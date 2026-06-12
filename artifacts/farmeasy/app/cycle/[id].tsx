@@ -25,7 +25,7 @@ export default function CycleDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const cycleId = parseInt(id ?? "0");
+  const cycleId = parseInt(id ?? "", 10);
 
   const {
     data: cycle,

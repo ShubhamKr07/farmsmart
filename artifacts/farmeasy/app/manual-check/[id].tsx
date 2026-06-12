@@ -52,7 +52,7 @@ export default function ManualCheckWizard() {
   const [photos, setPhotos] = useState<string[]>([]);
   const [error, setError] = useState("");
 
-  const cycleId = parseInt(id ?? "0");
+  const cycleId = parseInt(id ?? "", 10);
   const { data: cycle } = useGetCycle(cycleId);
   const { mutateAsync: createCheck, isPending } = useCreateManualCheck();
 
@@ -107,6 +107,18 @@ export default function ManualCheckWizard() {
       setError("Failed to submit. Please try again.");
     }
   };
+
+  if (isNaN(cycleId)) {
+    return (
+      <SafeAreaView style={s.safe}>
+        <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+          <Text style={{ fontFamily: "Inter_400Regular", color: colors.light.mutedForeground }}>
+            Invalid cycle
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   if (!cycle) {
     return (

@@ -25,6 +25,8 @@ export default function SignInPage() {
 
   const isLoading = fetchStatus === "fetching";
 
+  if (!signIn) return null;
+
   const handleSubmit = async () => {
     const { error } = await signIn.password({ emailAddress, password });
     if (error) {
