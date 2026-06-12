@@ -21,6 +21,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import colors from "@/constants/colors";
 import CycleCard from "@/components/CycleCard";
 import { useUserRole } from "@/hooks/useUserRole";
+import { matchesSearch, matchesStage, matchesDateRange } from "@/utils/cycleFilters";
 
 type Tab = "ongoing" | "history";
 type StageFilter = "germination" | "fertigation" | "harvest" | "completed" | null;
@@ -36,29 +37,6 @@ const HISTORY_STAGES: { label: string; value: StageFilter }[] = [
   { label: "All", value: null },
   { label: "Completed", value: "completed" },
 ];
-
-function matchesSearch(cycle: Cycle, query: string): boolean {
-  if (!query.trim()) return true;
-  const q = query.toLowerCase();
-  return (
-    cycle.shortId.toLowerCase().includes(q) ||
-    cycle.seedName.toLowerCase().includes(q) ||
-    cycle.growthProfileName.toLowerCase().includes(q) ||
-    cycle.seedLotQrCodes.some((code) => code.toLowerCase().includes(q))
-  );
-}
-
-function matchesStage(cycle: Cycle, stage: StageFilter): boolean {
-  if (!stage) return true;
-  return cycle.status === stage;
-}
-
-function matchesDateRange(cycle: Cycle, from: string, to: string): boolean {
-  const date = cycle.seedingDate;
-  if (from && date < from) return false;
-  if (to && date > to) return false;
-  return true;
-}
 
 export default function CyclesScreen() {
   const { isSupervisor } = useUserRole();

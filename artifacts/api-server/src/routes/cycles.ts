@@ -1,16 +1,68 @@
 import { Router, type Request, type Response, type NextFunction } from "express";
 import { getAuth } from "@clerk/express";
 import { eq, ne, desc } from "drizzle-orm";
+import { z } from "zod";
 import { db } from "@workspace/db";
 import {
   cyclesTable,
   growthProfilesTable,
   manualChecksTable,
 } from "@workspace/db";
+import { calcDaysOverdue, generateShortId, seedingWeight } from "../lib/utils";
 
 const router = Router();
 
 type UserRole = "technician" | "supervisor" | "quality_lead" | "facility_lead";
+
+// ── Zod schemas ───────────────────────────────────────────────────────────────
+
+const CreateCycleSchema = z
+  .object({
+    seedLotQrCodes: z.array(z.string().min(1)).min(1, "At least one seed lot required"),
+    seedName: z.string().min(1).max(200),
+    fullTrays: z.number().int().min(0),
+    halfTrays: z.number().int().min(0),
+    seedWeightTray: z.number().positive(),
+    growthProfileId: z.number().int().positive(),
+    seedingDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Must be YYYY-MM-DD"),
+    trayPosition: z.string().max(200).optional(),
+  })
+  .refine((d) => d.fullTrays > 0 || d.halfTrays > 0, {
+    message: "At least one tray (full or half) is required",
+  });
+
+const FertigationSchema = z.object({
+  seedLotQrCode: z.string().optional(),
+});
+
+const StartHarvestSchema = z.object({
+  trayQrCode: z.string().optional(),
+});
+
+const CompleteHarvestSchema = z.object({
+  fullTrays: z.number().int().min(0).optional(),
+  halfTrays: z.number().int().min(0).optional(),
+  harvestedQty: z.number().positive("harvestedQty must be a positive number"),
+  trayQrCode: z.string().optional(),
+  isBadTrays: z.boolean().optional(),
+  issue: z.string().optional(),
+});
+
+const ManualCheckSchema = z
+  .object({
+    fullTrays: z.number().int().min(0).default(0),
+    halfTrays: z.number().int().min(0).default(0),
+    isBadTrays: z.boolean().default(false),
+    issue: z.string().optional(),
+    notes: z.string().max(500).optional(),
+    photoUrls: z.array(z.string()).default([]),
+  })
+  .refine((d) => !d.isBadTrays || !!d.issue, {
+    message: "issue is required when isBadTrays is true",
+    path: ["issue"],
+  });
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function enforceAuth(req: Request, res: Response, next: NextFunction) {
   const { userId } = getAuth(req);
@@ -36,18 +88,20 @@ function parseParamId(req: Request): number {
   return parseInt(Array.isArray(v) ? v[0] : v, 10);
 }
 
-function generateShortId(): string {
-  return Math.floor(Math.random() * 0xffff)
-    .toString(16)
-    .padStart(4, "0");
-}
-
-function calcDaysOverdue(startedAt: Date | null, days: number): number | null {
-  if (!startedAt) return null;
-  const dueMs = startedAt.getTime() + days * 864e5;
-  const now = Date.now();
-  if (now <= dueMs) return null;
-  return Math.floor((now - dueMs) / 864e5);
+function validate<T>(
+  schema: z.ZodSchema<T>,
+  data: unknown,
+  res: Response,
+): T | null {
+  const result = schema.safeParse(data);
+  if (!result.success) {
+    res.status(400).json({
+      error: "Validation failed",
+      details: result.error.flatten(),
+    });
+    return null;
+  }
+  return result.data;
 }
 
 type Profile = typeof growthProfilesTable.$inferSelect;
@@ -81,7 +135,7 @@ function formatCycle(cycle: Cycle, profile: Profile) {
         ? calcDaysOverdue(cycle.germinationStartedAt, profile.germinationDays)
         : null,
     daysOverdueHarvest:
-      cycle.status === "fertigation"
+      cycle.status === "fertigation" || cycle.status === "harvest"
         ? calcDaysOverdue(cycle.fertigationStartedAt, profile.fertigationDays)
         : null,
   };
@@ -101,6 +155,8 @@ function formatCheck(c: typeof manualChecksTable.$inferSelect) {
     createdAt: c.createdAt.toISOString(),
   };
 }
+
+// ── Routes ────────────────────────────────────────────────────────────────────
 
 router.get("/cycles", enforceAuth, async (req, res) => {
   try {
@@ -140,27 +196,13 @@ router.get("/cycles", enforceAuth, async (req, res) => {
 
 router.post("/cycles", enforceAuth, async (req, res) => {
   try {
-    const {
-      seedLotQrCodes,
-      seedName,
-      fullTrays,
-      halfTrays,
-      seedWeightTray,
-      growthProfileId,
-      seedingDate,
-      trayPosition,
-    } = req.body;
-
-    if (!seedName || !growthProfileId || !seedingDate) {
-      return res
-        .status(400)
-        .json({ error: "seedName, growthProfileId, and seedingDate are required" });
-    }
+    const body = validate(CreateCycleSchema, req.body, res);
+    if (!body) return;
 
     const [profile] = await db
       .select()
       .from(growthProfilesTable)
-      .where(eq(growthProfilesTable.id, growthProfileId))
+      .where(eq(growthProfilesTable.id, body.growthProfileId))
       .limit(1);
     if (!profile) {
       return res.status(400).json({ error: "Growth profile not found" });
@@ -186,15 +228,15 @@ router.post("/cycles", enforceAuth, async (req, res) => {
       .insert(cyclesTable)
       .values({
         shortId,
-        seedLotQrCodes: seedLotQrCodes ?? [],
-        seedName,
-        fullTrays: fullTrays ?? 0,
-        halfTrays: halfTrays ?? 0,
-        seedWeightTray: String(seedWeightTray),
-        growthProfileId,
-        seedingDate,
+        seedLotQrCodes: body.seedLotQrCodes,
+        seedName: body.seedName,
+        fullTrays: body.fullTrays,
+        halfTrays: body.halfTrays,
+        seedWeightTray: String(body.seedWeightTray),
+        growthProfileId: body.growthProfileId,
+        seedingDate: body.seedingDate,
         status: "germination",
-        trayPosition,
+        trayPosition: body.trayPosition,
         germinationStartedAt: new Date(),
         createdBy: auth?.userId ?? null,
       })
@@ -251,7 +293,8 @@ router.get("/cycles/:id", enforceAuth, async (req, res) => {
 router.post("/cycles/:id/fertigation", enforceAuth, async (req, res) => {
   try {
     const id = parseParamId(req);
-    const { seedLotQrCode } = req.body;
+    const body = validate(FertigationSchema, req.body, res);
+    if (body === null) return;
 
     const [cycle] = await db
       .select()
@@ -280,7 +323,7 @@ router.post("/cycles/:id/fertigation", enforceAuth, async (req, res) => {
     }
 
     const qrCodes = cycle.seedLotQrCodes ?? [];
-    if (seedLotQrCode && qrCodes.length > 0 && !qrCodes.includes(seedLotQrCode)) {
+    if (body.seedLotQrCode && qrCodes.length > 0 && !qrCodes.includes(body.seedLotQrCode)) {
       return res
         .status(400)
         .json({ error: "QR code does not match any seed lot for this cycle" });
@@ -299,11 +342,12 @@ router.post("/cycles/:id/fertigation", enforceAuth, async (req, res) => {
   }
 });
 
+// Step 1 of harvest: mark as "harvest" in progress
 router.post("/cycles/:id/harvest", enforceAuth, async (req, res) => {
   try {
     const id = parseParamId(req);
-    const { fullTrays, halfTrays, harvestedQty, trayQrCode, isBadTrays, issue } = req.body;
-    const auth = getAuth(req);
+    const body = validate(StartHarvestSchema, req.body, res);
+    if (body === null) return;
 
     const [cycle] = await db
       .select()
@@ -312,18 +356,16 @@ router.post("/cycles/:id/harvest", enforceAuth, async (req, res) => {
       .limit(1);
     if (!cycle) return res.status(404).json({ error: "Cycle not found" });
     if (cycle.status !== "fertigation")
-      return res
-        .status(400)
-        .json({ error: "Cycle is not in fertigation status" });
+      return res.status(400).json({ error: "Cycle is not in fertigation status" });
 
-    const [harvestProfile] = await db
+    const [profile] = await db
       .select()
       .from(growthProfilesTable)
       .where(eq(growthProfilesTable.id, cycle.growthProfileId))
       .limit(1);
 
-    if (harvestProfile && cycle.fertigationStartedAt) {
-      const dueMs = cycle.fertigationStartedAt.getTime() + harvestProfile.fertigationDays * 86_400_000;
+    if (profile && cycle.fertigationStartedAt) {
+      const dueMs = cycle.fertigationStartedAt.getTime() + profile.fertigationDays * 86_400_000;
       if (Date.now() < dueMs) {
         const daysRemaining = Math.ceil((dueMs - Date.now()) / 86_400_000);
         return res.status(423).json({
@@ -336,31 +378,71 @@ router.post("/cycles/:id/harvest", enforceAuth, async (req, res) => {
     const [updated] = await db
       .update(cyclesTable)
       .set({
-        status: "completed",
-        fullTrays: fullTrays ?? cycle.fullTrays,
-        halfTrays: halfTrays ?? cycle.halfTrays,
-        harvestedQty: String(harvestedQty),
+        status: "harvest",
         harvestStartedAt: new Date(),
-        closedAt: new Date(),
-        trayPosition: trayQrCode || cycle.trayPosition,
+        trayPosition: body.trayQrCode ?? cycle.trayPosition,
       })
       .where(eq(cyclesTable.id, id))
       .returning();
 
-    if (isBadTrays) {
+    return res.json(formatCycle(updated, profile));
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Failed to start harvest" });
+  }
+});
+
+// Step 2 of harvest: record final quantities and close the cycle
+router.post("/cycles/:id/complete-harvest", enforceAuth, async (req, res) => {
+  try {
+    const id = parseParamId(req);
+    const body = validate(CompleteHarvestSchema, req.body, res);
+    if (body === null) return;
+
+    const [cycle] = await db
+      .select()
+      .from(cyclesTable)
+      .where(eq(cyclesTable.id, id))
+      .limit(1);
+    if (!cycle) return res.status(404).json({ error: "Cycle not found" });
+    if (cycle.status !== "harvest")
+      return res.status(400).json({ error: "Cycle is not in harvest status" });
+
+    const [profile] = await db
+      .select()
+      .from(growthProfilesTable)
+      .where(eq(growthProfilesTable.id, cycle.growthProfileId))
+      .limit(1);
+
+    const auth = getAuth(req);
+
+    const [updated] = await db
+      .update(cyclesTable)
+      .set({
+        status: "completed",
+        fullTrays: body.fullTrays ?? cycle.fullTrays,
+        halfTrays: body.halfTrays ?? cycle.halfTrays,
+        harvestedQty: String(body.harvestedQty),
+        closedAt: new Date(),
+        trayPosition: body.trayQrCode ?? cycle.trayPosition,
+      })
+      .where(eq(cyclesTable.id, id))
+      .returning();
+
+    if (body.isBadTrays) {
       await db.insert(manualChecksTable).values({
         cycleId: id,
-        fullTrays: fullTrays ?? cycle.fullTrays,
-        halfTrays: halfTrays ?? cycle.halfTrays,
+        fullTrays: body.fullTrays ?? cycle.fullTrays,
+        halfTrays: body.halfTrays ?? cycle.halfTrays,
         isBadTrays: true,
-        issue: issue ?? null,
+        issue: body.issue ?? null,
         notes: "Flagged at harvest",
         photoUrls: [],
         createdBy: auth?.userId ?? null,
       });
     }
 
-    return res.json(formatCycle(updated, harvestProfile));
+    return res.json(formatCycle(updated, profile));
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: "Failed to complete harvest" });
@@ -403,20 +485,21 @@ router.get("/cycles/:id/manual-checks", enforceAuth, async (req, res) => {
 router.post("/cycles/:id/manual-checks", enforceAuth, async (req, res) => {
   try {
     const id = parseParamId(req);
-    const { fullTrays, halfTrays, isBadTrays, issue, notes, photoUrls } =
-      req.body;
+    const body = validate(ManualCheckSchema, req.body, res);
+    if (body === null) return;
+
     const auth = getAuth(req);
 
     const [check] = await db
       .insert(manualChecksTable)
       .values({
         cycleId: id,
-        fullTrays: fullTrays ?? 0,
-        halfTrays: halfTrays ?? 0,
-        isBadTrays: isBadTrays ?? false,
-        issue: issue ?? null,
-        notes: notes ?? null,
-        photoUrls: photoUrls ?? [],
+        fullTrays: body.fullTrays,
+        halfTrays: body.halfTrays,
+        isBadTrays: body.isBadTrays,
+        issue: body.issue ?? null,
+        notes: body.notes ?? null,
+        photoUrls: body.photoUrls,
         createdBy: auth?.userId ?? null,
       })
       .returning();
