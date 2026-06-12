@@ -261,11 +261,6 @@ const s = StyleSheet.create({
     marginTop: 16,
     padding: 4,
   },
-  footer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    marginTop: 24,
-  },
   footerText: {
     fontSize: 14,
     fontFamily: "Inter_400Regular",
