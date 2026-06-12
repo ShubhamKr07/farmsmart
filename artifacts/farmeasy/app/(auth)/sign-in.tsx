@@ -1,0 +1,277 @@
+import { useSignIn } from "@clerk/expo";
+import { type Href, useRouter } from "expo-router";
+import React from "react";
+import {
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import colors from "@/constants/colors";
+
+export default function SignInPage() {
+  const { signIn, errors, fetchStatus } = useSignIn();
+  const router = useRouter();
+
+  const [emailAddress, setEmailAddress] = React.useState("");
+  const [password, setPassword] = React.useState("");
+  const [verifyCode, setVerifyCode] = React.useState("");
+
+  const isLoading = fetchStatus === "fetching";
+
+  const handleSubmit = async () => {
+    const { error } = await signIn.password({ emailAddress, password });
+    if (error) {
+      console.error(JSON.stringify(error, null, 2));
+      return;
+    }
+    if (signIn.status === "complete") {
+      await signIn.finalize({
+        navigate: ({ decorateUrl }) => {
+          const url = decorateUrl("/");
+          router.replace(url as Href);
+        },
+      });
+    } else if (signIn.status === "needs_client_trust") {
+      await signIn.mfa.sendEmailCode();
+    }
+  };
+
+  const handleVerify = async () => {
+    await signIn.mfa.verifyEmailCode({ code: verifyCode });
+    if (signIn.status === "complete") {
+      await signIn.finalize({
+        navigate: ({ decorateUrl }) => {
+          const url = decorateUrl("/");
+          router.replace(url as Href);
+        },
+      });
+    }
+  };
+
+  if (signIn.status === "needs_client_trust") {
+    return (
+      <SafeAreaView style={s.safe}>
+        <View style={s.container}>
+          <View style={s.logoRow}>
+            <View style={s.logoCircle} />
+            <Text style={s.logoText}>FarmEasy</Text>
+          </View>
+          <Text style={s.title}>Verify your identity</Text>
+          <Text style={s.subtitle}>Enter the code sent to your email</Text>
+          <TextInput
+            style={s.input}
+            value={verifyCode}
+            placeholder="6-digit code"
+            placeholderTextColor={colors.light.mutedForeground}
+            onChangeText={setVerifyCode}
+            keyboardType="numeric"
+          />
+          {errors.fields.code && (
+            <Text style={s.errorText}>{errors.fields.code.message}</Text>
+          )}
+          <Pressable
+            style={[s.btn, isLoading && s.btnDisabled]}
+            onPress={handleVerify}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={s.btnText}>Verify</Text>
+            )}
+          </Pressable>
+          <Pressable
+            style={s.linkBtn}
+            onPress={() => signIn.mfa.sendEmailCode()}
+          >
+            <Text style={s.linkText}>Resend code</Text>
+          </Pressable>
+          <Pressable style={s.linkBtn} onPress={() => signIn.reset()}>
+            <Text style={s.linkText}>Start over</Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={s.safe}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={{ flex: 1 }}
+      >
+        <ScrollView
+          contentContainerStyle={s.scroll}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={s.container}>
+            <View style={s.logoRow}>
+              <View style={s.logoCircle} />
+              <Text style={s.logoText}>FarmEasy</Text>
+            </View>
+            <Text style={s.title}>Welcome back</Text>
+            <Text style={s.subtitle}>Sign in to your account</Text>
+
+            <Text style={s.label}>Email address</Text>
+            <TextInput
+              style={s.input}
+              autoCapitalize="none"
+              value={emailAddress}
+              placeholder="you@example.com"
+              placeholderTextColor={colors.light.mutedForeground}
+              onChangeText={setEmailAddress}
+              keyboardType="email-address"
+              autoCorrect={false}
+            />
+            {errors.fields.identifier && (
+              <Text style={s.errorText}>
+                {errors.fields.identifier.message}
+              </Text>
+            )}
+
+            <Text style={s.label}>Password</Text>
+            <TextInput
+              style={s.input}
+              value={password}
+              placeholder="••••••••"
+              placeholderTextColor={colors.light.mutedForeground}
+              secureTextEntry
+              onChangeText={setPassword}
+            />
+            {errors.fields.password && (
+              <Text style={s.errorText}>{errors.fields.password.message}</Text>
+            )}
+
+            <Pressable
+              style={[
+                s.btn,
+                (!emailAddress || !password || isLoading) && s.btnDisabled,
+              ]}
+              onPress={handleSubmit}
+              disabled={!emailAddress || !password || isLoading}
+            >
+              {isLoading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={s.btnText}>Sign in</Text>
+              )}
+            </Pressable>
+
+            <Text style={s.footerText}>
+              Contact your farm administrator to request access.
+            </Text>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
+  );
+}
+
+const s = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: colors.light.background },
+  scroll: { flexGrow: 1 },
+  container: {
+    flex: 1,
+    padding: 28,
+    justifyContent: "center",
+    maxWidth: 440,
+    alignSelf: "center",
+    width: "100%",
+  },
+  logoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 40,
+  },
+  logoCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.light.primary,
+    marginRight: 10,
+  },
+  logoText: {
+    fontSize: 24,
+    fontFamily: "Inter_700Bold",
+    color: colors.light.primary,
+  },
+  title: {
+    fontSize: 28,
+    fontFamily: "Inter_700Bold",
+    color: colors.light.foreground,
+    marginBottom: 6,
+  },
+  subtitle: {
+    fontSize: 15,
+    fontFamily: "Inter_400Regular",
+    color: colors.light.mutedForeground,
+    marginBottom: 32,
+  },
+  label: {
+    fontSize: 14,
+    fontFamily: "Inter_500Medium",
+    color: colors.light.foreground,
+    marginBottom: 6,
+  },
+  input: {
+    height: 48,
+    borderWidth: 1,
+    borderColor: colors.light.border,
+    borderRadius: colors.radius,
+    paddingHorizontal: 14,
+    fontSize: 15,
+    fontFamily: "Inter_400Regular",
+    color: colors.light.foreground,
+    backgroundColor: colors.light.card,
+    marginBottom: 8,
+  },
+  errorText: {
+    color: colors.light.destructive,
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    marginBottom: 8,
+  },
+  btn: {
+    height: 50,
+    borderRadius: colors.radius,
+    backgroundColor: colors.light.primary,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 16,
+  },
+  btnDisabled: {
+    opacity: 0.5,
+  },
+  btnText: {
+    color: "#fff",
+    fontSize: 16,
+    fontFamily: "Inter_600SemiBold",
+  },
+  linkBtn: {
+    alignSelf: "center",
+    marginTop: 16,
+    padding: 4,
+  },
+  footer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginTop: 24,
+  },
+  footerText: {
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
+    color: colors.light.mutedForeground,
+  },
+  linkText: {
+    fontSize: 14,
+    fontFamily: "Inter_500Medium",
+    color: colors.light.primary,
+  },
+});

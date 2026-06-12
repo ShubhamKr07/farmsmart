@@ -1,0 +1,61 @@
+{
+  "expo": {
+    "name": "FarmEasy",
+    "slug": "farmeasy",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "farmeasy",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#F5F7F4"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "infoPlist": {
+        "NSCameraUsageDescription": "FarmEasy uses the camera to scan QR codes on trays and seed bags.",
+        "NSPhotoLibraryUsageDescription": "FarmEasy uses the photo library for manual check photos."
+      }
+    },
+    "android": {
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/images/icon.png"
+    },
+    "plugins": [
+      [
+        "expo-router",
+        {
+          "origin": "https://replit.com/"
+        }
+      ],
+      "expo-font",
+      "expo-web-browser",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "FarmEasy needs camera access to scan QR codes on trays and seed bags."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "FarmEasy needs camera access to take photos during manual checks.",
+          "photosPermission": "FarmEasy needs photo library access for manual check photos."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
+  }
+}

@@ -1,0 +1,536 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: FarmEasy API - Indoor farm cycle management
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: dashboard
+    description: Dashboard stats
+  - name: cycles
+    description: Crop cycle operations
+  - name: growth-profiles
+    description: Growth profile master data
+  - name: seed-lots
+    description: Seed lot lookup
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /dashboard:
+    get:
+      operationId: getDashboard
+      tags: [dashboard]
+      summary: Get dashboard statistics
+      responses:
+        "200":
+          description: Dashboard stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardStats"
+
+  /growth-profiles:
+    get:
+      operationId: listGrowthProfiles
+      tags: [growth-profiles]
+      summary: List all growth profiles
+      responses:
+        "200":
+          description: List of growth profiles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GrowthProfile"
+
+  /seed-lots/lookup:
+    get:
+      operationId: lookupSeedLot
+      tags: [seed-lots]
+      summary: Look up a seed lot by QR code
+      parameters:
+        - name: qrCode
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Seed lot found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SeedLot"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /cycles:
+    get:
+      operationId: listCycles
+      tags: [cycles]
+      summary: List cycles
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [ongoing, history]
+            default: ongoing
+      responses:
+        "200":
+          description: List of cycles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Cycle"
+    post:
+      operationId: createCycle
+      tags: [cycles]
+      summary: Create a new cycle (seeding)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCycleRequest"
+      responses:
+        "201":
+          description: Cycle created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cycle"
+
+  /cycles/{id}:
+    get:
+      operationId: getCycle
+      tags: [cycles]
+      summary: Get cycle detail with manual checks
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Cycle detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CycleDetail"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /cycles/{id}/fertigation:
+    post:
+      operationId: moveCycleToFertigation
+      tags: [cycles]
+      summary: Move cycle from germination to fertigation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MoveFertigationRequest"
+      responses:
+        "200":
+          description: Cycle moved to fertigation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cycle"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /cycles/{id}/harvest:
+    post:
+      operationId: completeCycleHarvest
+      tags: [cycles]
+      summary: Complete harvest for a cycle
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CompleteHarvestRequest"
+      responses:
+        "200":
+          description: Cycle harvest completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cycle"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /cycles/{id}/manual-checks:
+    get:
+      operationId: listManualChecks
+      tags: [cycles]
+      summary: List manual checks for a cycle
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of manual checks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ManualCheck"
+    post:
+      operationId: createManualCheck
+      tags: [cycles]
+      summary: Create a manual check for a cycle
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateManualCheckRequest"
+      responses:
+        "201":
+          description: Manual check created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ManualCheck"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required: [status]
+
+    GrowthProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        seedName:
+          type: string
+        germinationDays:
+          type: integer
+        fertigationDays:
+          type: integer
+      required: [id, name, seedName, germinationDays, fertigationDays]
+
+    SeedLot:
+      type: object
+      properties:
+        id:
+          type: integer
+        qrCode:
+          type: string
+        seedName:
+          type: string
+      required: [id, qrCode, seedName]
+
+    ManualCheck:
+      type: object
+      properties:
+        id:
+          type: integer
+        cycleId:
+          type: integer
+        fullTrays:
+          type: integer
+        halfTrays:
+          type: integer
+        isBadTrays:
+          type: boolean
+        issue:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        photoUrls:
+          type: array
+          items:
+            type: string
+        createdBy:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, cycleId, fullTrays, halfTrays, isBadTrays, photoUrls, createdAt]
+
+    Cycle:
+      type: object
+      properties:
+        id:
+          type: integer
+        shortId:
+          type: string
+        seedLotQrCodes:
+          type: array
+          items:
+            type: string
+        seedName:
+          type: string
+        fullTrays:
+          type: integer
+        halfTrays:
+          type: integer
+        seedWeightTray:
+          type: number
+        growthProfileId:
+          type: integer
+        growthProfileName:
+          type: string
+        germinationDays:
+          type: integer
+        fertigationDays:
+          type: integer
+        seedingDate:
+          type: string
+        status:
+          type: string
+          enum: [germination, fertigation, harvest, completed]
+        trayPosition:
+          type: string
+          nullable: true
+        germinationStartedAt:
+          type: string
+          format: date-time
+          nullable: true
+        fertigationStartedAt:
+          type: string
+          format: date-time
+          nullable: true
+        harvestStartedAt:
+          type: string
+          format: date-time
+          nullable: true
+        harvestedQty:
+          type: number
+          nullable: true
+        closedAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdBy:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        daysOverdueFertigation:
+          type: integer
+          nullable: true
+        daysOverdueHarvest:
+          type: integer
+          nullable: true
+      required:
+        - id
+        - shortId
+        - seedLotQrCodes
+        - seedName
+        - fullTrays
+        - halfTrays
+        - seedWeightTray
+        - growthProfileId
+        - growthProfileName
+        - germinationDays
+        - fertigationDays
+        - seedingDate
+        - status
+        - createdAt
+
+    CycleDetail:
+      allOf:
+        - $ref: "#/components/schemas/Cycle"
+        - type: object
+          properties:
+            manualChecks:
+              type: array
+              items:
+                $ref: "#/components/schemas/ManualCheck"
+          required: [manualChecks]
+
+    CreateCycleRequest:
+      type: object
+      properties:
+        seedLotQrCodes:
+          type: array
+          items:
+            type: string
+          minItems: 1
+        seedName:
+          type: string
+        fullTrays:
+          type: integer
+        halfTrays:
+          type: integer
+        seedWeightTray:
+          type: number
+        growthProfileId:
+          type: integer
+        seedingDate:
+          type: string
+        trayPosition:
+          type: string
+      required:
+        - seedLotQrCodes
+        - seedName
+        - fullTrays
+        - halfTrays
+        - seedWeightTray
+        - growthProfileId
+        - seedingDate
+        - trayPosition
+
+    MoveFertigationRequest:
+      type: object
+      properties:
+        seedLotQrCode:
+          type: string
+      required: [seedLotQrCode]
+
+    CompleteHarvestRequest:
+      type: object
+      properties:
+        fullTrays:
+          type: integer
+        halfTrays:
+          type: integer
+        harvestedQty:
+          type: number
+        trayQrCode:
+          type: string
+      required: [fullTrays, halfTrays, harvestedQty, trayQrCode]
+
+    CreateManualCheckRequest:
+      type: object
+      properties:
+        fullTrays:
+          type: integer
+        halfTrays:
+          type: integer
+        isBadTrays:
+          type: boolean
+        issue:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        photoUrls:
+          type: array
+          items:
+            type: string
+      required: [fullTrays, halfTrays, isBadTrays, photoUrls]
+
+    DashboardStats:
+      type: object
+      properties:
+        channelUtilization:
+          type: number
+        totalRunningCycles:
+          type: integer
+        totalChannels:
+          type: integer
+        totalYieldThisWeek:
+          type: number
+        totalYieldThisMonth:
+          type: number
+        actionRequired:
+          type: array
+          items:
+            $ref: "#/components/schemas/ActionRequiredItem"
+      required:
+        - channelUtilization
+        - totalRunningCycles
+        - totalChannels
+        - totalYieldThisWeek
+        - totalYieldThisMonth
+        - actionRequired
+
+    ActionRequiredItem:
+      type: object
+      properties:
+        cycleId:
+          type: integer
+        cycleShortId:
+          type: string
+        seedName:
+          type: string
+        type:
+          type: string
+          enum: [fertigation, harvest]
+        daysOverdue:
+          type: integer
+      required: [cycleId, cycleShortId, seedName, type, daysOverdue]
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required: [error]

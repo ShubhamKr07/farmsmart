@@ -1,0 +1,2 @@
+- [FarmEasy orval mutations](farmeasy-orval-mutations.md) — orval wraps path-param mutations as `{id, data: RequestBody}`, not flat args.
+- [FarmEasy DB arrays](farmeasy-db-arrays.md) — Drizzle pg `.array()` columns must never use `.default([])` at DB level; always provide values in code to avoid SQL default issues.

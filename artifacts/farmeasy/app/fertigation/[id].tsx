@@ -1,0 +1,459 @@
+import { Feather } from "@expo/vector-icons";
+import { useQueryClient } from "@tanstack/react-query";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useMemo, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  useGetCycle,
+  useMoveCycleToFertigation,
+  getListCyclesQueryKey,
+  getGetDashboardQueryKey,
+  getGetCycleQueryKey,
+} from "@workspace/api-client-react";
+import colors from "@/constants/colors";
+import QRScanner from "@/components/QRScanner";
+import StageTracker from "@/components/StageTracker";
+
+type Step = 1 | 2 | 3;
+
+export default function FertigationWizard() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const [step, setStep] = useState<Step>(1);
+  const [scannedQr, setScannedQr] = useState("");
+  const [error, setError] = useState("");
+
+  const cycleId = parseInt(id ?? "0");
+  const { data: cycle } = useGetCycle(cycleId);
+  const { mutateAsync: moveFertigation, isPending } = useMoveCycleToFertigation();
+
+  const daysSinceGermination = useMemo(() => {
+    if (!cycle?.germinationStartedAt) return 0;
+    return Math.floor(
+      (Date.now() - new Date(cycle.germinationStartedAt).getTime()) / 864e5
+    );
+  }, [cycle?.germinationStartedAt]);
+
+  const germinationProgress = useMemo(() => {
+    if (!cycle?.germinationDays) return 0;
+    return Math.min(100, Math.round((daysSinceGermination / cycle.germinationDays) * 100));
+  }, [daysSinceGermination, cycle?.germinationDays]);
+
+  const handleQrScanned = (qr: string) => {
+    setScannedQr(qr);
+    setError("");
+    const qrCodes = cycle?.seedLotQrCodes ?? [];
+    if (qrCodes.length > 0 && !qrCodes.includes(qr)) {
+      setError(`QR code "${qr}" doesn't match this cycle's seed lots`);
+    } else {
+      setStep(2);
+    }
+  };
+
+  const handleConfirm = async () => {
+    try {
+      await moveFertigation({ id: cycleId, data: { seedLotQrCode: scannedQr } });
+      queryClient.invalidateQueries({ queryKey: getListCyclesQueryKey({ status: "ongoing" }) });
+      queryClient.invalidateQueries({ queryKey: getGetDashboardQueryKey() });
+      queryClient.invalidateQueries({ queryKey: getGetCycleQueryKey(cycleId) });
+      Alert.alert(
+        "Moved to Fertigation!",
+        `${cycle?.seedName} cycle #${cycle?.shortId} has started its ${cycle?.fertigationDays}-day fertigation period.`,
+        [{ text: "OK", onPress: () => router.back() }]
+      );
+    } catch (err) {
+      console.error(err);
+      setError("Failed to move cycle to fertigation. Please try again.");
+    }
+  };
+
+  if (!cycle) {
+    return (
+      <SafeAreaView style={s.safe}>
+        <ActivityIndicator color={colors.light.primary} style={{ flex: 1 }} />
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={s.safe} edges={["top", "bottom"]}>
+      <View style={s.topBar}>
+        <Pressable onPress={() => (step > 1 ? setStep((x) => (x - 1) as Step) : router.back())}>
+          <Feather
+            name={step === 1 ? "x" : "arrow-left"}
+            size={24}
+            color={colors.light.foreground}
+          />
+        </Pressable>
+        <Text style={s.topTitle}>Move to Fertigation</Text>
+        <Text style={s.stepNum}>Step {step}/3</Text>
+      </View>
+
+      <View style={s.stepDots}>
+        {[1, 2, 3].map((n) => (
+          <View key={n} style={[s.dot, n <= step && s.dotActive]} />
+        ))}
+      </View>
+
+      <ScrollView contentContainerStyle={s.content}>
+        <View style={s.cycleInfo}>
+          <Text style={s.cycleName}>{cycle.seedName}</Text>
+          <Text style={s.cycleId}>#{cycle.shortId}</Text>
+          <StageTracker status="germination" />
+        </View>
+
+        {step === 1 && (
+          <>
+            <Text style={s.stepTitle}>Scan Seed Lot QR</Text>
+            <Text style={s.stepSub}>
+              Scan one of the seed lot QR codes associated with this cycle to confirm.
+            </Text>
+            {cycle.seedLotQrCodes.length > 0 && (
+              <View style={s.infoBox}>
+                <Text style={s.infoLabel}>Expected QR codes:</Text>
+                {cycle.seedLotQrCodes.map((qr) => (
+                  <Text key={qr} style={s.infoValue}>• {qr}</Text>
+                ))}
+              </View>
+            )}
+            <View style={s.scannerBox}>
+              <QRScanner onScanned={handleQrScanned} hint="Scan seed lot QR code" />
+            </View>
+            {error ? <Text style={s.errorText}>{error}</Text> : null}
+          </>
+        )}
+
+        {step === 2 && (
+          <>
+            <Text style={s.stepTitle}>Germination Review</Text>
+            <Text style={s.stepSub}>
+              Confirm germination is complete before moving to fertigation.
+            </Text>
+
+            <View style={s.progressCard}>
+              <View style={s.progressHeader}>
+                <Text style={s.progressLabel}>Days in Germination</Text>
+                <Text style={s.progressDays}>
+                  {daysSinceGermination} / {cycle.germinationDays} days
+                </Text>
+              </View>
+              <View style={s.progressTrack}>
+                <View
+                  style={[
+                    s.progressFill,
+                    {
+                      width: `${germinationProgress}%` as any,
+                      backgroundColor:
+                        germinationProgress >= 100
+                          ? colors.light.primary
+                          : colors.light.warning,
+                    },
+                  ]}
+                />
+              </View>
+              <Text style={s.progressSub}>
+                {germinationProgress >= 100
+                  ? "Germination period complete ✓"
+                  : `${100 - germinationProgress}% remaining`}
+              </Text>
+            </View>
+
+            <View style={s.detailGrid}>
+              <DetailItem label="Full Trays" value={`${cycle.fullTrays}`} />
+              <DetailItem label="Half Trays" value={`${cycle.halfTrays}`} />
+              <DetailItem label="Profile" value={cycle.growthProfileName} />
+              <DetailItem label="Fertigation period" value={`${cycle.fertigationDays} days`} />
+            </View>
+
+            <Pressable style={s.nextBtn} onPress={() => setStep(3)}>
+              <Text style={s.nextBtnText}>Looks Good — Continue</Text>
+              <Feather name="arrow-right" size={18} color="#fff" />
+            </Pressable>
+          </>
+        )}
+
+        {step === 3 && (
+          <>
+            <Text style={s.stepTitle}>Confirm</Text>
+            <Text style={s.stepSub}>
+              Moving this cycle to fertigation cannot be undone.
+            </Text>
+            <View style={s.summaryCard}>
+              <SummaryRow label="Cycle" value={`#${cycle.shortId}`} />
+              <SummaryRow label="Seed" value={cycle.seedName} />
+              <SummaryRow
+                label="Trays"
+                value={`${cycle.fullTrays}F + ${cycle.halfTrays}H`}
+              />
+              <SummaryRow label="Profile" value={cycle.growthProfileName} />
+              <SummaryRow
+                label="Fertigation period"
+                value={`${cycle.fertigationDays} days`}
+              />
+              <SummaryRow label="Verified QR" value={scannedQr} />
+            </View>
+            {error ? <Text style={s.errorText}>{error}</Text> : null}
+            <Pressable
+              style={[s.confirmBtn, isPending && s.btnDisabled]}
+              onPress={handleConfirm}
+              disabled={isPending}
+            >
+              {isPending ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <>
+                  <Text style={s.confirmBtnText}>Confirm — Move to Fertigation</Text>
+                  <Feather name="check" size={18} color="#fff" />
+                </>
+              )}
+            </Pressable>
+          </>
+        )}
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+function SummaryRow({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={s.summaryRow}>
+      <Text style={s.summaryLabel}>{label}</Text>
+      <Text style={s.summaryValue}>{value}</Text>
+    </View>
+  );
+}
+
+function DetailItem({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={s.detailItem}>
+      <Text style={s.detailLabel}>{label}</Text>
+      <Text style={s.detailValue}>{value}</Text>
+    </View>
+  );
+}
+
+const s = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: colors.light.background },
+  topBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  topTitle: {
+    fontSize: 17,
+    fontFamily: "Inter_600SemiBold",
+    color: colors.light.foreground,
+  },
+  stepNum: {
+    fontSize: 13,
+    fontFamily: "Inter_500Medium",
+    color: colors.light.mutedForeground,
+  },
+  stepDots: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 8,
+    marginBottom: 16,
+  },
+  dot: { width: 36, height: 4, borderRadius: 2, backgroundColor: colors.light.muted },
+  dotActive: { backgroundColor: colors.light.primary },
+  content: { padding: 20, paddingBottom: 40 },
+  cycleInfo: {
+    backgroundColor: colors.light.secondary,
+    borderRadius: colors.radius,
+    padding: 14,
+    marginBottom: 20,
+    gap: 4,
+  },
+  cycleName: {
+    fontSize: 18,
+    fontFamily: "Inter_700Bold",
+    color: colors.light.foreground,
+  },
+  cycleId: {
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    color: colors.light.mutedForeground,
+    marginBottom: 8,
+  },
+  stepTitle: {
+    fontSize: 20,
+    fontFamily: "Inter_700Bold",
+    color: colors.light.foreground,
+    marginBottom: 6,
+  },
+  stepSub: {
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
+    color: colors.light.mutedForeground,
+    marginBottom: 14,
+  },
+  infoBox: {
+    backgroundColor: colors.light.muted,
+    borderRadius: colors.radius,
+    padding: 12,
+    marginBottom: 12,
+  },
+  infoLabel: {
+    fontSize: 13,
+    fontFamily: "Inter_500Medium",
+    color: colors.light.mutedForeground,
+    marginBottom: 4,
+  },
+  infoValue: {
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    color: colors.light.foreground,
+  },
+  scannerBox: {
+    width: "100%",
+    borderRadius: colors.radius,
+    overflow: "hidden",
+    backgroundColor: colors.light.muted,
+  },
+  progressCard: {
+    backgroundColor: colors.light.card,
+    borderRadius: colors.radius,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.light.border,
+    marginBottom: 16,
+  },
+  progressHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  progressLabel: {
+    fontSize: 14,
+    fontFamily: "Inter_500Medium",
+    color: colors.light.foreground,
+  },
+  progressDays: {
+    fontSize: 14,
+    fontFamily: "Inter_700Bold",
+    color: colors.light.primary,
+  },
+  progressTrack: {
+    height: 8,
+    backgroundColor: colors.light.muted,
+    borderRadius: 4,
+    overflow: "hidden",
+    marginBottom: 8,
+  },
+  progressFill: {
+    height: "100%",
+    borderRadius: 4,
+  },
+  progressSub: {
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    color: colors.light.mutedForeground,
+  },
+  detailGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+    marginBottom: 20,
+  },
+  detailItem: {
+    flex: 1,
+    minWidth: "45%",
+    backgroundColor: colors.light.card,
+    borderRadius: colors.radius,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: colors.light.border,
+  },
+  detailLabel: {
+    fontSize: 11,
+    fontFamily: "Inter_500Medium",
+    color: colors.light.mutedForeground,
+    marginBottom: 4,
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+  },
+  detailValue: {
+    fontSize: 15,
+    fontFamily: "Inter_600SemiBold",
+    color: colors.light.foreground,
+  },
+  errorText: {
+    color: colors.light.destructive,
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    marginTop: 8,
+  },
+  summaryCard: {
+    backgroundColor: colors.light.card,
+    borderRadius: colors.radius,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.light.border,
+    marginBottom: 16,
+  },
+  summaryRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.light.border,
+  },
+  summaryLabel: {
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    color: colors.light.mutedForeground,
+  },
+  summaryValue: {
+    fontSize: 13,
+    fontFamily: "Inter_500Medium",
+    color: colors.light.foreground,
+    flex: 1,
+    textAlign: "right",
+    marginLeft: 8,
+  },
+  nextBtn: {
+    flexDirection: "row",
+    height: 52,
+    borderRadius: colors.radius,
+    backgroundColor: colors.light.primary,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    marginTop: 8,
+  },
+  nextBtnText: {
+    color: "#fff",
+    fontSize: 16,
+    fontFamily: "Inter_600SemiBold",
+  },
+  confirmBtn: {
+    flexDirection: "row",
+    height: 52,
+    borderRadius: colors.radius,
+    backgroundColor: colors.light.primary,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    marginTop: 8,
+  },
+  confirmBtnText: {
+    color: "#fff",
+    fontSize: 16,
+    fontFamily: "Inter_600SemiBold",
+  },
+  btnDisabled: { opacity: 0.4 },
+});
