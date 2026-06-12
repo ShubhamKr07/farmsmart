@@ -21,6 +21,7 @@ import {
   getGetCycleQueryKey,
 } from "@workspace/api-client-react";
 import colors from "@/constants/colors";
+import { uploadPhoto } from "@/utils/uploadPhoto";
 
 type Step = 1 | 2;
 
@@ -67,14 +68,10 @@ export default function ManualCheckWizard() {
     if (photos.length >= 6) return;
     const result = await ImagePicker.launchCameraAsync({
       quality: 0.6,
-      base64: true,
       allowsEditing: false,
     });
-    if (!result.canceled && result.assets[0].base64) {
-      setPhotos((p) => [
-        ...p,
-        `data:image/jpeg;base64,${result.assets[0].base64}`,
-      ]);
+    if (!result.canceled) {
+      setPhotos((p) => [...p, result.assets[0].uri]);
     }
   };
 
@@ -82,19 +79,16 @@ export default function ManualCheckWizard() {
     if (photos.length >= 6) return;
     const result = await ImagePicker.launchImageLibraryAsync({
       quality: 0.6,
-      base64: true,
       allowsEditing: false,
     });
-    if (!result.canceled && result.assets[0].base64) {
-      setPhotos((p) => [
-        ...p,
-        `data:image/jpeg;base64,${result.assets[0].base64}`,
-      ]);
+    if (!result.canceled) {
+      setPhotos((p) => [...p, result.assets[0].uri]);
     }
   };
 
   const handleSubmit = async () => {
     try {
+      const photoUrls = await Promise.all(photos.map(uploadPhoto));
       await createCheck({
         id: cycleId,
         data: {
@@ -103,7 +97,7 @@ export default function ManualCheckWizard() {
           isBadTrays,
           issue: isBadTrays ? issueLabel : null,
           notes: notes || null,
-          photoUrls: photos,
+          photoUrls,
         },
       });
       queryClient.invalidateQueries({ queryKey: getGetCycleQueryKey(cycleId) });

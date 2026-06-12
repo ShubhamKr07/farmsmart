@@ -55,7 +55,7 @@ const ManualCheckSchema = z
     isBadTrays: z.boolean().default(false),
     issue: z.string().optional(),
     notes: z.string().max(500).optional(),
-    photoUrls: z.array(z.string()).default([]),
+    photoUrls: z.array(z.string().url()).max(6).default([]),
   })
   .refine((d) => !d.isBadTrays || !!d.issue, {
     message: "issue is required when isBadTrays is true",

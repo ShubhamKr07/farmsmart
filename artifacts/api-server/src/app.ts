@@ -1,4 +1,5 @@
 import express, { type Express, type Request, type Response, type NextFunction } from "express";
+import path from "node:path";
 import cors from "cors";
 import pinoHttp from "pino-http";
 import { clerkMiddleware, getAuth } from "@clerk/express";
@@ -9,6 +10,7 @@ import {
   CLERK_PROXY_PATH,
   clerkProxyMiddleware,
 } from "./middlewares/clerkProxyMiddleware";
+import { UPLOADS_DIR } from "./routes/media";
 
 const app: Express = express();
 
@@ -34,6 +36,7 @@ app.use(
   }),
 );
 app.use(cors());
+app.use("/uploads", express.static(path.resolve(UPLOADS_DIR)));
 app.use(express.json({ limit: "20mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(clerkMiddleware());
