@@ -9,10 +9,9 @@ import {
   manualChecksTable,
 } from "@workspace/db";
 import { calcDaysOverdue, generateShortId, seedingWeight } from "../lib/utils";
+import { type UserRole, isSupervisorOrLead } from "@workspace/api-zod";
 
 const router = Router();
-
-type UserRole = "technician" | "supervisor" | "quality_lead" | "facility_lead";
 
 // ── Zod schemas ───────────────────────────────────────────────────────────────
 
@@ -77,10 +76,6 @@ function extractRole(req: Request): UserRole {
   const { sessionClaims } = getAuth(req);
   const meta = sessionClaims?.publicMetadata as { role?: UserRole } | undefined;
   return meta?.role ?? "technician";
-}
-
-function isSupervisorOrLead(role: UserRole): boolean {
-  return role === "supervisor" || role === "facility_lead";
 }
 
 function parseParamId(req: Request): number {
