@@ -262,6 +262,23 @@ router.post("/cycles/:id/fertigation", enforceAuth, async (req, res) => {
     if (cycle.status !== "germination")
       return res.status(400).json({ error: "Cycle is not in germination status" });
 
+    const [profile] = await db
+      .select()
+      .from(growthProfilesTable)
+      .where(eq(growthProfilesTable.id, cycle.growthProfileId))
+      .limit(1);
+
+    if (profile && cycle.germinationStartedAt) {
+      const dueMs = cycle.germinationStartedAt.getTime() + profile.germinationDays * 86_400_000;
+      if (Date.now() < dueMs) {
+        const daysRemaining = Math.ceil((dueMs - Date.now()) / 86_400_000);
+        return res.status(423).json({
+          error: "Germination period not yet complete.",
+          daysRemaining,
+        });
+      }
+    }
+
     const qrCodes = cycle.seedLotQrCodes ?? [];
     if (seedLotQrCode && qrCodes.length > 0 && !qrCodes.includes(seedLotQrCode)) {
       return res
@@ -274,12 +291,6 @@ router.post("/cycles/:id/fertigation", enforceAuth, async (req, res) => {
       .set({ status: "fertigation", fertigationStartedAt: new Date() })
       .where(eq(cyclesTable.id, id))
       .returning();
-
-    const [profile] = await db
-      .select()
-      .from(growthProfilesTable)
-      .where(eq(growthProfilesTable.id, updated.growthProfileId))
-      .limit(1);
 
     return res.json(formatCycle(updated, profile));
   } catch (err) {
@@ -304,6 +315,23 @@ router.post("/cycles/:id/harvest", enforceAuth, async (req, res) => {
       return res
         .status(400)
         .json({ error: "Cycle is not in fertigation status" });
+
+    const [harvestProfile] = await db
+      .select()
+      .from(growthProfilesTable)
+      .where(eq(growthProfilesTable.id, cycle.growthProfileId))
+      .limit(1);
+
+    if (harvestProfile && cycle.fertigationStartedAt) {
+      const dueMs = cycle.fertigationStartedAt.getTime() + harvestProfile.fertigationDays * 86_400_000;
+      if (Date.now() < dueMs) {
+        const daysRemaining = Math.ceil((dueMs - Date.now()) / 86_400_000);
+        return res.status(423).json({
+          error: "Fertigation period not yet complete.",
+          daysRemaining,
+        });
+      }
+    }
 
     const [updated] = await db
       .update(cyclesTable)
@@ -332,13 +360,7 @@ router.post("/cycles/:id/harvest", enforceAuth, async (req, res) => {
       });
     }
 
-    const [profile] = await db
-      .select()
-      .from(growthProfilesTable)
-      .where(eq(growthProfilesTable.id, updated.growthProfileId))
-      .limit(1);
-
-    return res.json(formatCycle(updated, profile));
+    return res.json(formatCycle(updated, harvestProfile));
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: "Failed to complete harvest" });

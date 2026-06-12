@@ -56,6 +56,18 @@ export default function CycleDetailScreen() {
   const canHarvest = cycle.status === "fertigation";
   const canManualCheck = cycle.status !== "completed";
 
+  const now = Date.now();
+  let fertigationDaysRemaining = 0;
+  if (canFertigation && cycle.germinationStartedAt && cycle.germinationDays) {
+    const dueMs = new Date(cycle.germinationStartedAt).getTime() + cycle.germinationDays * 86_400_000;
+    fertigationDaysRemaining = Math.max(0, Math.ceil((dueMs - now) / 86_400_000));
+  }
+  let harvestDaysRemaining = 0;
+  if (canHarvest && cycle.fertigationStartedAt && cycle.fertigationDays) {
+    const dueMs = new Date(cycle.fertigationStartedAt).getTime() + cycle.fertigationDays * 86_400_000;
+    harvestDaysRemaining = Math.max(0, Math.ceil((dueMs - now) / 86_400_000));
+  }
+
   return (
     <SafeAreaView style={s.safe} edges={["bottom"]}>
       <ScrollView
@@ -155,7 +167,13 @@ export default function CycleDetailScreen() {
         </View>
 
         {/* Actions */}
-        {canFertigation && (
+        {canFertigation && fertigationDaysRemaining > 0 && (
+          <View style={s.lockedBtn}>
+            <Feather name="lock" size={18} color={colors.light.mutedForeground} />
+            <Text style={s.lockedBtnText}>Locked — {fertigationDaysRemaining}d remaining</Text>
+          </View>
+        )}
+        {canFertigation && fertigationDaysRemaining === 0 && (
           <Pressable
             style={s.actionBtn}
             onPress={() => router.push(`/fertigation/${cycleId}` as any)}
@@ -164,7 +182,13 @@ export default function CycleDetailScreen() {
             <Text style={s.actionBtnText}>Move to Fertigation</Text>
           </Pressable>
         )}
-        {canHarvest && (
+        {canHarvest && harvestDaysRemaining > 0 && (
+          <View style={[s.lockedBtn, { marginBottom: 10 }]}>
+            <Feather name="lock" size={18} color={colors.light.mutedForeground} />
+            <Text style={s.lockedBtnText}>Locked — {harvestDaysRemaining}d remaining</Text>
+          </View>
+        )}
+        {canHarvest && harvestDaysRemaining === 0 && (
           <Pressable
             style={[s.actionBtn, { backgroundColor: "#F59E0B" }]}
             onPress={() => router.push(`/harvest/${cycleId}` as any)}
@@ -415,6 +439,23 @@ const s = StyleSheet.create({
     fontSize: 13,
     fontFamily: "Inter_500Medium",
     color: colors.light.destructive,
+  },
+  lockedBtn: {
+    flexDirection: "row",
+    height: 50,
+    borderRadius: colors.radius,
+    backgroundColor: colors.light.muted,
+    borderWidth: 1,
+    borderColor: colors.light.border,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    marginBottom: 10,
+  },
+  lockedBtnText: {
+    color: colors.light.mutedForeground,
+    fontSize: 15,
+    fontFamily: "Inter_500Medium",
   },
   actionBtn: {
     flexDirection: "row",

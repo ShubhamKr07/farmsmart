@@ -3,6 +3,7 @@ import { Feather } from "@expo/vector-icons";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
+import Svg, { Polyline, Line, Text as SvgText } from "react-native-svg";
 import {
   ActivityIndicator,
   Pressable,
@@ -157,12 +158,10 @@ export default function HomeScreen() {
                   </Pressable>
                 </View>
               </View>
-              <YieldBarChart
-                data={
-                  yieldPeriod === "week"
-                    ? ((stats as any)?.yieldByDay ?? [])
-                    : ((stats as any)?.yieldByWeek ?? [])
-                }
+              <YieldLineChart
+                yieldData={yieldPeriod === "week" ? ((stats as any)?.yieldByDay ?? []) : ((stats as any)?.yieldByWeek ?? [])}
+                seedingData={yieldPeriod === "week" ? ((stats as any)?.seedingByDay ?? []) : ((stats as any)?.seedingByWeek ?? [])}
+                badTrayData={yieldPeriod === "week" ? ((stats as any)?.badTrayByDay ?? []) : ((stats as any)?.badTrayByWeek ?? [])}
               />
               <View style={s.yieldTotalRow}>
                 <Text style={s.yieldTotalLabel}>
@@ -264,32 +263,82 @@ export default function HomeScreen() {
   );
 }
 
-function YieldBarChart({ data }: { data: { label: string; value: number }[] }) {
-  const max = Math.max(...data.map((d) => d.value), 1);
+function YieldLineChart({
+  yieldData,
+  seedingData,
+  badTrayData,
+}: {
+  yieldData: { label: string; value: number }[];
+  seedingData: { label: string; value: number }[];
+  badTrayData: { label: string; value: number }[];
+}) {
+  const VW = 300;
+  const VH = 110;
+  const PL = 28;
+  const PR = 6;
+  const PT = 6;
+  const PB = 20;
+  const chartW = VW - PL - PR;
+  const chartH = VH - PT - PB;
+
+  const n = Math.max(yieldData.length, 2);
+  const allVals = [...yieldData, ...seedingData, ...badTrayData].map((d) => d.value);
+  const maxVal = Math.max(...allVals, 1);
+
+  function pts(data: { value: number }[]) {
+    if (data.length < 2) return "";
+    return data
+      .map((d, i) => {
+        const x = PL + (i / (n - 1)) * chartW;
+        const y = PT + chartH - (d.value / maxVal) * chartH;
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+      })
+      .join(" ");
+  }
+
+  const labels = yieldData.map((d) => d.label);
+
   return (
-    <View style={s.chart}>
-      {data.map((item, i) => (
-        <View key={i} style={s.chartCol}>
-          <View style={s.chartBarWrap}>
-            <View
-              style={[
-                s.chartBar,
-                {
-                  height: `${Math.max(4, Math.round((item.value / max) * 100))}%` as any,
-                  backgroundColor:
-                    item.value === 0
-                      ? colors.light.muted
-                      : colors.light.primary,
-                },
-              ]}
-            />
-          </View>
-          <Text style={s.chartLabel}>{item.label}</Text>
-          {item.value > 0 && (
-            <Text style={s.chartVal}>{Math.round(item.value / 1000 * 10) / 10 || item.value}g</Text>
-          )}
+    <View style={s.lineChartWrap}>
+      <Svg width="100%" height={VH} viewBox={`0 0 ${VW} ${VH}`}>
+        <Line x1={PL} y1={PT} x2={PL} y2={PT + chartH} stroke="#e5e7eb" strokeWidth={1} />
+        <Line x1={PL} y1={PT + chartH} x2={VW - PR} y2={PT + chartH} stroke="#e5e7eb" strokeWidth={1} />
+        {yieldData.length >= 2 && (
+          <Polyline points={pts(yieldData)} fill="none" stroke="#22c55e" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+        )}
+        {seedingData.length >= 2 && (
+          <Polyline points={pts(seedingData)} fill="none" stroke="#3b82f6" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+        )}
+        {badTrayData.length >= 2 && (
+          <Polyline points={pts(badTrayData)} fill="none" stroke="#ef4444" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+        )}
+        {labels.map((label, i) => (
+          <SvgText
+            key={i}
+            x={PL + (i / (n - 1)) * chartW}
+            y={VH - 4}
+            fontSize={8}
+            fill="#9ca3af"
+            textAnchor="middle"
+          >
+            {label}
+          </SvgText>
+        ))}
+      </Svg>
+      <View style={s.chartLegend}>
+        <View style={s.legendItem}>
+          <View style={[s.legendDot, { backgroundColor: "#22c55e" }]} />
+          <Text style={s.legendLabel}>Yield</Text>
         </View>
-      ))}
+        <View style={s.legendItem}>
+          <View style={[s.legendDot, { backgroundColor: "#3b82f6" }]} />
+          <Text style={s.legendLabel}>Seeding</Text>
+        </View>
+        <View style={s.legendItem}>
+          <View style={[s.legendDot, { backgroundColor: "#ef4444" }]} />
+          <Text style={s.legendLabel}>Bad Trays</Text>
+        </View>
+      </View>
     </View>
   );
 }
@@ -455,39 +504,29 @@ const s = StyleSheet.create({
     color: colors.light.foreground,
     fontFamily: "Inter_600SemiBold",
   },
-  chart: {
+  lineChartWrap: {
+    marginBottom: 8,
+  },
+  chartLegend: {
     flexDirection: "row",
-    alignItems: "flex-end",
-    height: 100,
-    gap: 4,
-    marginBottom: 12,
+    gap: 16,
+    marginTop: 6,
+    marginBottom: 4,
   },
-  chartCol: {
-    flex: 1,
+  legendItem: {
+    flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    height: "100%",
-    justifyContent: "flex-end",
+    gap: 5,
   },
-  chartBarWrap: {
-    flex: 1,
-    width: "100%",
-    justifyContent: "flex-end",
+  legendDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
-  chartBar: {
-    width: "100%",
-    borderRadius: 3,
-    minHeight: 4,
-  },
-  chartLabel: {
-    fontSize: 9,
-    fontFamily: "Inter_500Medium",
-    color: colors.light.mutedForeground,
-  },
-  chartVal: {
-    fontSize: 8,
+  legendLabel: {
+    fontSize: 11,
     fontFamily: "Inter_400Regular",
-    color: colors.light.primary,
+    color: colors.light.mutedForeground,
   },
   yieldTotalRow: {
     flexDirection: "row",

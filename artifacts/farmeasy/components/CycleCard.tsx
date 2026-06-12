@@ -28,6 +28,8 @@ const STATUS_COLOR: Record<string, string> = {
 interface CountdownResult {
   daysOverdue: number | null;
   daysUntil: number | null;
+  daysRemaining: number;
+  isLocked: boolean;
   actionLabel: string;
 }
 
@@ -35,14 +37,16 @@ function getCountdown(cycle: Cycle, now: number): CountdownResult | null {
   if (cycle.status === "germination") {
     const overdue = cycle.daysOverdueFertigation ?? null;
     if (overdue !== null && overdue > 0) {
-      return { daysOverdue: overdue, daysUntil: null, actionLabel: "fertigation" };
+      return { daysOverdue: overdue, daysUntil: null, daysRemaining: 0, isLocked: false, actionLabel: "fertigation" };
     }
     if (cycle.germinationStartedAt) {
       const dueMs =
         new Date(cycle.germinationStartedAt).getTime() +
         cycle.germinationDays * 864e5;
+      const isLocked = now < dueMs;
+      const daysRemaining = isLocked ? Math.ceil((dueMs - now) / 864e5) : 0;
       const remaining = Math.floor((dueMs - now) / 864e5);
-      return { daysOverdue: null, daysUntil: Math.max(remaining, 0), actionLabel: "fertigation" };
+      return { daysOverdue: null, daysUntil: Math.max(remaining, 0), daysRemaining, isLocked, actionLabel: "fertigation" };
     }
     return null;
   }
@@ -50,14 +54,16 @@ function getCountdown(cycle: Cycle, now: number): CountdownResult | null {
   if (cycle.status === "fertigation") {
     const overdue = cycle.daysOverdueHarvest ?? null;
     if (overdue !== null && overdue > 0) {
-      return { daysOverdue: overdue, daysUntil: null, actionLabel: "harvest" };
+      return { daysOverdue: overdue, daysUntil: null, daysRemaining: 0, isLocked: false, actionLabel: "harvest" };
     }
     if (cycle.fertigationStartedAt) {
       const dueMs =
         new Date(cycle.fertigationStartedAt).getTime() +
         cycle.fertigationDays * 864e5;
+      const isLocked = now < dueMs;
+      const daysRemaining = isLocked ? Math.ceil((dueMs - now) / 864e5) : 0;
       const remaining = Math.floor((dueMs - now) / 864e5);
-      return { daysOverdue: null, daysUntil: Math.max(remaining, 0), actionLabel: "harvest" };
+      return { daysOverdue: null, daysUntil: Math.max(remaining, 0), daysRemaining, isLocked, actionLabel: "harvest" };
     }
     return null;
   }
@@ -89,6 +95,7 @@ export default function CycleCard({ cycle, onPress, onAction }: Props) {
 
   const countdown = getCountdown(cycle, now);
   const isOverdue = countdown !== null && countdown.daysOverdue !== null;
+  const isLocked = countdown?.isLocked === true;
 
   const actionLabel =
     cycle.status === "germination"
@@ -103,48 +110,55 @@ export default function CycleCard({ cycle, onPress, onAction }: Props) {
   };
 
   return (
-    <Pressable style={s.card} onPress={onPress}>
+    <Pressable
+      style={[s.card, isLocked && s.cardLocked]}
+      onPress={isLocked ? undefined : onPress}
+    >
       <View style={s.topRow}>
         <View style={s.idChip}>
           <Text style={s.idText}>#{cycle.shortId}</Text>
         </View>
-        <View style={[s.statusChip, { backgroundColor: STATUS_COLOR[cycle.status] + "20" }]}>
-          <View style={[s.statusDot, { backgroundColor: STATUS_COLOR[cycle.status] }]} />
-          <Text style={[s.statusText, { color: STATUS_COLOR[cycle.status] }]}>
+        <View style={[s.statusChip, { backgroundColor: STATUS_COLOR[cycle.status] + (isLocked ? "10" : "20") }]}>
+          <View style={[s.statusDot, { backgroundColor: STATUS_COLOR[cycle.status] + (isLocked ? "60" : "ff") }]} />
+          <Text style={[s.statusText, { color: STATUS_COLOR[cycle.status] + (isLocked ? "80" : "ff") }]}>
             {STATUS_LABEL[cycle.status] ?? cycle.status}
           </Text>
         </View>
+        {isLocked && (
+          <View style={s.lockBadge}>
+            <Feather name="lock" size={11} color={colors.light.mutedForeground} />
+            <Text style={s.lockBadgeText}>Locked</Text>
+          </View>
+        )}
       </View>
 
-      <Text style={s.seedName}>{cycle.seedName}</Text>
+      <Text style={[s.seedName, isLocked && s.textMuted]}>{cycle.seedName}</Text>
       <Text style={s.profileName}>{cycle.growthProfileName}</Text>
 
       <View style={s.trackerWrap}>
         <StageTracker status={cycle.status as CycleStatus} />
       </View>
 
-      {countdown !== null && (
+      {isLocked && countdown !== null ? (
+        <View style={s.lockedRow}>
+          <Feather name="clock" size={12} color={colors.light.mutedForeground} />
+          <Text style={s.lockedRowText}>
+            {countdown.daysRemaining}d until {countdown.actionLabel}
+          </Text>
+        </View>
+      ) : countdown !== null ? (
         <View
           style={[
             s.countdownRow,
             { backgroundColor: countdownColor(countdown) + "18" },
           ]}
         >
-          <Feather
-            name="clock"
-            size={12}
-            color={countdownColor(countdown)}
-          />
-          <Text
-            style={[
-              s.countdownText,
-              { color: countdownColor(countdown) },
-            ]}
-          >
+          <Feather name="clock" size={12} color={countdownColor(countdown)} />
+          <Text style={[s.countdownText, { color: countdownColor(countdown) }]}>
             {countdownLabel(countdown)}
           </Text>
         </View>
-      )}
+      ) : null}
 
       <View style={s.metaRow}>
         <View style={s.metaItem}>
@@ -159,7 +173,7 @@ export default function CycleCard({ cycle, onPress, onAction }: Props) {
         )}
       </View>
 
-      {cycle.status !== "completed" && actionLabel && (
+      {cycle.status !== "completed" && actionLabel && !isLocked && (
         <Pressable
           style={[s.actionBtn, isOverdue && s.actionBtnOverdue]}
           onPress={(e) => {
@@ -170,6 +184,15 @@ export default function CycleCard({ cycle, onPress, onAction }: Props) {
           <Text style={s.actionBtnText}>{actionLabel}</Text>
           <Feather name="arrow-right" size={14} color="#fff" />
         </Pressable>
+      )}
+
+      {isLocked && (
+        <View style={s.actionBtnLocked}>
+          <Feather name="lock" size={14} color={colors.light.mutedForeground} />
+          <Text style={s.actionBtnLockedText}>
+            Locked — {countdown?.daysRemaining ?? 0}d remaining
+          </Text>
+        </View>
       )}
     </Pressable>
   );
@@ -183,6 +206,62 @@ const s = StyleSheet.create({
     marginBottom: 12,
     borderWidth: 1,
     borderColor: colors.light.border,
+  },
+  cardLocked: {
+    opacity: 0.55,
+    backgroundColor: colors.light.muted,
+    borderColor: colors.light.border,
+  },
+  lockBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    backgroundColor: colors.light.muted,
+    borderWidth: 1,
+    borderColor: colors.light.border,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  lockBadgeText: {
+    fontSize: 11,
+    fontFamily: "Inter_500Medium",
+    color: colors.light.mutedForeground,
+  },
+  textMuted: {
+    color: colors.light.mutedForeground,
+  },
+  lockedRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+    marginBottom: 10,
+    alignSelf: "flex-start",
+    backgroundColor: colors.light.border,
+  },
+  lockedRowText: {
+    fontSize: 12,
+    fontFamily: "Inter_500Medium",
+    color: colors.light.mutedForeground,
+  },
+  actionBtnLocked: {
+    borderWidth: 1,
+    borderColor: colors.light.border,
+    borderRadius: colors.radius - 2,
+    paddingVertical: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    backgroundColor: colors.light.muted,
+  },
+  actionBtnLockedText: {
+    color: colors.light.mutedForeground,
+    fontSize: 14,
+    fontFamily: "Inter_500Medium",
   },
   topRow: {
     flexDirection: "row",

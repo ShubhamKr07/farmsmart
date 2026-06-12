@@ -12,7 +12,7 @@
  * Run:  pnpm --filter @workspace/scripts run seed-demo
  */
 
-import { db, cyclesTable, growthProfilesTable } from "@workspace/db";
+import { db, cyclesTable, growthProfilesTable, seedLotsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 
 function daysAgo(n: number): Date {
@@ -35,7 +35,41 @@ async function getProfile(id: number) {
   return p;
 }
 
+async function seedLots() {
+  const lots = [
+    { qrCode: "QR-SUNFL-001", seedName: "Sunflower" },
+    { qrCode: "QR-BROCL-001", seedName: "Broccoli" },
+    { qrCode: "QR-RADSH-001", seedName: "Radish" },
+    { qrCode: "QR-PEAST-001", seedName: "Pea Shoots" },
+    { qrCode: "QR-MICRO-001", seedName: "Microgreen Mix" },
+    { qrCode: "QR-WHEAT-001", seedName: "Wheatgrass" },
+    { qrCode: "QR-LENTL-001", seedName: "Lentil" },
+    { qrCode: "QR-ARUGA-001", seedName: "Arugula" },
+    { qrCode: "QR-KALE-001", seedName: "Kale" },
+    { qrCode: "QR-BASIL-001", seedName: "Basil" },
+    { qrCode: "QR-CILNTR-001", seedName: "Cilantro" },
+    { qrCode: "QR-CRESS-001", seedName: "Garden Cress" },
+  ];
+
+  console.log(`Seeding ${lots.length} seed lots…`);
+  for (const lot of lots) {
+    const existing = await db
+      .select({ id: seedLotsTable.id })
+      .from(seedLotsTable)
+      .where(eq(seedLotsTable.qrCode, lot.qrCode))
+      .limit(1);
+    if (existing.length > 0) {
+      console.log(`  skip (already exists): ${lot.qrCode}`);
+      continue;
+    }
+    await db.insert(seedLotsTable).values(lot);
+    console.log(`  inserted: ${lot.qrCode} → ${lot.seedName}`);
+  }
+}
+
 async function main() {
+  await seedLots();
+
   // Verify profiles exist
   const allProfiles = await db.select().from(growthProfilesTable);
   if (allProfiles.length < 2) {

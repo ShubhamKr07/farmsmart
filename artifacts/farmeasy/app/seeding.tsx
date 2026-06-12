@@ -1,7 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -55,9 +55,21 @@ export default function SeedingWizard() {
     trayPosition: "",
   });
   const [pendingQr, setPendingQr] = useState("");
+  const [autoFillChip, setAutoFillChip] = useState<string | null>(null);
 
   const { data: profiles } = useListGrowthProfiles();
   const { mutateAsync: createCycle, isPending } = useCreateCycle();
+  const { data: seedLotData } = useLookupSeedLot(
+    { qrCode: pendingQr },
+    { query: { enabled: !!pendingQr, retry: false } },
+  );
+
+  useEffect(() => {
+    if (seedLotData?.seedName) {
+      setForm((f) => ({ ...f, seedName: seedLotData.seedName }));
+      setAutoFillChip(seedLotData.seedName);
+    }
+  }, [seedLotData]);
 
   const handleLotScanned = (qr: string) => {
     if (!form.seedLotQrCodes.includes(qr)) {
@@ -181,10 +193,22 @@ export default function SeedingWizard() {
             <Text style={s.stepTitle}>Tray Details</Text>
 
             <Text style={s.label}>Seed Name</Text>
+            {autoFillChip && (
+              <View style={s.autoFillChip}>
+                <Feather name="check-circle" size={13} color={colors.light.primary} />
+                <Text style={s.autoFillChipText}>Auto-filled: {autoFillChip} — change?</Text>
+                <Pressable onPress={() => setAutoFillChip(null)}>
+                  <Feather name="x" size={14} color={colors.light.mutedForeground} />
+                </Pressable>
+              </View>
+            )}
             <TextInput
               style={s.input}
               value={form.seedName}
-              onChangeText={(v) => setForm((f) => ({ ...f, seedName: v }))}
+              onChangeText={(v) => {
+                setForm((f) => ({ ...f, seedName: v }));
+                setAutoFillChip(null);
+              }}
               placeholder="e.g. Arugula"
               placeholderTextColor={colors.light.mutedForeground}
             />
@@ -533,6 +557,24 @@ const s = StyleSheet.create({
     fontSize: 13,
     fontFamily: "Inter_400Regular",
     color: colors.light.mutedForeground,
+  },
+  autoFillChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: colors.light.secondary,
+    borderWidth: 1,
+    borderColor: colors.light.primary + "40",
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    marginBottom: 6,
+  },
+  autoFillChipText: {
+    flex: 1,
+    fontSize: 12,
+    fontFamily: "Inter_500Medium",
+    color: colors.light.primary,
   },
   summaryValue: {
     fontSize: 13,
