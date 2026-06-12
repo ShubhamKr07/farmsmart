@@ -15,12 +15,14 @@
     },
     "ios": {
       "supportsTablet": false,
+      "bundleIdentifier": "com.farmeasy.app",
       "infoPlist": {
         "NSCameraUsageDescription": "FarmEasy uses the camera to scan QR codes on trays and seed bags.",
         "NSPhotoLibraryUsageDescription": "FarmEasy uses the photo library for manual check photos."
       }
     },
     "android": {
+      "package": "com.farmeasy.app",
       "permissions": [
         "CAMERA",
         "READ_EXTERNAL_STORAGE",
@@ -31,6 +33,7 @@
       "favicon": "./assets/images/icon.png"
     },
     "plugins": [
+      "expo-dev-client",
       [
         "expo-router",
         {
