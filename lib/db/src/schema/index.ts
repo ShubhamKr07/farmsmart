@@ -55,20 +55,28 @@ export const cyclesTable = pgTable(
     createdBy: text("created_by"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
-  (table) => [index("cycles_status_idx").on(table.status)],
+  (table) => [
+    index("cycles_status_idx").on(table.status),
+    index("cycles_closed_at_idx").on(table.closedAt),
+    index("cycles_created_at_idx").on(table.createdAt),
+  ],
 );
 
-export const manualChecksTable = pgTable("manual_checks", {
-  id: serial("id").primaryKey(),
-  cycleId: integer("cycle_id")
-    .notNull()
-    .references(() => cyclesTable.id),
-  fullTrays: integer("full_trays").notNull().default(0),
-  halfTrays: integer("half_trays").notNull().default(0),
-  isBadTrays: boolean("is_bad_trays").notNull().default(false),
-  issue: text("issue"),
-  notes: text("notes"),
-  photoUrls: text("photo_urls").array().notNull(),
-  createdBy: text("created_by"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+export const manualChecksTable = pgTable(
+  "manual_checks",
+  {
+    id: serial("id").primaryKey(),
+    cycleId: integer("cycle_id")
+      .notNull()
+      .references(() => cyclesTable.id),
+    fullTrays: integer("full_trays").notNull().default(0),
+    halfTrays: integer("half_trays").notNull().default(0),
+    isBadTrays: boolean("is_bad_trays").notNull().default(false),
+    issue: text("issue"),
+    notes: text("notes"),
+    photoUrls: text("photo_urls").array().notNull(),
+    createdBy: text("created_by"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => [index("manual_checks_created_at_idx").on(table.createdAt)],
+);

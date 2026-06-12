@@ -17,6 +17,7 @@
     "@workspace/db": "workspace:*",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
+    "express-rate-limit": "^7.5.0",
     "drizzle-orm": "catalog:",
     "express": "^5.2.1",
     "http-proxy-middleware": "^4.1.0",

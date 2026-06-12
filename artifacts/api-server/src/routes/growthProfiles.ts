@@ -4,7 +4,7 @@ import { growthProfilesTable, seedLotsTable } from "@workspace/db";
 
 const router = Router();
 
-async function seedDataIfEmpty() {
+export async function seedDataIfEmpty() {
   try {
     const existing = await db
       .select({ id: growthProfilesTable.id })
@@ -58,8 +58,6 @@ async function seedDataIfEmpty() {
     console.error("Seeding failed:", err);
   }
 }
-
-seedDataIfEmpty();
 
 router.get("/growth-profiles", async (_req, res) => {
   try {

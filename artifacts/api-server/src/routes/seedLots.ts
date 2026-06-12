@@ -1,11 +1,20 @@
 import { Router } from "express";
+import { rateLimit } from "express-rate-limit";
 import { eq } from "drizzle-orm";
 import { db } from "@workspace/db";
 import { seedLotsTable } from "@workspace/db";
 
 const router = Router();
 
-router.get("/seed-lots/lookup", async (req, res) => {
+const seedLotLookupLimiter = rateLimit({
+  windowMs: 60_000,
+  limit: 30,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: { error: "Too many requests, please try again later" },
+});
+
+router.get("/seed-lots/lookup", seedLotLookupLimiter, async (req, res) => {
   try {
     const qrCode = req.query.qrCode as string;
     if (!qrCode) {

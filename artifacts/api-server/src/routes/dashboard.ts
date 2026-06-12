@@ -1,14 +1,23 @@
-import { Router, type Request, type Response } from "express";
+import { Router, type Request, type Response, type NextFunction } from "express";
+import { getAuth } from "@clerk/express";
 import { eq, ne } from "drizzle-orm";
 import { db } from "@workspace/db";
 import { cyclesTable, growthProfilesTable, manualChecksTable } from "@workspace/db";
+import { calcDaysOverdue, seedingWeight } from "../lib/utils";
 
 const TOTAL_CHANNELS = 20;
 const router = Router();
 
-type UserRole = "technician" | "supervisor" | "quality_lead" | "facility_lead";
+function enforceAuth(req: Request, res: Response, next: NextFunction) {
+  const { userId } = getAuth(req);
+  if (!userId) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  next();
+}
 
-router.get("/dashboard", async (_req: Request, res: Response) => {
+router.get("/dashboard", enforceAuth, async (_req: Request, res: Response) => {
   try {
     const runningRows = await db
       .select({ cycle: cyclesTable, profile: growthProfilesTable })
@@ -29,32 +38,27 @@ router.get("/dashboard", async (_req: Request, res: Response) => {
 
     for (const { cycle, profile } of runningRows) {
       if (!profile) continue;
-      const now = Date.now();
 
-      if (cycle.status === "germination" && cycle.germinationStartedAt) {
-        const dueMs =
-          cycle.germinationStartedAt.getTime() +
-          profile.germinationDays * 864e5;
-        if (now > dueMs) {
+      if (cycle.status === "germination") {
+        const daysOverdue = calcDaysOverdue(cycle.germinationStartedAt, profile.germinationDays);
+        if (daysOverdue !== null) {
           actionRequired.push({
             cycleId: cycle.id,
             cycleShortId: cycle.shortId,
             seedName: cycle.seedName,
             type: "fertigation",
-            daysOverdue: Math.floor((now - dueMs) / 864e5),
+            daysOverdue,
           });
         }
-      } else if (cycle.status === "fertigation" && cycle.fertigationStartedAt) {
-        const dueMs =
-          cycle.fertigationStartedAt.getTime() +
-          profile.fertigationDays * 864e5;
-        if (now > dueMs) {
+      } else if (cycle.status === "fertigation") {
+        const daysOverdue = calcDaysOverdue(cycle.fertigationStartedAt, profile.fertigationDays);
+        if (daysOverdue !== null) {
           actionRequired.push({
             cycleId: cycle.id,
             cycleShortId: cycle.shortId,
             seedName: cycle.seedName,
             type: "harvest",
-            daysOverdue: Math.floor((now - dueMs) / 864e5),
+            daysOverdue,
           });
         }
       }
@@ -101,10 +105,6 @@ router.get("/dashboard", async (_req: Request, res: Response) => {
       const qty = Number(c.harvestedQty);
       if (c.closedAt >= weekStart) totalYieldThisWeek += qty;
       if (c.closedAt >= monthStart) totalYieldThisMonth += qty;
-    }
-
-    function seedingWeight(fullTrays: number, halfTrays: number, seedWeightTray: string | null): number {
-      return Number(seedWeightTray ?? 0) * (fullTrays + halfTrays * 0.5);
     }
 
     const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
