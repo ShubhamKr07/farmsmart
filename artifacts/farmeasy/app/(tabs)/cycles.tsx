@@ -67,7 +67,7 @@ export default function CyclesScreen() {
   const hasAnyFilter = !!searchText.trim() || activeFilterCount > 0;
 
   const filteredCycles = useMemo(() => {
-    const all = cycles ?? [];
+    const all = Array.isArray(cycles) ? cycles : [];
     return all.filter(
       (c) =>
         matchesSearch(c, searchText) &&
