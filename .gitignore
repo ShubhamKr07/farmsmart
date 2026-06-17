@@ -5,6 +5,15 @@ dist
 tmp
 out-tsc
 *.tsbuildinfo
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# npm lock at root (project enforces pnpm)
+/package-lock.json
 .expo
 .expo-shared
 
