@@ -127,7 +127,8 @@ export default function SeedingWizard() {
     }
   };
 
-  const selectedProfile = profiles?.find(
+  const profileList = Array.isArray(profiles) ? profiles : [];
+  const selectedProfile = profileList.find(
     (p) => p.id === form.growthProfileId,
   );
 
@@ -316,7 +317,7 @@ export default function SeedingWizard() {
 
             <Text style={s.label}>Growth Profile</Text>
             <View style={s.profileList}>
-              {profiles?.map((p) => (
+              {profileList.map((p) => (
                 <Pressable
                   key={p.id}
                   style={[
