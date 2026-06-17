@@ -23,7 +23,9 @@ import {
 } from "@workspace/api-client-react";
 import colors from "@/constants/colors";
 import QRScanner from "@/components/QRScanner";
+import RackReadingsCard from "@/components/RackReadingsCard";
 import StageTracker from "@/components/StageTracker";
+import { parseQR, type RackPositionQR } from "@/utils/parseQR";
 
 type Step = 1 | 2 | 3;
 
@@ -46,6 +48,7 @@ export default function HarvestWizard() {
   const [step, setStep] = useState<Step>(1);
   const [scannedLotQr, setScannedLotQr] = useState("");
   const [rackQr, setRackQr] = useState("");
+  const [rackReadings, setRackReadings] = useState<RackPositionQR | null>(null);
   const [fullTrays, setFullTrays] = useState("0");
   const [halfTrays, setHalfTrays] = useState("0");
   const [harvestedQty, setHarvestedQty] = useState("");
@@ -72,11 +75,17 @@ export default function HarvestWizard() {
   const handleRackQr = (qr: string) => {
     setRackQr(qr);
     setError("");
+    const parsed = parseQR(qr);
+    if (parsed?.type === "rack_position") {
+      setRackReadings(parsed as RackPositionQR);
+    } else {
+      setRackReadings(null);
+    }
   };
 
   const handleConfirm = async () => {
     if (!rackQr) {
-      setError("Please scan the rack slot QR code first");
+      setError("Please scan the rack position QR code first.");
       return;
     }
     try {
@@ -141,18 +150,26 @@ export default function HarvestWizard() {
           <StageTracker status="fertigation" />
         </View>
 
+        {/* ── Step 1: Scan Seed Lot QR ── */}
         {step === 1 && (
           <>
             <Text style={s.stepTitle}>Scan Seed Lot QR</Text>
             <Text style={s.stepSub}>
-              Confirm the seed lot by scanning a QR code.
+              Confirm the seed lot by scanning a QR code from the tray label.
             </Text>
+            <View style={s.qrTypeHint}>
+              <Feather name="info" size={13} color={colors.light.primary} />
+              <Text style={s.qrTypeHintText}>
+                Seed lot QR codes contain the seed name, lot ID and variety.
+              </Text>
+            </View>
             <View style={s.scannerBox}>
               <QRScanner onScanned={handleLotQr} hint="Scan seed lot QR code" />
             </View>
           </>
         )}
 
+        {/* ── Step 2: Harvest Details ── */}
         {step === 2 && (
           <>
             <Text style={s.stepTitle}>Harvest Details</Text>
@@ -266,18 +283,39 @@ export default function HarvestWizard() {
           </>
         )}
 
+        {/* ── Step 3: Scan Rack Position QR + Confirm ── */}
         {step === 3 && (
           <>
-            <Text style={s.stepTitle}>Scan Rack Slot & Confirm</Text>
+            <Text style={s.stepTitle}>Scan Rack Position & Confirm</Text>
             <Text style={s.stepSub}>
-              Scan the rack slot QR code to confirm harvest location.
+              Scan the rack slot QR code to capture environmental readings and confirm the harvest location.
             </Text>
+            <View style={s.qrTypeHint}>
+              <Feather name="info" size={13} color={colors.light.primary} />
+              <Text style={s.qrTypeHintText}>
+                Rack QR codes contain humidity, temperature, pH, water level and nutrient mix.
+              </Text>
+            </View>
             <View style={s.scannerBox}>
               <QRScanner
                 onScanned={handleRackQr}
-                hint="Scan rack slot QR code"
+                hint="Scan rack position QR code"
               />
             </View>
+
+            {rackQr && (
+              rackReadings ? (
+                <RackReadingsCard
+                  data={rackReadings}
+                  position={rackReadings.position ?? rackQr}
+                />
+              ) : (
+                <View style={s.rackRawChip}>
+                  <Feather name="grid" size={14} color={colors.light.primary} />
+                  <Text style={s.rackRawText}>{rackQr}</Text>
+                </View>
+              )
+            )}
 
             {rackQr && (
               <View style={s.summaryCard}>
@@ -288,7 +326,6 @@ export default function HarvestWizard() {
                   value={`${fullTrays}F + ${halfTrays}H`}
                 />
                 <SummaryRow label="Harvested" value={`${harvestedQty} g`} />
-                <SummaryRow label="Rack Slot" value={rackQr} />
                 {isBadTrays && selectedIssue && (
                   <SummaryRow label="Bad Trays" value={issueLabel} />
                 )}
@@ -311,6 +348,10 @@ export default function HarvestWizard() {
                 </>
               )}
             </Pressable>
+
+            {!rackQr && (
+              <Text style={s.waitingText}>Waiting for rack position scan…</Text>
+            )}
           </>
         )}
       </ScrollView>
@@ -363,12 +404,42 @@ const s = StyleSheet.create({
     color: colors.light.mutedForeground,
     marginBottom: 14,
   },
+  qrTypeHint: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+    backgroundColor: colors.light.secondary,
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 14,
+  },
+  qrTypeHintText: {
+    flex: 1,
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    color: colors.light.primary,
+    lineHeight: 18,
+  },
   scannerBox: {
     width: "100%",
     borderRadius: colors.radius,
     overflow: "hidden",
     backgroundColor: colors.light.muted,
     marginBottom: 16,
+  },
+  rackRawChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: colors.light.secondary,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+  },
+  rackRawText: {
+    fontSize: 14,
+    fontFamily: "Inter_500Medium",
+    color: colors.light.foreground,
   },
   rowInput: { flexDirection: "row", gap: 12 },
   label: { fontSize: 13, fontFamily: "Inter_500Medium", color: colors.light.foreground, marginBottom: 6, marginTop: 12 },
@@ -466,6 +537,13 @@ const s = StyleSheet.create({
   summaryLabel: { fontSize: 13, fontFamily: "Inter_400Regular", color: colors.light.mutedForeground },
   summaryValue: { fontSize: 13, fontFamily: "Inter_500Medium", color: colors.light.foreground, flex: 1, textAlign: "right", marginLeft: 8 },
   errorText: { color: colors.light.destructive, fontSize: 13, fontFamily: "Inter_400Regular", marginTop: 8 },
+  waitingText: {
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
+    color: colors.light.mutedForeground,
+    textAlign: "center",
+    marginTop: 12,
+  },
   nextBtn: {
     flexDirection: "row",
     height: 50,

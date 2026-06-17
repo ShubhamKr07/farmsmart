@@ -1,2 +1,3 @@
 - [FarmEasy orval mutations](farmeasy-orval-mutations.md) — orval wraps path-param mutations as `{id, data: RequestBody}`, not flat args.
 - [FarmEasy DB arrays](farmeasy-db-arrays.md) — Drizzle pg `.array()` columns must never use `.default([])` at DB level; always provide values in code to avoid SQL default issues.
+- [FarmEasy Clerk upgrade](farmeasy-clerk-upgrade.md) — v2→v3 migration: package is `@clerk/expo`, proxyUrl uses `EXPO_PUBLIC_CLERK_PROXY_URL`, sign-in uses `signIn.password()`+`signIn.finalize()`.

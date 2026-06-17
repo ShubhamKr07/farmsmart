@@ -25,35 +25,67 @@ export default function SignInPage() {
 
   const isLoading = fetchStatus === "fetching";
 
-  if (!signIn) return null;
-
   const handleSubmit = async () => {
-    const { error } = await signIn.password({ emailAddress, password });
-    if (error) {
-      console.error(JSON.stringify(error, null, 2));
-      return;
-    }
-    if (signIn.status === "complete") {
-      await signIn.finalize({
-        navigate: ({ decorateUrl }) => {
-          const url = decorateUrl("/");
-          router.replace(url as Href);
-        },
-      });
-    } else if (signIn.status === "needs_client_trust") {
-      await signIn.mfa.sendEmailCode();
+    try {
+      const { error } = await signIn.password({ emailAddress, password });
+      if (error) {
+        console.error("[SignIn] password error:", JSON.stringify(error, null, 2));
+        return;
+      }
+
+      if (signIn.status === "complete") {
+        await signIn.finalize({
+          navigate: ({ session, decorateUrl }) => {
+            if (session?.currentTask) {
+              console.log("[SignIn] pending task:", session.currentTask);
+              return;
+            }
+            const url = decorateUrl("/");
+            if (url.startsWith("http")) {
+              (window as any).location.href = url;
+            } else {
+              router.push(url as Href);
+            }
+          },
+        });
+      } else if (signIn.status === "needs_client_trust") {
+        const emailCodeFactor = signIn.supportedSecondFactors.find(
+          (f) => f.strategy === "email_code"
+        );
+        if (emailCodeFactor) {
+          await signIn.mfa.sendEmailCode();
+        }
+      } else {
+        console.error("[SignIn] unexpected status:", signIn.status);
+      }
+    } catch (err: any) {
+      console.error("[SignIn] exception:", err?.message ?? err);
     }
   };
 
   const handleVerify = async () => {
-    await signIn.mfa.verifyEmailCode({ code: verifyCode });
-    if (signIn.status === "complete") {
-      await signIn.finalize({
-        navigate: ({ decorateUrl }) => {
-          const url = decorateUrl("/");
-          router.replace(url as Href);
-        },
-      });
+    try {
+      await signIn.mfa.verifyEmailCode({ code: verifyCode });
+      if (signIn.status === "complete") {
+        await signIn.finalize({
+          navigate: ({ session, decorateUrl }) => {
+            if (session?.currentTask) {
+              console.log("[SignIn] pending task:", session.currentTask);
+              return;
+            }
+            const url = decorateUrl("/");
+            if (url.startsWith("http")) {
+              (window as any).location.href = url;
+            } else {
+              router.push(url as Href);
+            }
+          },
+        });
+      } else {
+        console.error("[SignIn] verify: unexpected status:", signIn.status);
+      }
+    } catch (err: any) {
+      console.error("[SignIn] verify exception:", err?.message ?? err);
     }
   };
 
@@ -74,6 +106,7 @@ export default function SignInPage() {
             placeholderTextColor={colors.light.mutedForeground}
             onChangeText={setVerifyCode}
             keyboardType="numeric"
+            autoComplete="one-time-code"
           />
           {errors.fields.code && (
             <Text style={s.errorText}>{errors.fields.code.message}</Text>
@@ -89,10 +122,7 @@ export default function SignInPage() {
               <Text style={s.btnText}>Verify</Text>
             )}
           </Pressable>
-          <Pressable
-            style={s.linkBtn}
-            onPress={() => signIn.mfa.sendEmailCode()}
-          >
+          <Pressable style={s.linkBtn} onPress={() => signIn.mfa.sendEmailCode()}>
             <Text style={s.linkText}>Resend code</Text>
           </Pressable>
           <Pressable style={s.linkBtn} onPress={() => signIn.reset()}>
@@ -131,11 +161,10 @@ export default function SignInPage() {
               onChangeText={setEmailAddress}
               keyboardType="email-address"
               autoCorrect={false}
+              autoComplete="email"
             />
             {errors.fields.identifier && (
-              <Text style={s.errorText}>
-                {errors.fields.identifier.message}
-              </Text>
+              <Text style={s.errorText}>{errors.fields.identifier.message}</Text>
             )}
 
             <Text style={s.label}>Password</Text>
@@ -146,6 +175,7 @@ export default function SignInPage() {
               placeholderTextColor={colors.light.mutedForeground}
               secureTextEntry
               onChangeText={setPassword}
+              autoComplete="current-password"
             />
             {errors.fields.password && (
               <Text style={s.errorText}>{errors.fields.password.message}</Text>
@@ -169,6 +199,17 @@ export default function SignInPage() {
             <Text style={s.footerText}>
               Contact your farm administrator to request access.
             </Text>
+
+            {(errors.global?.length || errors.fields.identifier || errors.fields.password) && (
+              <View style={s.errorBanner}>
+                <Text style={s.errorBannerText}>
+                  {errors.global?.[0]?.message
+                    ?? errors.fields.identifier?.message
+                    ?? errors.fields.password?.message
+                    ?? "Invalid email or password."}
+                </Text>
+              </View>
+            )}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -265,10 +306,26 @@ const s = StyleSheet.create({
     fontSize: 14,
     fontFamily: "Inter_400Regular",
     color: colors.light.mutedForeground,
+    marginTop: 24,
+    textAlign: "center",
   },
   linkText: {
     fontSize: 14,
     fontFamily: "Inter_500Medium",
     color: colors.light.primary,
+  },
+  errorBanner: {
+    marginTop: 16,
+    padding: 12,
+    borderRadius: colors.radius,
+    backgroundColor: "#FEE2E2",
+    borderWidth: 1,
+    borderColor: "#FECACA",
+  },
+  errorBannerText: {
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
+    color: "#B91C1C",
+    textAlign: "center",
   },
 });

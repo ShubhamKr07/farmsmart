@@ -1,7 +1,5 @@
 /** Pure utility functions — no DB or HTTP dependencies, fully unit-testable. */
 
-import { randomBytes } from "node:crypto";
-
 export function calcDaysOverdue(startedAt: Date | null, days: number): number | null {
   if (!startedAt) return null;
   const dueMs = startedAt.getTime() + days * 864e5;
@@ -11,7 +9,9 @@ export function calcDaysOverdue(startedAt: Date | null, days: number): number | 
 }
 
 export function generateShortId(): string {
-  return randomBytes(2).toString("hex");
+  return Math.floor(Math.random() * 0xffff)
+    .toString(16)
+    .padStart(4, "0");
 }
 
 export function seedingWeight(

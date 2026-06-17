@@ -9,9 +9,10 @@ import {
   manualChecksTable,
 } from "@workspace/db";
 import { calcDaysOverdue, generateShortId, seedingWeight } from "../lib/utils";
-import { type UserRole, isSupervisorOrLead } from "@workspace/api-zod";
 
 const router = Router();
+
+type UserRole = "technician" | "supervisor" | "quality_lead" | "facility_lead";
 
 // ── Zod schemas ───────────────────────────────────────────────────────────────
 
@@ -54,7 +55,7 @@ const ManualCheckSchema = z
     isBadTrays: z.boolean().default(false),
     issue: z.string().optional(),
     notes: z.string().max(500).optional(),
-    photoUrls: z.array(z.string().url()).max(6).default([]),
+    photoUrls: z.array(z.string()).default([]),
   })
   .refine((d) => !d.isBadTrays || !!d.issue, {
     message: "issue is required when isBadTrays is true",
@@ -76,6 +77,10 @@ function extractRole(req: Request): UserRole {
   const { sessionClaims } = getAuth(req);
   const meta = sessionClaims?.publicMetadata as { role?: UserRole } | undefined;
   return meta?.role ?? "technician";
+}
+
+function isSupervisorOrLead(role: UserRole): boolean {
+  return role === "supervisor" || role === "facility_lead";
 }
 
 function parseParamId(req: Request): number {

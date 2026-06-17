@@ -31,10 +31,7 @@ const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY ?? "";
 const domain = process.env.EXPO_PUBLIC_DOMAIN;
 if (domain) setBaseUrl(`https://${domain}`);
 
-const internalDomain = process.env.REPLIT_INTERNAL_APP_DOMAIN;
-const proxyUrl = internalDomain
-  ? `https://${internalDomain}/api/__clerk`
-  : undefined;
+const proxyUrl = process.env.EXPO_PUBLIC_CLERK_PROXY_URL || undefined;
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { isSignedIn, isLoaded } = useAuth();

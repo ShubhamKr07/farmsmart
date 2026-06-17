@@ -24,6 +24,8 @@ import {
 } from "@workspace/api-client-react";
 import colors from "@/constants/colors";
 import QRScanner from "@/components/QRScanner";
+import RackReadingsCard from "@/components/RackReadingsCard";
+import { parseQR, type RackPositionQR, type SeedLotQR } from "@/utils/parseQR";
 
 type Step = 1 | 2 | 3;
 
@@ -56,6 +58,7 @@ export default function SeedingWizard() {
   });
   const [pendingQr, setPendingQr] = useState("");
   const [autoFillChip, setAutoFillChip] = useState<string | null>(null);
+  const [rackReadings, setRackReadings] = useState<RackPositionQR | null>(null);
 
   const { data: profiles } = useListGrowthProfiles();
   const { mutateAsync: createCycle, isPending } = useCreateCycle();
@@ -75,11 +78,26 @@ export default function SeedingWizard() {
     if (!form.seedLotQrCodes.includes(qr)) {
       setForm((f) => ({ ...f, seedLotQrCodes: [...f.seedLotQrCodes, qr] }));
     }
+    // Try to parse structured seed lot QR
+    const parsed = parseQR(qr);
+    if (parsed?.type === "seed_lot") {
+      const lot = parsed as SeedLotQR;
+      if (lot.seedName) {
+        setForm((f) => ({ ...f, seedName: lot.seedName! }));
+        setAutoFillChip(lot.seedName!);
+      }
+    }
     setPendingQr(qr);
   };
 
   const handleRackScanned = (qr: string) => {
     setForm((f) => ({ ...f, trayPosition: qr }));
+    const parsed = parseQR(qr);
+    if (parsed?.type === "rack_position") {
+      setRackReadings(parsed as RackPositionQR);
+    } else {
+      setRackReadings(null);
+    }
   };
 
   const handleConfirm = async () => {
@@ -137,11 +155,17 @@ export default function SeedingWizard() {
       </View>
 
       {step === 1 && (
-        <View style={s.stepContent}>
+        <ScrollView contentContainerStyle={s.stepContent}>
           <Text style={s.stepTitle}>Scan Seed Lot QR</Text>
           <Text style={s.stepSubtitle}>
-            Scan one or more seed lot bags. Scanned codes appear below.
+            Point the camera at a seed lot QR code. Scanned codes appear below.
           </Text>
+          <View style={s.qrTypeHint}>
+            <Feather name="info" size={13} color={colors.light.primary} />
+            <Text style={s.qrTypeHintText}>
+              Seed lot QR codes contain the seed name, lot ID, variety and batch weight.
+            </Text>
+          </View>
           <View style={s.scannerBox}>
             <QRScanner
               onScanned={handleLotScanned}
@@ -150,21 +174,29 @@ export default function SeedingWizard() {
           </View>
           {form.seedLotQrCodes.length > 0 && (
             <View style={s.qrChips}>
-              {form.seedLotQrCodes.map((qr) => (
-                <View key={qr} style={s.qrChip}>
-                  <Text style={s.qrChipText}>{qr}</Text>
-                  <Pressable
-                    onPress={() =>
-                      setForm((f) => ({
-                        ...f,
-                        seedLotQrCodes: f.seedLotQrCodes.filter((q) => q !== qr),
-                      }))
-                    }
-                  >
-                    <Feather name="x" size={14} color={colors.light.mutedForeground} />
-                  </Pressable>
-                </View>
-              ))}
+              {form.seedLotQrCodes.map((qr) => {
+                const parsed = parseQR(qr);
+                const label =
+                  parsed?.type === "seed_lot" && (parsed as SeedLotQR).seedName
+                    ? `${(parsed as SeedLotQR).seedName} · ${(parsed as SeedLotQR).lotId ?? qr}`
+                    : qr;
+                return (
+                  <View key={qr} style={s.qrChip}>
+                    <Feather name="check-circle" size={13} color={colors.light.primary} />
+                    <Text style={s.qrChipText} numberOfLines={1}>{label}</Text>
+                    <Pressable
+                      onPress={() =>
+                        setForm((f) => ({
+                          ...f,
+                          seedLotQrCodes: f.seedLotQrCodes.filter((q) => q !== qr),
+                        }))
+                      }
+                    >
+                      <Feather name="x" size={14} color={colors.light.mutedForeground} />
+                    </Pressable>
+                  </View>
+                );
+              })}
             </View>
           )}
           <Pressable
@@ -178,7 +210,7 @@ export default function SeedingWizard() {
             <Text style={s.nextBtnText}>Add Details</Text>
             <Feather name="arrow-right" size={18} color="#fff" />
           </Pressable>
-        </View>
+        </ScrollView>
       )}
 
       {step === 2 && (
@@ -342,29 +374,48 @@ export default function SeedingWizard() {
         <ScrollView contentContainerStyle={s.stepContent}>
           <Text style={s.stepTitle}>Scan Rack Slot</Text>
           <Text style={s.stepSubtitle}>
-            Scan the QR code on the rack slot where trays will be placed.
+            Scan the QR code on the rack slot where the trays will be placed.
           </Text>
+          <View style={s.qrTypeHint}>
+            <Feather name="info" size={13} color={colors.light.primary} />
+            <Text style={s.qrTypeHintText}>
+              Rack position QR codes include humidity, temperature, pH, water level and nutrient mix.
+            </Text>
+          </View>
           <View style={s.scannerBox}>
             <QRScanner
               onScanned={handleRackScanned}
-              hint="Point at rack slot QR code"
+              hint="Point camera at rack slot QR code"
             />
           </View>
 
           {form.trayPosition ? (
-            <View style={s.summaryCard}>
-              <Text style={s.summaryTitle}>Confirm Seeding</Text>
-              <Row label="Seed Lots" value={form.seedLotQrCodes.join(", ")} />
-              <Row label="Seed Name" value={form.seedName} />
-              <Row
-                label="Trays"
-                value={`${form.fullTrays} full + ${form.halfTrays} half`}
-              />
-              <Row label="Weight/Tray" value={`${form.seedWeightTray} g`} />
-              <Row label="Profile" value={selectedProfile?.name ?? "-"} />
-              <Row label="Seeding Date" value={form.seedingDate} />
-              <Row label="Rack Slot" value={form.trayPosition} />
-            </View>
+            <>
+              {rackReadings ? (
+                <RackReadingsCard
+                  data={rackReadings}
+                  position={rackReadings.position ?? form.trayPosition}
+                />
+              ) : (
+                <View style={s.rackRawChip}>
+                  <Feather name="grid" size={14} color={colors.light.primary} />
+                  <Text style={s.rackRawText}>{form.trayPosition}</Text>
+                </View>
+              )}
+
+              <View style={s.summaryCard}>
+                <Text style={s.summaryTitle}>Confirm Seeding</Text>
+                <Row label="Seed Lots" value={form.seedLotQrCodes.length.toString()} />
+                <Row label="Seed Name" value={form.seedName} />
+                <Row
+                  label="Trays"
+                  value={`${form.fullTrays} full + ${form.halfTrays} half`}
+                />
+                <Row label="Weight/Tray" value={`${form.seedWeightTray} g`} />
+                <Row label="Profile" value={selectedProfile?.name ?? "-"} />
+                <Row label="Seeding Date" value={form.seedingDate} />
+              </View>
+            </>
           ) : (
             <Text style={s.stepSubtitle}>Waiting for rack slot scan…</Text>
           )}
@@ -442,7 +493,23 @@ const s = StyleSheet.create({
     fontSize: 14,
     fontFamily: "Inter_400Regular",
     color: colors.light.mutedForeground,
-    marginBottom: 16,
+    marginBottom: 12,
+  },
+  qrTypeHint: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+    backgroundColor: colors.light.secondary,
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 14,
+  },
+  qrTypeHintText: {
+    flex: 1,
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    color: colors.light.primary,
+    lineHeight: 18,
   },
   scannerBox: {
     width: "100%",
@@ -460,11 +527,27 @@ const s = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 20,
+    maxWidth: "100%",
   },
   qrChipText: {
     fontSize: 13,
     fontFamily: "Inter_500Medium",
     color: colors.light.primary,
+    flexShrink: 1,
+  },
+  rackRawChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: colors.light.secondary,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+  },
+  rackRawText: {
+    fontSize: 14,
+    fontFamily: "Inter_500Medium",
+    color: colors.light.foreground,
   },
   label: {
     fontSize: 13,
@@ -539,6 +622,7 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.light.border,
     gap: 2,
+    marginBottom: 4,
   },
   summaryTitle: {
     fontSize: 17,

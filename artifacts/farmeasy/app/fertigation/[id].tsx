@@ -21,7 +21,9 @@ import {
 } from "@workspace/api-client-react";
 import colors from "@/constants/colors";
 import QRScanner from "@/components/QRScanner";
+import RackReadingsCard from "@/components/RackReadingsCard";
 import StageTracker from "@/components/StageTracker";
+import { parseQR, type RackPositionQR } from "@/utils/parseQR";
 
 type Step = 1 | 2 | 3;
 
@@ -31,6 +33,8 @@ export default function FertigationWizard() {
   const queryClient = useQueryClient();
   const [step, setStep] = useState<Step>(1);
   const [scannedQr, setScannedQr] = useState("");
+  const [rackQr, setRackQr] = useState("");
+  const [rackReadings, setRackReadings] = useState<RackPositionQR | null>(null);
   const [error, setError] = useState("");
 
   const cycleId = parseInt(id ?? "0");
@@ -49,7 +53,7 @@ export default function FertigationWizard() {
     return Math.min(100, Math.round((daysSinceGermination / cycle.germinationDays) * 100));
   }, [daysSinceGermination, cycle?.germinationDays]);
 
-  const handleQrScanned = (qr: string) => {
+  const handleSeedLotScanned = (qr: string) => {
     setScannedQr(qr);
     setError("");
     const qrCodes = cycle?.seedLotQrCodes ?? [];
@@ -60,7 +64,22 @@ export default function FertigationWizard() {
     }
   };
 
+  const handleRackScanned = (qr: string) => {
+    setRackQr(qr);
+    setError("");
+    const parsed = parseQR(qr);
+    if (parsed?.type === "rack_position") {
+      setRackReadings(parsed as RackPositionQR);
+    } else {
+      setRackReadings(null);
+    }
+  };
+
   const handleConfirm = async () => {
+    if (!rackQr) {
+      setError("Please scan the rack position QR code first.");
+      return;
+    }
     try {
       await moveFertigation({ id: cycleId, data: { seedLotQrCode: scannedQr } });
       queryClient.invalidateQueries({ queryKey: getListCyclesQueryKey({ status: "ongoing" }) });
@@ -112,11 +131,12 @@ export default function FertigationWizard() {
           <StageTracker status="germination" />
         </View>
 
+        {/* ── Step 1: Scan Seed Lot QR ── */}
         {step === 1 && (
           <>
             <Text style={s.stepTitle}>Scan Seed Lot QR</Text>
             <Text style={s.stepSub}>
-              Scan one of the seed lot QR codes associated with this cycle to confirm.
+              Scan one of the seed lot QR codes for this cycle to verify.
             </Text>
             {cycle.seedLotQrCodes.length > 0 && (
               <View style={s.infoBox}>
@@ -127,12 +147,13 @@ export default function FertigationWizard() {
               </View>
             )}
             <View style={s.scannerBox}>
-              <QRScanner onScanned={handleQrScanned} hint="Scan seed lot QR code" />
+              <QRScanner onScanned={handleSeedLotScanned} hint="Scan seed lot QR code" />
             </View>
             {error ? <Text style={s.errorText}>{error}</Text> : null}
           </>
         )}
 
+        {/* ── Step 2: Germination Review ── */}
         {step === 2 && (
           <>
             <Text style={s.stepTitle}>Germination Review</Text>
@@ -176,37 +197,66 @@ export default function FertigationWizard() {
             </View>
 
             <Pressable style={s.nextBtn} onPress={() => setStep(3)}>
-              <Text style={s.nextBtnText}>Looks Good — Continue</Text>
+              <Text style={s.nextBtnText}>Looks Good — Scan Rack Slot</Text>
               <Feather name="arrow-right" size={18} color="#fff" />
             </Pressable>
           </>
         )}
 
+        {/* ── Step 3: Scan Rack Position QR + Confirm ── */}
         {step === 3 && (
           <>
-            <Text style={s.stepTitle}>Confirm</Text>
+            <Text style={s.stepTitle}>Scan Rack Position</Text>
             <Text style={s.stepSub}>
-              Moving this cycle to fertigation cannot be undone.
+              Scan the rack slot QR code to record current environmental readings at this position.
             </Text>
-            <View style={s.summaryCard}>
-              <SummaryRow label="Cycle" value={`#${cycle.shortId}`} />
-              <SummaryRow label="Seed" value={cycle.seedName} />
-              <SummaryRow
-                label="Trays"
-                value={`${cycle.fullTrays}F + ${cycle.halfTrays}H`}
-              />
-              <SummaryRow label="Profile" value={cycle.growthProfileName} />
-              <SummaryRow
-                label="Fertigation period"
-                value={`${cycle.fertigationDays} days`}
-              />
-              <SummaryRow label="Verified QR" value={scannedQr} />
+            <View style={s.qrTypeHint}>
+              <Feather name="info" size={13} color={colors.light.primary} />
+              <Text style={s.qrTypeHintText}>
+                Rack QR codes contain humidity, temperature, pH, water level and nutrient mix.
+              </Text>
             </View>
+            <View style={s.scannerBox}>
+              <QRScanner
+                onScanned={handleRackScanned}
+                hint="Scan rack position QR code"
+              />
+            </View>
+
+            {rackQr && (
+              rackReadings ? (
+                <RackReadingsCard
+                  data={rackReadings}
+                  position={rackReadings.position ?? rackQr}
+                />
+              ) : (
+                <View style={s.rackRawChip}>
+                  <Feather name="grid" size={14} color={colors.light.primary} />
+                  <Text style={s.rackRawText}>{rackQr}</Text>
+                </View>
+              )
+            )}
+
+            {rackQr && (
+              <View style={s.summaryCard}>
+                <SummaryRow label="Cycle" value={`#${cycle.shortId}`} />
+                <SummaryRow label="Seed" value={cycle.seedName} />
+                <SummaryRow
+                  label="Trays"
+                  value={`${cycle.fullTrays}F + ${cycle.halfTrays}H`}
+                />
+                <SummaryRow label="Profile" value={cycle.growthProfileName} />
+                <SummaryRow label="Fertigation period" value={`${cycle.fertigationDays} days`} />
+                <SummaryRow label="Verified QR" value={scannedQr} />
+              </View>
+            )}
+
             {error ? <Text style={s.errorText}>{error}</Text> : null}
+
             <Pressable
-              style={[s.confirmBtn, isPending && s.btnDisabled]}
+              style={[s.confirmBtn, (isPending || !rackQr) && s.btnDisabled]}
               onPress={handleConfirm}
-              disabled={isPending}
+              disabled={isPending || !rackQr}
             >
               {isPending ? (
                 <ActivityIndicator color="#fff" />
@@ -217,6 +267,10 @@ export default function FertigationWizard() {
                 </>
               )}
             </Pressable>
+
+            {!rackQr && (
+              <Text style={s.waitingText}>Waiting for rack position scan…</Text>
+            )}
           </>
         )}
       </ScrollView>
@@ -300,6 +354,22 @@ const s = StyleSheet.create({
     color: colors.light.mutedForeground,
     marginBottom: 14,
   },
+  qrTypeHint: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+    backgroundColor: colors.light.secondary,
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 14,
+  },
+  qrTypeHintText: {
+    flex: 1,
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    color: colors.light.primary,
+    lineHeight: 18,
+  },
   infoBox: {
     backgroundColor: colors.light.muted,
     borderRadius: colors.radius,
@@ -322,6 +392,21 @@ const s = StyleSheet.create({
     borderRadius: colors.radius,
     overflow: "hidden",
     backgroundColor: colors.light.muted,
+    marginBottom: 16,
+  },
+  rackRawChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: colors.light.secondary,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+  },
+  rackRawText: {
+    fontSize: 14,
+    fontFamily: "Inter_500Medium",
+    color: colors.light.foreground,
   },
   progressCard: {
     backgroundColor: colors.light.card,
@@ -396,6 +481,13 @@ const s = StyleSheet.create({
     fontSize: 13,
     fontFamily: "Inter_400Regular",
     marginTop: 8,
+  },
+  waitingText: {
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
+    color: colors.light.mutedForeground,
+    textAlign: "center",
+    marginTop: 12,
   },
   summaryCard: {
     backgroundColor: colors.light.card,

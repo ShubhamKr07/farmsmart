@@ -25,7 +25,7 @@ export default function CycleDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const cycleId = parseInt(id ?? "", 10);
+  const cycleId = parseInt(id ?? "0");
 
   const {
     data: cycle,
@@ -56,21 +56,17 @@ export default function CycleDetailScreen() {
   const canHarvest = cycle.status === "fertigation";
   const canManualCheck = cycle.status !== "completed";
 
-  // daysOverdue* is non-null once the period has elapsed (server-computed).
-  // Only compute remaining days when the server says we're still inside the window.
-  const fertigationDaysRemaining =
-    canFertigation && cycle.daysOverdueFertigation === null && cycle.germinationStartedAt
-      ? Math.max(0, Math.ceil(
-          (new Date(cycle.germinationStartedAt).getTime() + (cycle.germinationDays ?? 0) * 86_400_000 - Date.now()) / 86_400_000
-        ))
-      : 0;
-
-  const harvestDaysRemaining =
-    canHarvest && cycle.daysOverdueHarvest === null && cycle.fertigationStartedAt
-      ? Math.max(0, Math.ceil(
-          (new Date(cycle.fertigationStartedAt).getTime() + (cycle.fertigationDays ?? 0) * 86_400_000 - Date.now()) / 86_400_000
-        ))
-      : 0;
+  const now = Date.now();
+  let fertigationDaysRemaining = 0;
+  if (canFertigation && cycle.germinationStartedAt && cycle.germinationDays) {
+    const dueMs = new Date(cycle.germinationStartedAt).getTime() + cycle.germinationDays * 86_400_000;
+    fertigationDaysRemaining = Math.max(0, Math.ceil((dueMs - now) / 86_400_000));
+  }
+  let harvestDaysRemaining = 0;
+  if (canHarvest && cycle.fertigationStartedAt && cycle.fertigationDays) {
+    const dueMs = new Date(cycle.fertigationStartedAt).getTime() + cycle.fertigationDays * 86_400_000;
+    harvestDaysRemaining = Math.max(0, Math.ceil((dueMs - now) / 86_400_000));
+  }
 
   return (
     <SafeAreaView style={s.safe} edges={["bottom"]}>
@@ -180,7 +176,7 @@ export default function CycleDetailScreen() {
         {canFertigation && fertigationDaysRemaining === 0 && (
           <Pressable
             style={s.actionBtn}
-            onPress={() => router.push({ pathname: "/fertigation/[id]", params: { id: cycleId } })}
+            onPress={() => router.push(`/fertigation/${cycleId}` as any)}
           >
             <Feather name="droplet" size={18} color="#fff" />
             <Text style={s.actionBtnText}>Move to Fertigation</Text>
@@ -195,7 +191,7 @@ export default function CycleDetailScreen() {
         {canHarvest && harvestDaysRemaining === 0 && (
           <Pressable
             style={[s.actionBtn, { backgroundColor: "#F59E0B" }]}
-            onPress={() => router.push({ pathname: "/harvest/[id]", params: { id: cycleId } })}
+            onPress={() => router.push(`/harvest/${cycleId}` as any)}
           >
             <Feather name="scissors" size={18} color="#fff" />
             <Text style={s.actionBtnText}>Harvest</Text>
@@ -204,7 +200,7 @@ export default function CycleDetailScreen() {
         {canManualCheck && (
           <Pressable
             style={s.secondaryBtn}
-            onPress={() => router.push({ pathname: "/manual-check/[id]", params: { id: cycleId } })}
+            onPress={() => router.push(`/manual-check/${cycleId}` as any)}
           >
             <Feather name="clipboard" size={18} color={colors.light.primary} />
             <Text style={s.secondaryBtnText}>Manual Check</Text>
