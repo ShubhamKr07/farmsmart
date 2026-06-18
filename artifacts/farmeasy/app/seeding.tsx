@@ -184,7 +184,12 @@ export default function SeedingWizard() {
                 return (
                   <View key={qr} style={s.qrChip}>
                     <Feather name="check-circle" size={13} color={colors.light.primary} />
-                    <Text style={s.qrChipText} numberOfLines={1}>{label}</Text>
+                    <Pressable
+                      style={{ flex: 1 }}
+                      onPress={() => router.push({ pathname: "/seed-lot/[qrCode]", params: { qrCode: qr } })}
+                    >
+                      <Text style={s.qrChipText} numberOfLines={1}>{label}</Text>
+                    </Pressable>
                     <Pressable
                       onPress={() =>
                         setForm((f) => ({

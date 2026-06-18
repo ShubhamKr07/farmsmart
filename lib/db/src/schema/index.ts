@@ -29,6 +29,16 @@ export const seedLotsTable = pgTable("seed_lots", {
   id: serial("id").primaryKey(),
   qrCode: text("qr_code").notNull().unique(),
   seedName: text("seed_name").notNull(),
+  supplier: text("supplier"),
+  productLink: text("product_link"),
+  itemNumber: text("item_number"),
+  vendorShort: text("vendor_short"),
+  gpcCode: text("gpc_code"),
+  type: text("type"),
+  success: text("success"),
+  growTime: text("grow_time"),
+  usedIn: text("used_in"),
+  currentlyGrown: boolean("currently_grown"),
 });
 
 export const cyclesTable = pgTable(

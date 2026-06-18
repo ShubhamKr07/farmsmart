@@ -117,11 +117,22 @@ export default function CycleDetailScreen() {
             <DetailRow icon="map-pin" label="Rack Slot" value={cycle.trayPosition} />
           )}
           {cycle.seedLotQrCodes.length > 0 && (
-            <DetailRow
-              icon="tag"
-              label="Seed Lots"
-              value={cycle.seedLotQrCodes.join(", ")}
-            />
+            <View style={s.seedLotRow}>
+              <Feather name="tag" size={16} color={colors.light.mutedForeground} style={{ marginRight: 8 }} />
+              <Text style={s.detailLabel}>Seed Lots</Text>
+              <View style={s.seedLotChips}>
+                {cycle.seedLotQrCodes.map((qr) => (
+                  <Pressable
+                    key={qr}
+                    onPress={() => router.push({ pathname: "/seed-lot/[qrCode]", params: { qrCode: qr } })}
+                    style={s.seedLotChip}
+                  >
+                    <Text style={s.seedLotChipText} numberOfLines={1}>{qr}</Text>
+                    <Feather name="chevron-right" size={12} color={colors.light.primary} />
+                  </Pressable>
+                ))}
+              </View>
+            </View>
           )}
           <DetailRow
             icon="clock"
@@ -569,5 +580,29 @@ const s = StyleSheet.create({
     fontFamily: "Inter_400Regular",
     color: colors.light.mutedForeground,
     marginTop: 2,
+  },
+  seedLotRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    borderTopColor: colors.light.border,
+    gap: 8,
+  },
+  seedLotChips: { flex: 1, gap: 4 },
+  seedLotChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: colors.light.secondary,
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  seedLotChipText: {
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    color: colors.light.primary,
+    flex: 1,
   },
 });
