@@ -10,4 +10,14 @@ export interface SeedLot {
   id: number;
   qrCode: string;
   seedName: string;
+  supplier?: string | null;
+  productLink?: string | null;
+  itemNumber?: string | null;
+  vendorShort?: string | null;
+  gpcCode?: string | null;
+  type?: string | null;
+  success?: string | null;
+  growTime?: string | null;
+  usedIn?: string | null;
+  currentlyGrown?: boolean | null;
 }

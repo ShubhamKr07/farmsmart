@@ -288,6 +288,36 @@ components:
           type: string
         seedName:
           type: string
+        supplier:
+          type: string
+          nullable: true
+        productLink:
+          type: string
+          nullable: true
+        itemNumber:
+          type: string
+          nullable: true
+        vendorShort:
+          type: string
+          nullable: true
+        gpcCode:
+          type: string
+          nullable: true
+        type:
+          type: string
+          nullable: true
+        success:
+          type: string
+          nullable: true
+        growTime:
+          type: string
+          nullable: true
+        usedIn:
+          type: string
+          nullable: true
+        currentlyGrown:
+          type: boolean
+          nullable: true
       required: [id, qrCode, seedName]
 
     ManualCheck:

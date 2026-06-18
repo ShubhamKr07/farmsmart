@@ -58,7 +58,17 @@ export const LookupSeedLotQueryParams = zod.object({
 export const LookupSeedLotResponse = zod.object({
   "id": zod.number(),
   "qrCode": zod.string(),
-  "seedName": zod.string()
+  "seedName": zod.string(),
+  "supplier": zod.string().nullish(),
+  "productLink": zod.string().nullish(),
+  "itemNumber": zod.string().nullish(),
+  "vendorShort": zod.string().nullish(),
+  "gpcCode": zod.string().nullish(),
+  "type": zod.string().nullish(),
+  "success": zod.string().nullish(),
+  "growTime": zod.string().nullish(),
+  "usedIn": zod.string().nullish(),
+  "currentlyGrown": zod.boolean().nullish()
 })
 
 
