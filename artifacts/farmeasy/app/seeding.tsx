@@ -127,8 +127,7 @@ export default function SeedingWizard() {
     }
   };
 
-  const profileList = Array.isArray(profiles) ? profiles : [];
-  const selectedProfile = profileList.find(
+  const selectedProfile = profiles?.find(
     (p) => p.id === form.growthProfileId,
   );
 
@@ -184,12 +183,7 @@ export default function SeedingWizard() {
                 return (
                   <View key={qr} style={s.qrChip}>
                     <Feather name="check-circle" size={13} color={colors.light.primary} />
-                    <Pressable
-                      style={{ flex: 1 }}
-                      onPress={() => router.push({ pathname: "/seed-lot/[qrCode]", params: { qrCode: qr } })}
-                    >
-                      <Text style={s.qrChipText} numberOfLines={1}>{label}</Text>
-                    </Pressable>
+                    <Text style={s.qrChipText} numberOfLines={1}>{label}</Text>
                     <Pressable
                       onPress={() =>
                         setForm((f) => ({
@@ -322,7 +316,7 @@ export default function SeedingWizard() {
 
             <Text style={s.label}>Growth Profile</Text>
             <View style={s.profileList}>
-              {profileList.map((p) => (
+              {profiles?.map((p) => (
                 <Pressable
                   key={p.id}
                   style={[
