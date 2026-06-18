@@ -15,6 +15,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { setBaseUrl } from "@workspace/api-client-react";
+import colors from "@/constants/colors";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
@@ -121,6 +122,14 @@ export default function RootLayout() {
                         options={{
                           presentation: "modal",
                           headerShown: false,
+                        }}
+                      />
+                      <Stack.Screen
+                        name="seed-lot/[qrCode]"
+                        options={{
+                          headerShown: true,
+                          title: "Seed Lot",
+                          headerTintColor: colors.light.primary,
                         }}
                       />
                     </Stack>
