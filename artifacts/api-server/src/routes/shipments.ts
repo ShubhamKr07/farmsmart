@@ -1,0 +1,110 @@
+import { Router, type Request, type Response } from "express";
+import { eq, and } from "drizzle-orm";
+import { db } from "@workspace/db";
+import { shipmentsTable } from "@workspace/db";
+
+const router = Router();
+
+function generateShortId(): string {
+  return "SHP-" + Math.random().toString(36).slice(2, 8).toUpperCase();
+}
+
+function formatShipment(s: typeof shipmentsTable.$inferSelect) {
+  return {
+    id: s.id,
+    shortId: s.shortId,
+    client: s.client,
+    productDescription: s.productDescription ?? null,
+    yieldSoldKg: s.yieldSoldKg ? Number(s.yieldSoldKg) : null,
+    revenueUsd: s.revenueUsd ? Number(s.revenueUsd) : null,
+    shippingDate: s.shippingDate ?? null,
+    status: s.status,
+    createdAt: s.createdAt.toISOString(),
+  };
+}
+
+router.get("/shipments", async (req: Request, res: Response) => {
+  try {
+    const statusFilter = req.query.status as string | undefined;
+    const clientFilter = req.query.client as string | undefined;
+
+    let rows = await db.select().from(shipmentsTable).orderBy(shipmentsTable.createdAt);
+
+    if (statusFilter && ["in_progress", "complete", "pending"].includes(statusFilter)) {
+      rows = rows.filter((r) => r.status === statusFilter);
+    }
+    if (clientFilter) {
+      rows = rows.filter((r) => r.client.toLowerCase().includes(clientFilter.toLowerCase()));
+    }
+
+    return res.json(rows.map(formatShipment));
+  } catch (err) {
+    req.log.error(err);
+    return res.status(500).json({ error: "Failed to fetch shipments" });
+  }
+});
+
+router.post("/shipments", async (req: Request, res: Response) => {
+  try {
+    const { client, productDescription, yieldSoldKg, revenueUsd, shippingDate, status } = req.body;
+    if (!client) return res.status(400).json({ error: "client is required" });
+
+    let shortId = generateShortId();
+    let exists = await db
+      .select({ id: shipmentsTable.id })
+      .from(shipmentsTable)
+      .where(eq(shipmentsTable.shortId, shortId))
+      .limit(1);
+    while (exists.length > 0) {
+      shortId = generateShortId();
+      exists = await db
+        .select({ id: shipmentsTable.id })
+        .from(shipmentsTable)
+        .where(eq(shipmentsTable.shortId, shortId))
+        .limit(1);
+    }
+
+    const [shipment] = await db
+      .insert(shipmentsTable)
+      .values({
+        shortId,
+        client,
+        productDescription: productDescription ?? null,
+        yieldSoldKg: yieldSoldKg ? String(yieldSoldKg) : null,
+        revenueUsd: revenueUsd ? String(revenueUsd) : null,
+        shippingDate: shippingDate ?? null,
+        status: status ?? "pending",
+      })
+      .returning();
+
+    return res.status(201).json(formatShipment(shipment));
+  } catch (err) {
+    req.log.error(err);
+    return res.status(500).json({ error: "Failed to create shipment" });
+  }
+});
+
+router.patch("/shipments/:id/status", async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params["id"] as string, 10);
+    const { status } = req.body;
+
+    if (!["in_progress", "complete", "pending"].includes(status)) {
+      return res.status(400).json({ error: "Invalid status" });
+    }
+
+    const [shipment] = await db
+      .update(shipmentsTable)
+      .set({ status })
+      .where(eq(shipmentsTable.id, id))
+      .returning();
+
+    if (!shipment) return res.status(404).json({ error: "Shipment not found" });
+    return res.json(formatShipment(shipment));
+  } catch (err) {
+    req.log.error(err);
+    return res.status(500).json({ error: "Failed to update shipment status" });
+  }
+});
+
+export default router;

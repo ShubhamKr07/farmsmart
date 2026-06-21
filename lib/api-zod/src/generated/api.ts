@@ -25,13 +25,50 @@ export const GetDashboardResponse = zod.object({
   "totalChannels": zod.number(),
   "totalYieldThisWeek": zod.number(),
   "totalYieldThisMonth": zod.number(),
+  "activeSeedLots": zod.number(),
+  "badTraysCount": zod.number(),
+  "activeCropTypes": zod.array(zod.string()),
+  "totalBadTrays": zod.number(),
+  "yieldByDay": zod.array(zod.object({
+  "label": zod.string(),
+  "value": zod.number()
+})).optional(),
+  "yieldByWeek": zod.array(zod.object({
+  "label": zod.string(),
+  "value": zod.number()
+})).optional(),
+  "seedingByDay": zod.array(zod.object({
+  "label": zod.string(),
+  "value": zod.number()
+})).optional(),
+  "seedingByWeek": zod.array(zod.object({
+  "label": zod.string(),
+  "value": zod.number()
+})).optional(),
+  "badTrayByDay": zod.array(zod.object({
+  "label": zod.string(),
+  "value": zod.number()
+})).optional(),
+  "badTrayByWeek": zod.array(zod.object({
+  "label": zod.string(),
+  "value": zod.number()
+})).optional(),
   "actionRequired": zod.array(zod.object({
   "cycleId": zod.number(),
   "cycleShortId": zod.string(),
   "seedName": zod.string(),
   "type": zod.enum(['fertigation', 'harvest']),
   "daysOverdue": zod.number()
-}))
+})),
+  "sensorStatus": zod.object({
+  "sensorsOnline": zod.number(),
+  "sensorsTotal": zod.number(),
+  "acidityPh": zod.number(),
+  "waterLevelPct": zod.number(),
+  "tempCelsius": zod.number(),
+  "humidityPct": zod.number(),
+  "updatedAt": zod.coerce.date()
+}).optional()
 })
 
 
@@ -123,7 +160,12 @@ export const CreateCycleBody = zod.object({
   "seedWeightTray": zod.number(),
   "growthProfileId": zod.number(),
   "seedingDate": zod.string(),
-  "trayPosition": zod.string()
+  "trayPosition": zod.string(),
+  "humidity": zod.number().optional(),
+  "temperature": zod.number().optional(),
+  "ph": zod.number().optional(),
+  "waterLevel": zod.number().optional(),
+  "nutrientMix": zod.string().optional()
 })
 
 
@@ -182,7 +224,12 @@ export const MoveCycleToFertigationParams = zod.object({
 })
 
 export const MoveCycleToFertigationBody = zod.object({
-  "seedLotQrCode": zod.string()
+  "seedLotQrCode": zod.string(),
+  "humidity": zod.number().optional(),
+  "temperature": zod.number().optional(),
+  "ph": zod.number().optional(),
+  "waterLevel": zod.number().optional(),
+  "nutrientMix": zod.string().optional()
 })
 
 export const MoveCycleToFertigationResponse = zod.object({
@@ -289,6 +336,249 @@ export const CreateManualCheckBody = zod.object({
   "issue": zod.string().nullish(),
   "notes": zod.string().nullish(),
   "photoUrls": zod.array(zod.string())
+})
+
+
+/**
+ * @summary List alerts by status
+ */
+export const ListAlertsQueryParams = zod.object({
+  "status": zod.enum(['current', 'resolved', 'dismissed']).optional(),
+  "limit": zod.coerce.number().optional()
+})
+
+export const ListAlertsResponseItem = zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "location": zod.string().nullish(),
+  "severity": zod.enum(['critical', 'warning']),
+  "status": zod.enum(['current', 'resolved', 'dismissed']),
+  "actionType": zod.string().nullish(),
+  "actionNotes": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "resolvedAt": zod.coerce.date().nullish()
+})
+export const ListAlertsResponse = zod.array(ListAlertsResponseItem)
+
+
+/**
+ * @summary Create a new alert
+ */
+export const CreateAlertBody = zod.object({
+  "title": zod.string(),
+  "description": zod.string().optional(),
+  "location": zod.string().optional(),
+  "severity": zod.enum(['critical', 'warning'])
+})
+
+
+/**
+ * @summary Resolve or dismiss an alert
+ */
+export const UpdateAlertStatusParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateAlertStatusBody = zod.object({
+  "status": zod.enum(['resolved', 'dismissed'])
+})
+
+export const UpdateAlertStatusResponse = zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "location": zod.string().nullish(),
+  "severity": zod.enum(['critical', 'warning']),
+  "status": zod.enum(['current', 'resolved', 'dismissed']),
+  "actionType": zod.string().nullish(),
+  "actionNotes": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "resolvedAt": zod.coerce.date().nullish()
+})
+
+
+/**
+ * @summary Take action on an alert (resolves it)
+ */
+export const TakeAlertActionParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const TakeAlertActionBody = zod.object({
+  "actionType": zod.string(),
+  "notes": zod.string().optional()
+})
+
+export const TakeAlertActionResponse = zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "location": zod.string().nullish(),
+  "severity": zod.enum(['critical', 'warning']),
+  "status": zod.enum(['current', 'resolved', 'dismissed']),
+  "actionType": zod.string().nullish(),
+  "actionNotes": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "resolvedAt": zod.coerce.date().nullish()
+})
+
+
+/**
+ * @summary List inventory items
+ */
+export const ListInventoryResponseItem = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "brand": zod.string().nullish(),
+  "category": zod.string().nullish(),
+  "qrCode": zod.string().nullish(),
+  "currentQty": zod.number(),
+  "maxQty": zod.number(),
+  "unit": zod.string(),
+  "arrivalDate": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+})
+export const ListInventoryResponse = zod.array(ListInventoryResponseItem)
+
+
+/**
+ * @summary Create an inventory item
+ */
+export const CreateInventoryItemBody = zod.object({
+  "name": zod.string(),
+  "brand": zod.string().optional(),
+  "category": zod.string().optional(),
+  "qrCode": zod.string().optional(),
+  "currentQty": zod.number(),
+  "maxQty": zod.number(),
+  "unit": zod.string().optional(),
+  "arrivalDate": zod.string().optional()
+})
+
+
+/**
+ * @summary Update an inventory item
+ */
+export const UpdateInventoryItemParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateInventoryItemBody = zod.object({
+  "name": zod.string().optional(),
+  "brand": zod.string().optional(),
+  "category": zod.string().optional(),
+  "currentQty": zod.number().optional(),
+  "maxQty": zod.number().optional(),
+  "unit": zod.string().optional()
+})
+
+export const UpdateInventoryItemResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "brand": zod.string().nullish(),
+  "category": zod.string().nullish(),
+  "qrCode": zod.string().nullish(),
+  "currentQty": zod.number(),
+  "maxQty": zod.number(),
+  "unit": zod.string(),
+  "arrivalDate": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary List shipments
+ */
+export const ListShipmentsQueryParams = zod.object({
+  "status": zod.enum(['in_progress', 'complete', 'pending']).optional(),
+  "client": zod.coerce.string().optional()
+})
+
+export const ListShipmentsResponseItem = zod.object({
+  "id": zod.number(),
+  "shortId": zod.string(),
+  "client": zod.string(),
+  "productDescription": zod.string().nullish(),
+  "yieldSoldKg": zod.number().nullish(),
+  "revenueUsd": zod.number().nullish(),
+  "shippingDate": zod.string().nullish(),
+  "status": zod.enum(['in_progress', 'complete', 'pending']),
+  "createdAt": zod.coerce.date()
+})
+export const ListShipmentsResponse = zod.array(ListShipmentsResponseItem)
+
+
+/**
+ * @summary Create a shipment
+ */
+export const CreateShipmentBody = zod.object({
+  "client": zod.string(),
+  "productDescription": zod.string().optional(),
+  "yieldSoldKg": zod.number().optional(),
+  "revenueUsd": zod.number().optional(),
+  "shippingDate": zod.string().optional(),
+  "status": zod.enum(['in_progress', 'complete', 'pending']).optional()
+})
+
+
+/**
+ * @summary Update shipment status
+ */
+export const UpdateShipmentStatusParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateShipmentStatusBody = zod.object({
+  "status": zod.enum(['in_progress', 'complete', 'pending'])
+})
+
+export const UpdateShipmentStatusResponse = zod.object({
+  "id": zod.number(),
+  "shortId": zod.string(),
+  "client": zod.string(),
+  "productDescription": zod.string().nullish(),
+  "yieldSoldKg": zod.number().nullish(),
+  "revenueUsd": zod.number().nullish(),
+  "shippingDate": zod.string().nullish(),
+  "status": zod.enum(['in_progress', 'complete', 'pending']),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Get bad trays analysis with aggregated issues and manual entries
+ */
+export const GetBadTraysAnalysisResponse = zod.object({
+  "totalBadTrays": zod.number(),
+  "estimatedLoss": zod.number(),
+  "issues": zod.array(zod.object({
+  "issue": zod.string(),
+  "frequency": zod.number(),
+  "affectedTrays": zod.number(),
+  "estimatedLoss": zod.number()
+})),
+  "manualEntries": zod.array(zod.object({
+  "id": zod.number(),
+  "trayId": zod.string(),
+  "zone": zod.string().nullish(),
+  "cropType": zod.string(),
+  "issue": zod.string().nullish(),
+  "entryDate": zod.coerce.date(),
+  "severity": zod.string()
+}))
+})
+
+
+/**
+ * @summary Create a bad tray manual check entry
+ */
+export const CreateBadTrayEntryBody = zod.object({
+  "cycleId": zod.number(),
+  "fullTrays": zod.number().optional(),
+  "halfTrays": zod.number().optional(),
+  "issue": zod.string(),
+  "notes": zod.string().optional()
 })
 
 

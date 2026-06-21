@@ -8,6 +8,7 @@ import {
   timestamp,
   pgEnum,
   index,
+  real,
 } from "drizzle-orm/pg-core";
 
 export const cycleStatusEnum = pgEnum("cycle_status", [
@@ -15,6 +16,23 @@ export const cycleStatusEnum = pgEnum("cycle_status", [
   "fertigation",
   "harvest",
   "completed",
+]);
+
+export const alertSeverityEnum = pgEnum("alert_severity", [
+  "critical",
+  "warning",
+]);
+
+export const alertStatusEnum = pgEnum("alert_status", [
+  "current",
+  "resolved",
+  "dismissed",
+]);
+
+export const shipmentStatusEnum = pgEnum("shipment_status", [
+  "in_progress",
+  "complete",
+  "pending",
 ]);
 
 export const growthProfilesTable = pgTable("growth_profiles", {
@@ -68,17 +86,71 @@ export const cyclesTable = pgTable(
   (table) => [index("cycles_status_idx").on(table.status)],
 );
 
-export const manualChecksTable = pgTable("manual_checks", {
+export const manualChecksTable = pgTable(
+  "manual_checks",
+  {
+    id: serial("id").primaryKey(),
+    cycleId: integer("cycle_id")
+      .notNull()
+      .references(() => cyclesTable.id),
+    fullTrays: integer("full_trays").notNull().default(0),
+    halfTrays: integer("half_trays").notNull().default(0),
+    isBadTrays: boolean("is_bad_trays").notNull().default(false),
+    issue: text("issue"),
+    notes: text("notes"),
+    photoUrls: text("photo_urls").array().notNull(),
+    createdBy: text("created_by"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => [index("manual_checks_created_at_idx").on(table.createdAt)],
+);
+
+export const alertsTable = pgTable("alerts", {
   id: serial("id").primaryKey(),
-  cycleId: integer("cycle_id")
-    .notNull()
-    .references(() => cyclesTable.id),
-  fullTrays: integer("full_trays").notNull().default(0),
-  halfTrays: integer("half_trays").notNull().default(0),
-  isBadTrays: boolean("is_bad_trays").notNull().default(false),
-  issue: text("issue"),
-  notes: text("notes"),
-  photoUrls: text("photo_urls").array().notNull(),
-  createdBy: text("created_by"),
+  title: text("title").notNull(),
+  description: text("description"),
+  location: text("location"),
+  severity: alertSeverityEnum("severity").notNull().default("warning"),
+  status: alertStatusEnum("status").notNull().default("current"),
+  actionType: text("action_type"),
+  actionNotes: text("action_notes"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+  resolvedAt: timestamp("resolved_at"),
+});
+
+export const inventoryItemsTable = pgTable("inventory_items", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  brand: text("brand"),
+  category: text("category"),
+  qrCode: text("qr_code"),
+  currentQty: numeric("current_qty").notNull().default("0"),
+  maxQty: numeric("max_qty").notNull().default("0"),
+  unit: text("unit").notNull().default("g"),
+  arrivalDate: text("arrival_date"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const shipmentsTable = pgTable("shipments", {
+  id: serial("id").primaryKey(),
+  shortId: text("short_id").notNull().unique(),
+  client: text("client").notNull(),
+  productDescription: text("product_description"),
+  yieldSoldKg: numeric("yield_sold_kg"),
+  revenueUsd: numeric("revenue_usd"),
+  shippingDate: text("shipping_date"),
+  status: shipmentStatusEnum("status").notNull().default("pending"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const sensorStatusTable = pgTable("sensor_status", {
+  id: serial("id").primaryKey(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  sensorsOnline: integer("sensors_online").notNull().default(24),
+  sensorsTotal: integer("sensors_total").notNull().default(24),
+  acidityPh: real("acidity_ph").notNull().default(6.0),
+  waterLevelPct: real("water_level_pct").notNull().default(95),
+  tempCelsius: real("temp_celsius").notNull().default(30),
+  humidityPct: real("humidity_pct").notNull().default(65),
+  nutrientMix: text("nutrient_mix"),
 });

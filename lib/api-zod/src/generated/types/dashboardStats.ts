@@ -6,6 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ActionRequiredItem } from './actionRequiredItem';
+import type { ChartDataPoint } from './chartDataPoint';
+import type { SensorStatus } from './sensorStatus';
 
 export interface DashboardStats {
   channelUtilization: number;
@@ -13,5 +15,16 @@ export interface DashboardStats {
   totalChannels: number;
   totalYieldThisWeek: number;
   totalYieldThisMonth: number;
+  activeSeedLots: number;
+  badTraysCount: number;
+  activeCropTypes: string[];
+  totalBadTrays: number;
+  yieldByDay?: ChartDataPoint[];
+  yieldByWeek?: ChartDataPoint[];
+  seedingByDay?: ChartDataPoint[];
+  seedingByWeek?: ChartDataPoint[];
+  badTrayByDay?: ChartDataPoint[];
+  badTrayByWeek?: ChartDataPoint[];
   actionRequired: ActionRequiredItem[];
+  sensorStatus?: SensorStatus;
 }

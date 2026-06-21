@@ -8,4 +8,9 @@
 
 export interface MoveFertigationRequest {
   seedLotQrCode: string;
+  humidity?: number;
+  temperature?: number;
+  ph?: number;
+  waterLevel?: number;
+  nutrientMix?: string;
 }

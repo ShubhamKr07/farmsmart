@@ -1,14 +1,32 @@
-import { Router, type Request, type Response } from "express";
-import { eq, ne } from "drizzle-orm";
+import { Router, type Request, type Response, type NextFunction } from "express";
+import { getAuth } from "@clerk/express";
+import { eq, ne, count, and } from "drizzle-orm";
 import { db } from "@workspace/db";
-import { cyclesTable, growthProfilesTable, manualChecksTable } from "@workspace/db";
+import {
+  cyclesTable,
+  growthProfilesTable,
+  manualChecksTable,
+  seedLotsTable,
+  alertsTable,
+  sensorStatusTable,
+} from "@workspace/db";
+import { calcDaysOverdue, seedingWeight } from "../lib/utils";
 
 const TOTAL_CHANNELS = 20;
 const router = Router();
 
 type UserRole = "technician" | "supervisor" | "quality_lead" | "facility_lead";
 
-router.get("/dashboard", async (_req: Request, res: Response) => {
+function enforceAuth(req: Request, res: Response, next: NextFunction) {
+  const { userId } = getAuth(req);
+  if (!userId) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  next();
+}
+
+router.get("/dashboard", enforceAuth, async (req: Request, res: Response) => {
   try {
     const runningRows = await db
       .select({ cycle: cyclesTable, profile: growthProfilesTable })
@@ -23,6 +41,7 @@ router.get("/dashboard", async (_req: Request, res: Response) => {
       cycleId: number;
       cycleShortId: string;
       seedName: string;
+      trayPosition: string | null;
       type: "fertigation" | "harvest";
       daysOverdue: number;
     }[] = [];
@@ -40,6 +59,7 @@ router.get("/dashboard", async (_req: Request, res: Response) => {
             cycleId: cycle.id,
             cycleShortId: cycle.shortId,
             seedName: cycle.seedName,
+            trayPosition: cycle.trayPosition,
             type: "fertigation",
             daysOverdue: Math.floor((now - dueMs) / 864e5),
           });
@@ -53,10 +73,43 @@ router.get("/dashboard", async (_req: Request, res: Response) => {
             cycleId: cycle.id,
             cycleShortId: cycle.shortId,
             seedName: cycle.seedName,
+            trayPosition: cycle.trayPosition,
             type: "harvest",
             daysOverdue: Math.floor((now - dueMs) / 864e5),
           });
         }
+      }
+    }
+
+    // Auto-create alerts for overdue cycles (idempotent: skip if open alert already exists)
+    for (const item of actionRequired) {
+      const title =
+        item.type === "harvest"
+          ? `Overdue Harvest: ${item.seedName}`
+          : `Overdue Fertigation Transition: ${item.seedName}`;
+      const location = item.trayPosition ?? `Cycle ${item.cycleShortId}`;
+
+      const existing = await db
+        .select({ id: alertsTable.id })
+        .from(alertsTable)
+        .where(
+          and(
+            eq(alertsTable.title, title),
+            eq(alertsTable.location, location),
+            eq(alertsTable.status, "current"),
+          ),
+        )
+        .limit(1);
+
+      if (existing.length === 0) {
+        await db.insert(alertsTable).values({
+          title,
+          description: `Cycle #${item.cycleShortId} (${item.seedName}) is ${item.daysOverdue} day(s) overdue for ${item.type === "harvest" ? "harvesting" : "fertigation transition"}.`,
+          severity: item.daysOverdue >= 3 ? "critical" : "warning",
+          location,
+          status: "current",
+          actionType: item.type,
+        });
       }
     }
 
@@ -156,22 +209,89 @@ router.get("/dashboard", async (_req: Request, res: Response) => {
       badTrayByWeek.push({ label, value: badTrayTotal });
     }
 
+    // Active seed lots (currently being grown)
+    const activeSeedLotsRows = await db
+      .select({
+        id: seedLotsTable.id,
+        seedName: seedLotsTable.seedName,
+        qrCode: seedLotsTable.qrCode,
+        currentlyGrown: seedLotsTable.currentlyGrown,
+      })
+      .from(seedLotsTable)
+      .where(eq(seedLotsTable.currentlyGrown, true));
+    const activeSeedLots = activeSeedLotsRows.length;
+
+    // Active crop types (distinct seed names in running cycles)
+    const cropTypes = new Set(runningRows.map((r) => r.cycle.seedName));
+    const activeCropTypes = cropTypes.size;
+
+    // Total bad trays
+    const totalBadTrays = badTrayChecks.reduce(
+      (sum, c) => sum + c.fullTrays + Math.ceil(c.halfTrays * 0.5),
+      0,
+    );
+    const badTraysCount = badTrayChecks.filter((c) => {
+      const d = new Date();
+      d.setDate(d.getDate() - 7);
+      return c.createdAt >= d;
+    }).length;
+
+    // Sensor status
+    let sensorStatus = {
+      sensorsOnline: 4,
+      sensorsTotal: 4,
+      acidityPh: 6.5,
+      waterLevelPct: 78,
+      tempCelsius: 22.5,
+      humidityPct: 65,
+    };
+    const sensorRows = await db.select().from(sensorStatusTable).limit(1);
+    if (sensorRows.length > 0) {
+      const s = sensorRows[0];
+      sensorStatus = {
+        sensorsOnline: s.sensorsOnline,
+        sensorsTotal: s.sensorsTotal,
+        acidityPh: Number(s.acidityPh),
+        waterLevelPct: Number(s.waterLevelPct),
+        tempCelsius: Number(s.tempCelsius),
+        humidityPct: Number(s.humidityPct),
+      };
+    }
+
+    // Current alerts count
+    const currentAlerts = await db
+      .select({ id: alertsTable.id, severity: alertsTable.severity })
+      .from(alertsTable)
+      .where(eq(alertsTable.status, "current"));
+
     return res.json({
       channelUtilization: runningRows.length / TOTAL_CHANNELS,
       totalRunningCycles: runningRows.length,
       totalChannels: TOTAL_CHANNELS,
       totalYieldThisWeek,
       totalYieldThisMonth,
+      activeSeedLots,
+      activeSeedLotDetails: activeSeedLotsRows.map((s) => ({
+        id: s.id,
+        seedName: s.seedName,
+        qrCode: s.qrCode,
+      })),
+      badTraysCount,
+      activeCropTypes,
+      totalBadTrays,
       yieldByDay,
       yieldByWeek,
       seedingByDay,
       seedingByWeek,
       badTrayByDay,
       badTrayByWeek,
+      sensorStatus,
+      currentAlertsCount: currentAlerts.length,
+      criticalAlertsCount: currentAlerts.filter((a) => a.severity === "critical").length,
       actionRequired: actionRequired.sort((a, b) => b.daysOverdue - a.daysOverdue),
     });
   } catch (err) {
-    console.error(err);
+    req.log.error(err);
     return res.status(500).json({ error: "Failed to fetch dashboard" });
   }
 });

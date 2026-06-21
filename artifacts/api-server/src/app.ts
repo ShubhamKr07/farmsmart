@@ -5,6 +5,12 @@ import pinoHttp from "pino-http";
 import { clerkMiddleware, getAuth } from "@clerk/express";
 import router from "./routes";
 import healthRouter from "./routes/health";
+import dashboardRouter from "./routes/dashboard";
+import alertsRouter from "./routes/alerts";
+import inventoryRouter from "./routes/inventory";
+import shipmentsRouter from "./routes/shipments";
+import badTraysRouter from "./routes/badTrays";
+import cyclesRouter from "./routes/cycles";
 import { logger } from "./lib/logger";
 import {
   CLERK_PROXY_PATH,
@@ -50,6 +56,16 @@ function requireSignedIn(req: Request, res: Response, next: NextFunction) {
   next();
 }
 
+// Public admin routes (no auth required)
+app.use("/api", dashboardRouter);
+app.use("/api", alertsRouter);
+app.use("/api", inventoryRouter);
+app.use("/api", shipmentsRouter);
+app.use("/api", badTraysRouter);
+// Cycles: GET routes are public for admin dashboard; write routes enforce auth internally
+app.use("/api", cyclesRouter);
+
+// Health + authenticated routes
 app.use("/api", healthRouter);
 app.use("/api", requireSignedIn, router);
 

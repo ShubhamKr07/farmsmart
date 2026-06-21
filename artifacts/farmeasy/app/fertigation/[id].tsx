@@ -81,7 +81,21 @@ export default function FertigationWizard() {
       return;
     }
     try {
-      await moveFertigation({ id: cycleId, data: { seedLotQrCode: scannedQr } });
+      await moveFertigation({
+        id: cycleId,
+        data: {
+          seedLotQrCode: scannedQr,
+          ...(rackReadings
+            ? {
+                humidity: rackReadings.humidity,
+                temperature: rackReadings.temperature,
+                ph: rackReadings.ph,
+                waterLevel: rackReadings.waterLevel,
+                nutrientMix: rackReadings.nutrientMix,
+              }
+            : {}),
+        },
+      });
       queryClient.invalidateQueries({ queryKey: getListCyclesQueryKey({ status: "ongoing" }) });
       queryClient.invalidateQueries({ queryKey: getGetDashboardQueryKey() });
       queryClient.invalidateQueries({ queryKey: getGetCycleQueryKey(cycleId) });

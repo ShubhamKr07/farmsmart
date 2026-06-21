@@ -113,6 +113,15 @@ export default function SeedingWizard() {
           growthProfileId: form.growthProfileId!,
           seedingDate: form.seedingDate,
           trayPosition: form.trayPosition,
+          ...(rackReadings
+            ? {
+                humidity: rackReadings.humidity,
+                temperature: rackReadings.temperature,
+                ph: rackReadings.ph,
+                waterLevel: rackReadings.waterLevel,
+                nutrientMix: rackReadings.nutrientMix,
+              }
+            : {}),
         },
       });
       queryClient.invalidateQueries({ queryKey: getListCyclesQueryKey({ status: "ongoing" }) });

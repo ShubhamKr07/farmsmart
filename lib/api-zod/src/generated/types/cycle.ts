@@ -21,14 +21,23 @@ export interface Cycle {
   fertigationDays: number;
   seedingDate: string;
   status: CycleStatus;
+  /** @nullable */
   trayPosition?: string | null;
+  /** @nullable */
   germinationStartedAt?: Date | null;
+  /** @nullable */
   fertigationStartedAt?: Date | null;
+  /** @nullable */
   harvestStartedAt?: Date | null;
+  /** @nullable */
   harvestedQty?: number | null;
+  /** @nullable */
   closedAt?: Date | null;
+  /** @nullable */
   createdBy?: string | null;
   createdAt: Date;
+  /** @nullable */
   daysOverdueFertigation?: number | null;
+  /** @nullable */
   daysOverdueHarvest?: number | null;
 }

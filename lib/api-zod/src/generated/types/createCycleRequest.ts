@@ -16,4 +16,9 @@ export interface CreateCycleRequest {
   growthProfileId: number;
   seedingDate: string;
   trayPosition: string;
+  humidity?: number;
+  temperature?: number;
+  ph?: number;
+  waterLevel?: number;
+  nutrientMix?: string;
 }

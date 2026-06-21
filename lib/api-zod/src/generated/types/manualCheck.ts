@@ -12,9 +12,12 @@ export interface ManualCheck {
   fullTrays: number;
   halfTrays: number;
   isBadTrays: boolean;
+  /** @nullable */
   issue?: string | null;
+  /** @nullable */
   notes?: string | null;
   photoUrls: string[];
+  /** @nullable */
   createdBy?: string | null;
   createdAt: Date;
 }

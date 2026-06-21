@@ -21,15 +21,25 @@ export interface SeedLot {
   id: number;
   qrCode: string;
   seedName: string;
+  /** @nullable */
   supplier?: string | null;
+  /** @nullable */
   productLink?: string | null;
+  /** @nullable */
   itemNumber?: string | null;
+  /** @nullable */
   vendorShort?: string | null;
+  /** @nullable */
   gpcCode?: string | null;
+  /** @nullable */
   type?: string | null;
+  /** @nullable */
   success?: string | null;
+  /** @nullable */
   growTime?: string | null;
+  /** @nullable */
   usedIn?: string | null;
+  /** @nullable */
   currentlyGrown?: boolean | null;
 }
 
@@ -39,9 +49,12 @@ export interface ManualCheck {
   fullTrays: number;
   halfTrays: number;
   isBadTrays: boolean;
+  /** @nullable */
   issue?: string | null;
+  /** @nullable */
   notes?: string | null;
   photoUrls: string[];
+  /** @nullable */
   createdBy?: string | null;
   createdAt: string;
 }
@@ -70,15 +83,24 @@ export interface Cycle {
   fertigationDays: number;
   seedingDate: string;
   status: CycleStatus;
+  /** @nullable */
   trayPosition?: string | null;
+  /** @nullable */
   germinationStartedAt?: string | null;
+  /** @nullable */
   fertigationStartedAt?: string | null;
+  /** @nullable */
   harvestStartedAt?: string | null;
+  /** @nullable */
   harvestedQty?: number | null;
+  /** @nullable */
   closedAt?: string | null;
+  /** @nullable */
   createdBy?: string | null;
   createdAt: string;
+  /** @nullable */
   daysOverdueFertigation?: number | null;
+  /** @nullable */
   daysOverdueHarvest?: number | null;
 }
 
@@ -96,10 +118,20 @@ export interface CreateCycleRequest {
   growthProfileId: number;
   seedingDate: string;
   trayPosition: string;
+  humidity?: number;
+  temperature?: number;
+  ph?: number;
+  waterLevel?: number;
+  nutrientMix?: string;
 }
 
 export interface MoveFertigationRequest {
   seedLotQrCode: string;
+  humidity?: number;
+  temperature?: number;
+  ph?: number;
+  waterLevel?: number;
+  nutrientMix?: string;
 }
 
 export interface CompleteHarvestRequest {
@@ -113,9 +145,26 @@ export interface CreateManualCheckRequest {
   fullTrays: number;
   halfTrays: number;
   isBadTrays: boolean;
+  /** @nullable */
   issue?: string | null;
+  /** @nullable */
   notes?: string | null;
   photoUrls: string[];
+}
+
+export interface SensorStatus {
+  sensorsOnline: number;
+  sensorsTotal: number;
+  acidityPh: number;
+  waterLevelPct: number;
+  tempCelsius: number;
+  humidityPct: number;
+  updatedAt: string;
+}
+
+export interface ChartDataPoint {
+  label: string;
+  value: number;
 }
 
 export type ActionRequiredItemType = typeof ActionRequiredItemType[keyof typeof ActionRequiredItemType];
@@ -140,7 +189,212 @@ export interface DashboardStats {
   totalChannels: number;
   totalYieldThisWeek: number;
   totalYieldThisMonth: number;
+  activeSeedLots: number;
+  badTraysCount: number;
+  activeCropTypes: string[];
+  totalBadTrays: number;
+  yieldByDay?: ChartDataPoint[];
+  yieldByWeek?: ChartDataPoint[];
+  seedingByDay?: ChartDataPoint[];
+  seedingByWeek?: ChartDataPoint[];
+  badTrayByDay?: ChartDataPoint[];
+  badTrayByWeek?: ChartDataPoint[];
   actionRequired: ActionRequiredItem[];
+  sensorStatus?: SensorStatus;
+}
+
+export type AlertSeverity = typeof AlertSeverity[keyof typeof AlertSeverity];
+
+
+export const AlertSeverity = {
+  critical: 'critical',
+  warning: 'warning',
+} as const;
+
+export type AlertStatus = typeof AlertStatus[keyof typeof AlertStatus];
+
+
+export const AlertStatus = {
+  current: 'current',
+  resolved: 'resolved',
+  dismissed: 'dismissed',
+} as const;
+
+export interface Alert {
+  id: number;
+  title: string;
+  /** @nullable */
+  description?: string | null;
+  /** @nullable */
+  location?: string | null;
+  severity: AlertSeverity;
+  status: AlertStatus;
+  /** @nullable */
+  actionType?: string | null;
+  /** @nullable */
+  actionNotes?: string | null;
+  createdAt: string;
+  /** @nullable */
+  resolvedAt?: string | null;
+}
+
+export type AlertInputSeverity = typeof AlertInputSeverity[keyof typeof AlertInputSeverity];
+
+
+export const AlertInputSeverity = {
+  critical: 'critical',
+  warning: 'warning',
+} as const;
+
+export interface AlertInput {
+  title: string;
+  description?: string;
+  location?: string;
+  severity: AlertInputSeverity;
+}
+
+export type AlertStatusUpdateStatus = typeof AlertStatusUpdateStatus[keyof typeof AlertStatusUpdateStatus];
+
+
+export const AlertStatusUpdateStatus = {
+  resolved: 'resolved',
+  dismissed: 'dismissed',
+} as const;
+
+export interface AlertStatusUpdate {
+  status: AlertStatusUpdateStatus;
+}
+
+export interface AlertActionInput {
+  actionType: string;
+  notes?: string;
+}
+
+export interface InventoryItem {
+  id: number;
+  name: string;
+  /** @nullable */
+  brand?: string | null;
+  /** @nullable */
+  category?: string | null;
+  /** @nullable */
+  qrCode?: string | null;
+  currentQty: number;
+  maxQty: number;
+  unit: string;
+  /** @nullable */
+  arrivalDate?: string | null;
+  createdAt: string;
+}
+
+export interface InventoryItemInput {
+  name: string;
+  brand?: string;
+  category?: string;
+  qrCode?: string;
+  currentQty: number;
+  maxQty: number;
+  unit?: string;
+  arrivalDate?: string;
+}
+
+export interface InventoryItemUpdate {
+  name?: string;
+  brand?: string;
+  category?: string;
+  currentQty?: number;
+  maxQty?: number;
+  unit?: string;
+}
+
+export type ShipmentStatus = typeof ShipmentStatus[keyof typeof ShipmentStatus];
+
+
+export const ShipmentStatus = {
+  in_progress: 'in_progress',
+  complete: 'complete',
+  pending: 'pending',
+} as const;
+
+export interface Shipment {
+  id: number;
+  shortId: string;
+  client: string;
+  /** @nullable */
+  productDescription?: string | null;
+  /** @nullable */
+  yieldSoldKg?: number | null;
+  /** @nullable */
+  revenueUsd?: number | null;
+  /** @nullable */
+  shippingDate?: string | null;
+  status: ShipmentStatus;
+  createdAt: string;
+}
+
+export type ShipmentInputStatus = typeof ShipmentInputStatus[keyof typeof ShipmentInputStatus];
+
+
+export const ShipmentInputStatus = {
+  in_progress: 'in_progress',
+  complete: 'complete',
+  pending: 'pending',
+} as const;
+
+export interface ShipmentInput {
+  client: string;
+  productDescription?: string;
+  yieldSoldKg?: number;
+  revenueUsd?: number;
+  shippingDate?: string;
+  status?: ShipmentInputStatus;
+}
+
+export type ShipmentStatusUpdateStatus = typeof ShipmentStatusUpdateStatus[keyof typeof ShipmentStatusUpdateStatus];
+
+
+export const ShipmentStatusUpdateStatus = {
+  in_progress: 'in_progress',
+  complete: 'complete',
+  pending: 'pending',
+} as const;
+
+export interface ShipmentStatusUpdate {
+  status: ShipmentStatusUpdateStatus;
+}
+
+export interface IssueAggregate {
+  issue: string;
+  frequency: number;
+  affectedTrays: number;
+  estimatedLoss: number;
+}
+
+export interface BadTrayEntry {
+  id: number;
+  trayId: string;
+  /** @nullable */
+  zone?: string | null;
+  cropType: string;
+  /** @nullable */
+  issue?: string | null;
+  entryDate: string;
+  severity: string;
+}
+
+export interface BadTraysAnalysis {
+  totalBadTrays: number;
+  estimatedLoss: number;
+  issues: IssueAggregate[];
+  manualEntries: BadTrayEntry[];
+}
+
+export interface BadTrayEntryInput {
+  cycleId: number;
+  fullTrays?: number;
+  halfTrays?: number;
+  issue: string;
+  notes?: string;
 }
 
 export interface ErrorResponse {
@@ -161,5 +415,33 @@ export type ListCyclesStatus = typeof ListCyclesStatus[keyof typeof ListCyclesSt
 export const ListCyclesStatus = {
   ongoing: 'ongoing',
   history: 'history',
+} as const;
+
+export type ListAlertsParams = {
+status?: ListAlertsStatus;
+limit?: number;
+};
+
+export type ListAlertsStatus = typeof ListAlertsStatus[keyof typeof ListAlertsStatus];
+
+
+export const ListAlertsStatus = {
+  current: 'current',
+  resolved: 'resolved',
+  dismissed: 'dismissed',
+} as const;
+
+export type ListShipmentsParams = {
+status?: ListShipmentsStatus;
+client?: string;
+};
+
+export type ListShipmentsStatus = typeof ListShipmentsStatus[keyof typeof ListShipmentsStatus];
+
+
+export const ListShipmentsStatus = {
+  in_progress: 'in_progress',
+  complete: 'complete',
+  pending: 'pending',
 } as const;
 

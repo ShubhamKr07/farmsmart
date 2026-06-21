@@ -18,6 +18,14 @@ tags:
     description: Growth profile master data
   - name: seed-lots
     description: Seed lot lookup
+  - name: alerts
+    description: Alert management
+  - name: inventory
+    description: Inventory management
+  - name: shipments
+    description: Shipment tracking
+  - name: bad-trays
+    description: Bad tray analysis
 paths:
   /healthz:
     get:
@@ -255,6 +263,278 @@ paths:
               schema:
                 $ref: "#/components/schemas/ManualCheck"
 
+  /alerts:
+    get:
+      operationId: listAlerts
+      tags: [alerts]
+      summary: List alerts by status
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [current, resolved, dismissed]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of alerts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Alert"
+    post:
+      operationId: createAlert
+      tags: [alerts]
+      summary: Create a new alert
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AlertInput"
+      responses:
+        "201":
+          description: Alert created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Alert"
+
+  /alerts/{id}:
+    patch:
+      operationId: updateAlertStatus
+      tags: [alerts]
+      summary: Resolve or dismiss an alert
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AlertStatusUpdate"
+      responses:
+        "200":
+          description: Alert updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Alert"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /alerts/{id}/action:
+    post:
+      operationId: takeAlertAction
+      tags: [alerts]
+      summary: Take action on an alert (resolves it)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AlertActionInput"
+      responses:
+        "200":
+          description: Alert resolved with action
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Alert"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /inventory:
+    get:
+      operationId: listInventory
+      tags: [inventory]
+      summary: List inventory items
+      responses:
+        "200":
+          description: List of inventory items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/InventoryItem"
+    post:
+      operationId: createInventoryItem
+      tags: [inventory]
+      summary: Create an inventory item
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InventoryItemInput"
+      responses:
+        "201":
+          description: Item created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InventoryItem"
+
+  /inventory/{id}:
+    patch:
+      operationId: updateInventoryItem
+      tags: [inventory]
+      summary: Update an inventory item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InventoryItemUpdate"
+      responses:
+        "200":
+          description: Item updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InventoryItem"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /shipments:
+    get:
+      operationId: listShipments
+      tags: [shipments]
+      summary: List shipments
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [in_progress, complete, pending]
+        - name: client
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of shipments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Shipment"
+    post:
+      operationId: createShipment
+      tags: [shipments]
+      summary: Create a shipment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ShipmentInput"
+      responses:
+        "201":
+          description: Shipment created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Shipment"
+
+  /shipments/{id}/status:
+    patch:
+      operationId: updateShipmentStatus
+      tags: [shipments]
+      summary: Update shipment status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ShipmentStatusUpdate"
+      responses:
+        "200":
+          description: Status updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Shipment"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /bad-trays:
+    get:
+      operationId: getBadTraysAnalysis
+      tags: [bad-trays]
+      summary: Get bad trays analysis with aggregated issues and manual entries
+      responses:
+        "200":
+          description: Bad trays analysis
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BadTraysAnalysis"
+
+  /bad-trays/manual-checks:
+    post:
+      operationId: createBadTrayEntry
+      tags: [bad-trays]
+      summary: Create a bad tray manual check entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BadTrayEntryInput"
+      responses:
+        "201":
+          description: Entry created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ManualCheck"
+
 components:
   schemas:
     HealthStatus:
@@ -289,35 +569,25 @@ components:
         seedName:
           type: string
         supplier:
-          type: string
-          nullable: true
+          type: ["string", "null"]
         productLink:
-          type: string
-          nullable: true
+          type: ["string", "null"]
         itemNumber:
-          type: string
-          nullable: true
+          type: ["string", "null"]
         vendorShort:
-          type: string
-          nullable: true
+          type: ["string", "null"]
         gpcCode:
-          type: string
-          nullable: true
+          type: ["string", "null"]
         type:
-          type: string
-          nullable: true
+          type: ["string", "null"]
         success:
-          type: string
-          nullable: true
+          type: ["string", "null"]
         growTime:
-          type: string
-          nullable: true
+          type: ["string", "null"]
         usedIn:
-          type: string
-          nullable: true
+          type: ["string", "null"]
         currentlyGrown:
-          type: boolean
-          nullable: true
+          type: ["boolean", "null"]
       required: [id, qrCode, seedName]
 
     ManualCheck:
@@ -334,18 +604,15 @@ components:
         isBadTrays:
           type: boolean
         issue:
-          type: string
-          nullable: true
+          type: ["string", "null"]
         notes:
-          type: string
-          nullable: true
+          type: ["string", "null"]
         photoUrls:
           type: array
           items:
             type: string
         createdBy:
-          type: string
-          nullable: true
+          type: ["string", "null"]
         createdAt:
           type: string
           format: date-time
@@ -384,39 +651,30 @@ components:
           type: string
           enum: [germination, fertigation, harvest, completed]
         trayPosition:
-          type: string
-          nullable: true
+          type: ["string", "null"]
         germinationStartedAt:
-          type: string
+          type: ["string", "null"]
           format: date-time
-          nullable: true
         fertigationStartedAt:
-          type: string
+          type: ["string", "null"]
           format: date-time
-          nullable: true
         harvestStartedAt:
-          type: string
+          type: ["string", "null"]
           format: date-time
-          nullable: true
         harvestedQty:
-          type: number
-          nullable: true
+          type: ["number", "null"]
         closedAt:
-          type: string
+          type: ["string", "null"]
           format: date-time
-          nullable: true
         createdBy:
-          type: string
-          nullable: true
+          type: ["string", "null"]
         createdAt:
           type: string
           format: date-time
         daysOverdueFertigation:
-          type: integer
-          nullable: true
+          type: ["integer", "null"]
         daysOverdueHarvest:
-          type: integer
-          nullable: true
+          type: ["integer", "null"]
       required:
         - id
         - shortId
@@ -466,6 +724,16 @@ components:
           type: string
         trayPosition:
           type: string
+        humidity:
+          type: number
+        temperature:
+          type: number
+        ph:
+          type: number
+        waterLevel:
+          type: number
+        nutrientMix:
+          type: string
       required:
         - seedLotQrCodes
         - seedName
@@ -480,6 +748,16 @@ components:
       type: object
       properties:
         seedLotQrCode:
+          type: string
+        humidity:
+          type: number
+        temperature:
+          type: number
+        ph:
+          type: number
+        waterLevel:
+          type: number
+        nutrientMix:
           type: string
       required: [seedLotQrCode]
 
@@ -506,16 +784,34 @@ components:
         isBadTrays:
           type: boolean
         issue:
-          type: string
-          nullable: true
+          type: ["string", "null"]
         notes:
-          type: string
-          nullable: true
+          type: ["string", "null"]
         photoUrls:
           type: array
           items:
             type: string
       required: [fullTrays, halfTrays, isBadTrays, photoUrls]
+
+    SensorStatus:
+      type: object
+      properties:
+        sensorsOnline:
+          type: integer
+        sensorsTotal:
+          type: integer
+        acidityPh:
+          type: number
+        waterLevelPct:
+          type: number
+        tempCelsius:
+          type: number
+        humidityPct:
+          type: number
+        updatedAt:
+          type: string
+          format: date-time
+      required: [sensorsOnline, sensorsTotal, acidityPh, waterLevelPct, tempCelsius, humidityPct, updatedAt]
 
     DashboardStats:
       type: object
@@ -530,17 +826,66 @@ components:
           type: number
         totalYieldThisMonth:
           type: number
+        activeSeedLots:
+          type: integer
+        badTraysCount:
+          type: integer
+        activeCropTypes:
+          type: array
+          items:
+            type: string
+        totalBadTrays:
+          type: integer
+        yieldByDay:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChartDataPoint"
+        yieldByWeek:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChartDataPoint"
+        seedingByDay:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChartDataPoint"
+        seedingByWeek:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChartDataPoint"
+        badTrayByDay:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChartDataPoint"
+        badTrayByWeek:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChartDataPoint"
         actionRequired:
           type: array
           items:
             $ref: "#/components/schemas/ActionRequiredItem"
+        sensorStatus:
+          $ref: "#/components/schemas/SensorStatus"
       required:
         - channelUtilization
         - totalRunningCycles
         - totalChannels
         - totalYieldThisWeek
         - totalYieldThisMonth
+        - activeSeedLots
+        - badTraysCount
+        - activeCropTypes
+        - totalBadTrays
         - actionRequired
+
+    ChartDataPoint:
+      type: object
+      properties:
+        label:
+          type: string
+        value:
+          type: number
+      required: [label, value]
 
     ActionRequiredItem:
       type: object
@@ -557,6 +902,245 @@ components:
         daysOverdue:
           type: integer
       required: [cycleId, cycleShortId, seedName, type, daysOverdue]
+
+    Alert:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: ["string", "null"]
+        location:
+          type: ["string", "null"]
+        severity:
+          type: string
+          enum: [critical, warning]
+        status:
+          type: string
+          enum: [current, resolved, dismissed]
+        actionType:
+          type: ["string", "null"]
+        actionNotes:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+        resolvedAt:
+          type: ["string", "null"]
+          format: date-time
+      required: [id, title, severity, status, createdAt]
+
+    AlertInput:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        location:
+          type: string
+        severity:
+          type: string
+          enum: [critical, warning]
+      required: [title, severity]
+
+    AlertStatusUpdate:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [resolved, dismissed]
+      required: [status]
+
+    AlertActionInput:
+      type: object
+      properties:
+        actionType:
+          type: string
+        notes:
+          type: string
+      required: [actionType]
+
+    InventoryItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        brand:
+          type: ["string", "null"]
+        category:
+          type: ["string", "null"]
+        qrCode:
+          type: ["string", "null"]
+        currentQty:
+          type: number
+        maxQty:
+          type: number
+        unit:
+          type: string
+        arrivalDate:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, name, currentQty, maxQty, unit, createdAt]
+
+    InventoryItemInput:
+      type: object
+      properties:
+        name:
+          type: string
+        brand:
+          type: string
+        category:
+          type: string
+        qrCode:
+          type: string
+        currentQty:
+          type: number
+        maxQty:
+          type: number
+        unit:
+          type: string
+        arrivalDate:
+          type: string
+      required: [name, currentQty, maxQty]
+
+    InventoryItemUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        brand:
+          type: string
+        category:
+          type: string
+        currentQty:
+          type: number
+        maxQty:
+          type: number
+        unit:
+          type: string
+
+    Shipment:
+      type: object
+      properties:
+        id:
+          type: integer
+        shortId:
+          type: string
+        client:
+          type: string
+        productDescription:
+          type: ["string", "null"]
+        yieldSoldKg:
+          type: ["number", "null"]
+        revenueUsd:
+          type: ["number", "null"]
+        shippingDate:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [in_progress, complete, pending]
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, shortId, client, status, createdAt]
+
+    ShipmentInput:
+      type: object
+      properties:
+        client:
+          type: string
+        productDescription:
+          type: string
+        yieldSoldKg:
+          type: number
+        revenueUsd:
+          type: number
+        shippingDate:
+          type: string
+        status:
+          type: string
+          enum: [in_progress, complete, pending]
+      required: [client]
+
+    ShipmentStatusUpdate:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [in_progress, complete, pending]
+      required: [status]
+
+    BadTraysAnalysis:
+      type: object
+      properties:
+        totalBadTrays:
+          type: integer
+        estimatedLoss:
+          type: number
+        issues:
+          type: array
+          items:
+            $ref: "#/components/schemas/IssueAggregate"
+        manualEntries:
+          type: array
+          items:
+            $ref: "#/components/schemas/BadTrayEntry"
+      required: [totalBadTrays, estimatedLoss, issues, manualEntries]
+
+    IssueAggregate:
+      type: object
+      properties:
+        issue:
+          type: string
+        frequency:
+          type: number
+        affectedTrays:
+          type: integer
+        estimatedLoss:
+          type: number
+      required: [issue, frequency, affectedTrays, estimatedLoss]
+
+    BadTrayEntry:
+      type: object
+      properties:
+        id:
+          type: integer
+        trayId:
+          type: string
+        zone:
+          type: ["string", "null"]
+        cropType:
+          type: string
+        issue:
+          type: ["string", "null"]
+        entryDate:
+          type: string
+          format: date-time
+        severity:
+          type: string
+      required: [id, trayId, cropType, entryDate, severity]
+
+    BadTrayEntryInput:
+      type: object
+      properties:
+        cycleId:
+          type: integer
+        fullTrays:
+          type: integer
+        halfTrays:
+          type: integer
+        issue:
+          type: string
+        notes:
+          type: string
+      required: [cycleId, issue]
 
     ErrorResponse:
       type: object

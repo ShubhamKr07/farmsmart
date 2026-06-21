@@ -10,7 +10,9 @@ export interface CreateManualCheckRequest {
   fullTrays: number;
   halfTrays: number;
   isBadTrays: boolean;
+  /** @nullable */
   issue?: string | null;
+  /** @nullable */
   notes?: string | null;
   photoUrls: string[];
 }

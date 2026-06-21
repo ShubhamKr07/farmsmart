@@ -1,4 +1,5 @@
-import { Router } from "express";
+import { Router, type Request, type Response, type NextFunction } from "express";
+import { getAuth } from "@clerk/express";
 import multer from "multer";
 import path from "node:path";
 import fs from "node:fs";
@@ -27,9 +28,18 @@ const upload = multer({
   },
 });
 
+function enforceAuth(req: Request, res: Response, next: NextFunction) {
+  const { userId } = getAuth(req);
+  if (!userId) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  next();
+}
+
 const router = Router();
 
-router.post("/media/upload", upload.single("file"), (req, res) => {
+router.post("/media/upload", enforceAuth, upload.single("file"), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: "No file provided" });
   }

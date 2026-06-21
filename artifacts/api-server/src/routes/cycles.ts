@@ -7,6 +7,7 @@ import {
   cyclesTable,
   growthProfilesTable,
   manualChecksTable,
+  sensorStatusTable,
 } from "@workspace/db";
 import { calcDaysOverdue, generateShortId, seedingWeight } from "../lib/utils";
 
@@ -26,6 +27,11 @@ const CreateCycleSchema = z
     growthProfileId: z.number().int().positive(),
     seedingDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Must be YYYY-MM-DD"),
     trayPosition: z.string().max(200).optional(),
+    humidity: z.number().optional(),
+    temperature: z.number().optional(),
+    ph: z.number().optional(),
+    waterLevel: z.number().optional(),
+    nutrientMix: z.string().optional(),
   })
   .refine((d) => d.fullTrays > 0 || d.halfTrays > 0, {
     message: "At least one tray (full or half) is required",
@@ -33,6 +39,11 @@ const CreateCycleSchema = z
 
 const FertigationSchema = z.object({
   seedLotQrCode: z.string().optional(),
+  humidity: z.number().optional(),
+  temperature: z.number().optional(),
+  ph: z.number().optional(),
+  waterLevel: z.number().optional(),
+  nutrientMix: z.string().optional(),
 });
 
 const StartHarvestSchema = z.object({
@@ -242,6 +253,29 @@ router.post("/cycles", enforceAuth, async (req, res) => {
       })
       .returning();
 
+    const hasSensorData =
+      body.humidity !== undefined ||
+      body.temperature !== undefined ||
+      body.ph !== undefined ||
+      body.waterLevel !== undefined ||
+      body.nutrientMix !== undefined;
+
+    if (hasSensorData) {
+      const sensorUpdate: Record<string, unknown> = { updatedAt: new Date() };
+      if (body.humidity !== undefined) sensorUpdate.humidityPct = body.humidity;
+      if (body.temperature !== undefined) sensorUpdate.tempCelsius = body.temperature;
+      if (body.ph !== undefined) sensorUpdate.acidityPh = body.ph;
+      if (body.waterLevel !== undefined) sensorUpdate.waterLevelPct = body.waterLevel;
+      if (body.nutrientMix !== undefined) sensorUpdate.nutrientMix = body.nutrientMix;
+
+      const [existing] = await db.select({ id: sensorStatusTable.id }).from(sensorStatusTable).limit(1);
+      if (existing) {
+        await db.update(sensorStatusTable).set(sensorUpdate).where(eq(sensorStatusTable.id, existing.id));
+      } else {
+        await db.insert(sensorStatusTable).values(sensorUpdate as typeof sensorStatusTable.$inferInsert);
+      }
+    }
+
     return res.status(201).json(formatCycle(cycle, profile));
   } catch (err) {
     console.error(err);
@@ -334,6 +368,30 @@ router.post("/cycles/:id/fertigation", enforceAuth, async (req, res) => {
       .set({ status: "fertigation", fertigationStartedAt: new Date() })
       .where(eq(cyclesTable.id, id))
       .returning();
+
+    const hasSensorData =
+      body.humidity !== undefined ||
+      body.temperature !== undefined ||
+      body.ph !== undefined ||
+      body.waterLevel !== undefined ||
+      body.nutrientMix !== undefined;
+
+    if (hasSensorData) {
+      const sensorUpdate: Record<string, unknown> = { updatedAt: new Date() };
+      if (body.humidity !== undefined) sensorUpdate.humidityPct = body.humidity;
+      if (body.temperature !== undefined) sensorUpdate.tempCelsius = body.temperature;
+      if (body.ph !== undefined) sensorUpdate.acidityPh = body.ph;
+      if (body.waterLevel !== undefined) sensorUpdate.waterLevelPct = body.waterLevel;
+      if (body.nutrientMix !== undefined) sensorUpdate.nutrientMix = body.nutrientMix;
+
+      const [existing] = await db.select({ id: sensorStatusTable.id }).from(sensorStatusTable).limit(1);
+      if (existing) {
+        await db.update(sensorStatusTable).set(sensorUpdate).where(eq(sensorStatusTable.id, existing.id));
+      } else {
+        await db.insert(sensorStatusTable).values(sensorUpdate as typeof sensorStatusTable.$inferInsert);
+      }
+    }
+
 
     return res.json(formatCycle(updated, profile));
   } catch (err) {
@@ -499,7 +557,7 @@ router.post("/cycles/:id/manual-checks", enforceAuth, async (req, res) => {
         isBadTrays: body.isBadTrays,
         issue: body.issue ?? null,
         notes: body.notes ?? null,
-        photoUrls: body.photoUrls,
+        photoUrls: body.photoUrls ?? [],
         createdBy: auth?.userId ?? null,
       })
       .returning();
