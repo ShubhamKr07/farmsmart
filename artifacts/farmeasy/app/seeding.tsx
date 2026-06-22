@@ -180,6 +180,7 @@ export default function SeedingWizard() {
             <QRScanner
               onScanned={handleLotScanned}
               hint="Point camera at seed lot QR code"
+              multiScan
             />
           </View>
           {form.seedLotQrCodes.length > 0 && (

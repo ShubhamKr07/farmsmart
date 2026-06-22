@@ -14,6 +14,7 @@ interface Props {
   onScanned: (value: string) => void;
   hint?: string;
   allowManual?: boolean;
+  multiScan?: boolean;
 }
 
 let CameraModule: any = null;
@@ -27,9 +28,10 @@ try {
   // expo-camera not available
 }
 
-function NativeScanner({ onScanned, hint }: Props) {
+function NativeScanner({ onScanned, hint, multiScan }: Props) {
   const [permission, requestPermission] = useCameraPermissionsHook();
   const [scanned, setScanned] = useState(false);
+  const [flashLabel, setFlashLabel] = useState<string | null>(null);
   const [showManual, setShowManual] = useState(false);
   const [manual, setManual] = useState("");
 
@@ -114,14 +116,28 @@ function NativeScanner({ onScanned, hint }: Props) {
             : ({ data }: { data: string }) => {
                 setScanned(true);
                 onScanned(data);
+                if (multiScan) {
+                  const short = data.length > 20 ? data.slice(0, 20) + "…" : data;
+                  setFlashLabel(short);
+                  setTimeout(() => {
+                    setScanned(false);
+                    setFlashLabel(null);
+                  }, 1500);
+                }
               }
         }
       />
       <View style={s.overlay}>
         <View style={s.reticle} />
-        {hint && <Text style={s.scanHint}>{hint}</Text>}
+        {flashLabel ? (
+          <View style={s.flashBadge}>
+            <Text style={s.flashBadgeText}>✓ Scanned</Text>
+          </View>
+        ) : hint ? (
+          <Text style={s.scanHint}>{hint}</Text>
+        ) : null}
       </View>
-      {scanned && (
+      {scanned && !multiScan && (
         <Pressable style={s.rescanBtn} onPress={() => setScanned(false)}>
           <Text style={s.btnText}>Scan again</Text>
         </Pressable>
@@ -162,7 +178,7 @@ export default function QRScanner(props: Props) {
   if (Platform.OS === "web" || !CameraModule) {
     return <WebScanner {...props} />;
   }
-  return <NativeScanner {...props} />;
+  return <NativeScanner {...props} multiScan={props.multiScan} />;
 }
 
 const s = StyleSheet.create({
@@ -190,6 +206,18 @@ const s = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
+  },
+  flashBadge: {
+    marginTop: 12,
+    backgroundColor: colors.light.primary,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  flashBadgeText: {
+    color: "#fff",
+    fontSize: 14,
+    fontFamily: "Inter_600SemiBold",
   },
   rescanBtn: {
     position: "absolute",
