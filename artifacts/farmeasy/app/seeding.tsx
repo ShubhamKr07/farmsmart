@@ -19,9 +19,11 @@ import {
   useCreateCycle,
   useListGrowthProfiles,
   useLookupSeedLot,
+  getLookupSeedLotQueryOptions,
   getListCyclesQueryKey,
   getGetDashboardQueryKey,
 } from "@workspace/api-client-react";
+import { useQueries } from "@tanstack/react-query";
 import colors from "@/constants/colors";
 import QRScanner from "@/components/QRScanner";
 import RackReadingsCard from "@/components/RackReadingsCard";
@@ -76,6 +78,12 @@ export default function SeedingWizard() {
     { qrCode: pendingQr },
     { query: { enabled: !!pendingQr, retry: false } },
   );
+
+  const lotDbQueries = useQueries({
+    queries: form.seedLotQrCodes.map((qr) =>
+      getLookupSeedLotQueryOptions({ qrCode: qr }, { query: { retry: false } }),
+    ),
+  });
 
   useEffect(() => {
     if (seedLotData?.seedName) {
@@ -201,42 +209,52 @@ export default function SeedingWizard() {
               multiScan
             />
           </View>
-          {scannedLots.length > 0 && (
+          {form.seedLotQrCodes.length > 0 && (
             <View style={s.lotCards}>
-              {scannedLots.map((meta) => (
-                <View key={meta.qr} style={s.lotCard}>
-                  <View style={s.lotCardHeader}>
-                    <Feather name="check-circle" size={14} color={colors.light.primary} />
-                    <Text style={s.lotCardName} numberOfLines={1}>
-                      {meta.seedName ?? meta.qr}
-                    </Text>
-                    <Pressable
-                      onPress={() => {
-                        setForm((f) => ({ ...f, seedLotQrCodes: f.seedLotQrCodes.filter((q) => q !== meta.qr) }));
-                        setScannedLots((prev) => prev.filter((l) => l.qr !== meta.qr));
-                      }}
-                    >
-                      <Feather name="x" size={15} color={colors.light.mutedForeground} />
-                    </Pressable>
-                  </View>
-                  <View style={s.lotCardMeta}>
-                    {meta.lotId && (
-                      <Text style={s.lotMetaText}>Lot: {meta.lotId}</Text>
-                    )}
-                    {meta.variety && (
-                      <Text style={s.lotMetaText}>Variety: {meta.variety}</Text>
-                    )}
-                    {meta.batchWeight != null && (
-                      <Text style={s.lotMetaText}>
-                        Batch: {meta.batchWeight}{meta.unit ?? "g"}
+              {form.seedLotQrCodes.map((qr, idx) => {
+                const dbResult = lotDbQueries[idx];
+                const db = dbResult?.data;
+                const qrMeta = scannedLots.find((l) => l.qr === qr);
+                const displayName = db?.seedName ?? qrMeta?.seedName ?? qr;
+                return (
+                  <View key={qr} style={s.lotCard}>
+                    <View style={s.lotCardHeader}>
+                      <Feather
+                        name={dbResult?.isLoading ? "loader" : "check-circle"}
+                        size={14}
+                        color={colors.light.primary}
+                      />
+                      <Text style={s.lotCardName} numberOfLines={1}>
+                        {displayName}
                       </Text>
-                    )}
-                    {!meta.lotId && !meta.variety && !meta.batchWeight && (
-                      <Text style={s.lotMetaText} numberOfLines={1}>{meta.qr}</Text>
-                    )}
+                      <Pressable
+                        onPress={() => {
+                          setForm((f) => ({ ...f, seedLotQrCodes: f.seedLotQrCodes.filter((q) => q !== qr) }));
+                          setScannedLots((prev) => prev.filter((l) => l.qr !== qr));
+                        }}
+                      >
+                        <Feather name="x" size={15} color={colors.light.mutedForeground} />
+                      </Pressable>
+                    </View>
+                    <View style={s.lotCardMeta}>
+                      {db?.type && <Text style={s.lotMetaText}>Type: {db.type}</Text>}
+                      {db?.supplier && <Text style={s.lotMetaText}>Supplier: {db.supplier}</Text>}
+                      {db?.vendorShort && <Text style={s.lotMetaText}>Vendor: {db.vendorShort}</Text>}
+                      {db?.itemNumber && <Text style={s.lotMetaText}>Item #: {db.itemNumber}</Text>}
+                      {db?.growTime && <Text style={s.lotMetaText}>Grow Time: {db.growTime}</Text>}
+                      {db?.success && <Text style={s.lotMetaText}>Success: {db.success}</Text>}
+                      {qrMeta?.lotId && <Text style={s.lotMetaText}>Lot ID: {qrMeta.lotId}</Text>}
+                      {qrMeta?.variety && <Text style={s.lotMetaText}>Variety: {qrMeta.variety}</Text>}
+                      {qrMeta?.batchWeight != null && (
+                        <Text style={s.lotMetaText}>Batch: {qrMeta.batchWeight}{qrMeta.unit ?? "g"}</Text>
+                      )}
+                      {!db && !dbResult?.isLoading && !qrMeta?.lotId && !qrMeta?.variety && (
+                        <Text style={s.lotMetaText} numberOfLines={1}>{qr}</Text>
+                      )}
+                    </View>
                   </View>
-                </View>
-              ))}
+                );
+              })}
             </View>
           )}
           <Pressable
@@ -453,32 +471,31 @@ export default function SeedingWizard() {
                 <Row label="Weight/Tray" value={`${form.seedWeightTray} g`} />
                 <Row label="Profile" value={selectedProfile?.name ?? "-"} />
                 <Row label="Seeding Date" value={form.seedingDate} />
-                {scannedLots.length > 0 && (
+                {form.seedLotQrCodes.length > 0 && (
                   <View style={s.summaryLots}>
                     <Text style={s.summaryLotsTitle}>
-                      Seed Lots ({scannedLots.length})
+                      Seed Lots ({form.seedLotQrCodes.length})
                     </Text>
-                    {scannedLots.map((meta) => (
-                      <View key={meta.qr} style={s.summaryLotRow}>
-                        <Feather name="package" size={12} color={colors.light.primary} />
-                        <View style={{ flex: 1 }}>
-                          <Text style={s.summaryLotName}>
-                            {meta.seedName ?? meta.qr}
-                            {meta.variety ? ` · ${meta.variety}` : ""}
-                          </Text>
-                          {(meta.lotId || meta.batchWeight != null) && (
-                            <Text style={s.summaryLotSub}>
-                              {[
-                                meta.lotId && `Lot: ${meta.lotId}`,
-                                meta.batchWeight != null && `${meta.batchWeight}${meta.unit ?? "g"}`,
-                              ]
-                                .filter(Boolean)
-                                .join("  ·  ")}
-                            </Text>
-                          )}
+                    {form.seedLotQrCodes.map((qr, idx) => {
+                      const db = lotDbQueries[idx]?.data;
+                      const qrMeta = scannedLots.find((l) => l.qr === qr);
+                      const name = db?.seedName ?? qrMeta?.seedName ?? qr;
+                      const sub = [
+                        db?.type,
+                        db?.supplier ?? qrMeta?.variety,
+                        db?.growTime && `${db.growTime} grow`,
+                        qrMeta?.batchWeight != null && `${qrMeta.batchWeight}${qrMeta.unit ?? "g"}`,
+                      ].filter(Boolean).join("  ·  ");
+                      return (
+                        <View key={qr} style={s.summaryLotRow}>
+                          <Feather name="package" size={12} color={colors.light.primary} />
+                          <View style={{ flex: 1 }}>
+                            <Text style={s.summaryLotName}>{name}</Text>
+                            {!!sub && <Text style={s.summaryLotSub}>{sub}</Text>}
+                          </View>
                         </View>
-                      </View>
-                    ))}
+                      );
+                    })}
                   </View>
                 )}
               </View>
