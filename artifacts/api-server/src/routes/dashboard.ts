@@ -26,7 +26,7 @@ function enforceAuth(req: Request, res: Response, next: NextFunction) {
   next();
 }
 
-router.get("/dashboard", enforceAuth, async (req: Request, res: Response) => {
+router.get("/dashboard", async (req: Request, res: Response) => {
   try {
     const runningRows = await db
       .select({ cycle: cyclesTable, profile: growthProfilesTable })
