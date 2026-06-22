@@ -401,6 +401,118 @@ export interface ErrorResponse {
   error: string;
 }
 
+export interface TrayItem {
+  id: number;
+  label: string;
+  positionIndex: number;
+}
+
+export interface RackItem {
+  id: number;
+  label: string;
+  positionIndex: number;
+  trays: TrayItem[];
+}
+
+export interface ChannelItem {
+  id: number;
+  label: string;
+  positionIndex: number;
+  /** @nullable */
+  monitoringApiTemp?: string | null;
+  /** @nullable */
+  monitoringApiWaterLevel?: string | null;
+  /** @nullable */
+  monitoringApiPh?: string | null;
+  racks: RackItem[];
+}
+
+export type RoomItemName = typeof RoomItemName[keyof typeof RoomItemName];
+
+
+export const RoomItemName = {
+  seeding: 'seeding',
+  fertigation: 'fertigation',
+  harvesting: 'harvesting',
+} as const;
+
+export interface RoomItem {
+  id: number;
+  name: RoomItemName;
+  sortOrder: number;
+  channels: ChannelItem[];
+}
+
+export interface CreateChannelInput {
+  roomId: number;
+  label: string;
+}
+
+export interface UpdateChannelInput {
+  label?: string;
+  positionIndex?: number;
+}
+
+export interface MonitoringApiInput {
+  /** @nullable */
+  monitoringApiTemp?: string | null;
+  /** @nullable */
+  monitoringApiWaterLevel?: string | null;
+  /** @nullable */
+  monitoringApiPh?: string | null;
+}
+
+export interface CreateRackInput {
+  channelId: number;
+  label: string;
+}
+
+export interface UpdateRackInput {
+  label?: string;
+  positionIndex?: number;
+}
+
+export interface CreateTrayInput {
+  rackId: number;
+  label: string;
+}
+
+export interface ChannelMonitoringItem {
+  id: number;
+  /** @nullable */
+  monitoringApiTemp?: string | null;
+  /** @nullable */
+  monitoringApiWaterLevel?: string | null;
+  /** @nullable */
+  monitoringApiPh?: string | null;
+}
+
+export interface SuccessResponse {
+  success: boolean;
+}
+
+export interface SetTrayCountInput {
+  /** @minimum 0 */
+  count: number;
+}
+
+export interface TrayCountResult {
+  rackId: number;
+  count: number;
+}
+
+export interface ChannelResolved {
+  channelId: number;
+  room: string;
+  channel: string;
+  rack?: string | null;
+  rackId?: number | null;
+  trayCount?: number | null;
+  monitoringApiTemp?: string | null;
+  monitoringApiWaterLevel?: string | null;
+  monitoringApiPh?: string | null;
+}
+
 export type LookupSeedLotParams = {
 qrCode: string;
 };
@@ -444,4 +556,19 @@ export const ListShipmentsStatus = {
   complete: 'complete',
   pending: 'pending',
 } as const;
+
+export type ResolveLayoutQrParams = {
+/**
+ * Room name (seeding, fertigation, harvesting)
+ */
+room: string;
+/**
+ * Channel label
+ */
+channel: string;
+/**
+ * Optional rack label
+ */
+rack?: string;
+};
 

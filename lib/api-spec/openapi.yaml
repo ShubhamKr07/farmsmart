@@ -26,6 +26,8 @@ tags:
     description: Shipment tracking
   - name: bad-trays
     description: Bad tray analysis
+  - name: layout
+    description: Facility layout management
 paths:
   /healthz:
     get:
@@ -534,6 +536,265 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ManualCheck"
+
+  /layout:
+    get:
+      operationId: getLayout
+      tags: [layout]
+      summary: Get full facility layout (rooms → channels → racks → trays)
+      responses:
+        "200":
+          description: Full layout
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RoomItem"
+
+  /layout/channels:
+    post:
+      operationId: createChannel
+      tags: [layout]
+      summary: Create a channel in a room
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateChannelInput"
+      responses:
+        "201":
+          description: Channel created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChannelItem"
+
+  /layout/channels/{id}:
+    patch:
+      operationId: updateChannel
+      tags: [layout]
+      summary: Rename or reorder a channel
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateChannelInput"
+      responses:
+        "200":
+          description: Channel updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChannelItem"
+    delete:
+      operationId: deleteChannel
+      tags: [layout]
+      summary: Delete a channel (cascades racks/trays)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Channel deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /layout/channels/{id}/monitoring:
+    patch:
+      operationId: updateChannelMonitoring
+      tags: [layout]
+      summary: Save monitoring API URLs for a channel
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MonitoringApiInput"
+      responses:
+        "200":
+          description: Monitoring config updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChannelMonitoringItem"
+
+  /layout/racks:
+    post:
+      operationId: createRack
+      tags: [layout]
+      summary: Create a rack in a channel
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateRackInput"
+      responses:
+        "201":
+          description: Rack created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RackItem"
+
+  /layout/resolve:
+    get:
+      operationId: resolveLayoutQr
+      tags: [layout]
+      summary: Resolve a layout QR payload to channel monitoring config
+      parameters:
+        - name: room
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Room name (seeding, fertigation, harvesting)
+        - name: channel
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Channel label
+        - name: rack
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Optional rack label
+      responses:
+        "200":
+          description: Resolved channel monitoring config
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChannelResolved"
+        "404":
+          description: Room or channel not found
+
+  /layout/racks/{id}/tray-count:
+    patch:
+      operationId: setRackTrayCount
+      tags: [layout]
+      summary: Set the number of trays in a rack (creates or deletes to match target count)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetTrayCountInput"
+      responses:
+        "200":
+          description: Tray count updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrayCountResult"
+
+  /layout/racks/{id}:
+    patch:
+      operationId: updateRack
+      tags: [layout]
+      summary: Rename or reorder a rack
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateRackInput"
+      responses:
+        "200":
+          description: Rack updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RackItem"
+    delete:
+      operationId: deleteRack
+      tags: [layout]
+      summary: Delete a rack (cascades trays)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Rack deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /layout/trays:
+    post:
+      operationId: createTray
+      tags: [layout]
+      summary: Create a tray in a rack
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTrayInput"
+      responses:
+        "201":
+          description: Tray created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrayItem"
+
+  /layout/trays/{id}:
+    delete:
+      operationId: deleteTray
+      tags: [layout]
+      summary: Delete a tray
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Tray deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
 
 components:
   schemas:
@@ -1148,3 +1409,185 @@ components:
         error:
           type: string
       required: [error]
+
+    TrayItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        label:
+          type: string
+        positionIndex:
+          type: integer
+      required: [id, label, positionIndex]
+
+    RackItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        label:
+          type: string
+        positionIndex:
+          type: integer
+        trays:
+          type: array
+          items:
+            $ref: "#/components/schemas/TrayItem"
+      required: [id, label, positionIndex, trays]
+
+    ChannelItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        label:
+          type: string
+        positionIndex:
+          type: integer
+        monitoringApiTemp:
+          type: ["string", "null"]
+        monitoringApiWaterLevel:
+          type: ["string", "null"]
+        monitoringApiPh:
+          type: ["string", "null"]
+        racks:
+          type: array
+          items:
+            $ref: "#/components/schemas/RackItem"
+      required: [id, label, positionIndex, racks]
+
+    RoomItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+          enum: [seeding, fertigation, harvesting]
+        sortOrder:
+          type: integer
+        channels:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChannelItem"
+      required: [id, name, sortOrder, channels]
+
+    CreateChannelInput:
+      type: object
+      properties:
+        roomId:
+          type: integer
+        label:
+          type: string
+      required: [roomId, label]
+
+    UpdateChannelInput:
+      type: object
+      properties:
+        label:
+          type: string
+        positionIndex:
+          type: integer
+
+    MonitoringApiInput:
+      type: object
+      properties:
+        monitoringApiTemp:
+          type: ["string", "null"]
+        monitoringApiWaterLevel:
+          type: ["string", "null"]
+        monitoringApiPh:
+          type: ["string", "null"]
+
+    CreateRackInput:
+      type: object
+      properties:
+        channelId:
+          type: integer
+        label:
+          type: string
+      required: [channelId, label]
+
+    UpdateRackInput:
+      type: object
+      properties:
+        label:
+          type: string
+        positionIndex:
+          type: integer
+
+    CreateTrayInput:
+      type: object
+      properties:
+        rackId:
+          type: integer
+        label:
+          type: string
+      required: [rackId, label]
+
+    ChannelMonitoringItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        monitoringApiTemp:
+          type: ["string", "null"]
+        monitoringApiWaterLevel:
+          type: ["string", "null"]
+        monitoringApiPh:
+          type: ["string", "null"]
+      required: [id]
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+      required: [success]
+
+    SetTrayCountInput:
+      type: object
+      properties:
+        count:
+          type: integer
+          minimum: 0
+      required: [count]
+
+    TrayCountResult:
+      type: object
+      properties:
+        rackId:
+          type: integer
+        count:
+          type: integer
+      required: [rackId, count]
+
+    ChannelResolved:
+      type: object
+      properties:
+        channelId:
+          type: integer
+        room:
+          type: string
+        channel:
+          type: string
+        rack:
+          type: string
+          nullable: true
+        rackId:
+          type: integer
+          nullable: true
+        trayCount:
+          type: integer
+          nullable: true
+        monitoringApiTemp:
+          type: string
+          nullable: true
+        monitoringApiWaterLevel:
+          type: string
+          nullable: true
+        monitoringApiPh:
+          type: string
+          nullable: true
+      required: [channelId, room, channel]

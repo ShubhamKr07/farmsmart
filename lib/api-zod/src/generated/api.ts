@@ -582,3 +582,215 @@ export const CreateBadTrayEntryBody = zod.object({
 })
 
 
+/**
+ * @summary Get full facility layout (rooms → channels → racks → trays)
+ */
+export const GetLayoutResponseItem = zod.object({
+  "id": zod.number(),
+  "name": zod.enum(['seeding', 'fertigation', 'harvesting']),
+  "sortOrder": zod.number(),
+  "channels": zod.array(zod.object({
+  "id": zod.number(),
+  "label": zod.string(),
+  "positionIndex": zod.number(),
+  "monitoringApiTemp": zod.string().nullish(),
+  "monitoringApiWaterLevel": zod.string().nullish(),
+  "monitoringApiPh": zod.string().nullish(),
+  "racks": zod.array(zod.object({
+  "id": zod.number(),
+  "label": zod.string(),
+  "positionIndex": zod.number(),
+  "trays": zod.array(zod.object({
+  "id": zod.number(),
+  "label": zod.string(),
+  "positionIndex": zod.number()
+}))
+}))
+}))
+})
+export const GetLayoutResponse = zod.array(GetLayoutResponseItem)
+
+
+/**
+ * @summary Create a channel in a room
+ */
+export const CreateChannelBody = zod.object({
+  "roomId": zod.number(),
+  "label": zod.string()
+})
+
+
+/**
+ * @summary Rename or reorder a channel
+ */
+export const UpdateChannelParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateChannelBody = zod.object({
+  "label": zod.string().optional(),
+  "positionIndex": zod.number().optional()
+})
+
+export const UpdateChannelResponse = zod.object({
+  "id": zod.number(),
+  "label": zod.string(),
+  "positionIndex": zod.number(),
+  "monitoringApiTemp": zod.string().nullish(),
+  "monitoringApiWaterLevel": zod.string().nullish(),
+  "monitoringApiPh": zod.string().nullish(),
+  "racks": zod.array(zod.object({
+  "id": zod.number(),
+  "label": zod.string(),
+  "positionIndex": zod.number(),
+  "trays": zod.array(zod.object({
+  "id": zod.number(),
+  "label": zod.string(),
+  "positionIndex": zod.number()
+}))
+}))
+})
+
+
+/**
+ * @summary Delete a channel (cascades racks/trays)
+ */
+export const DeleteChannelParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DeleteChannelResponse = zod.object({
+  "success": zod.boolean()
+})
+
+
+/**
+ * @summary Save monitoring API URLs for a channel
+ */
+export const UpdateChannelMonitoringParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateChannelMonitoringBody = zod.object({
+  "monitoringApiTemp": zod.string().nullish(),
+  "monitoringApiWaterLevel": zod.string().nullish(),
+  "monitoringApiPh": zod.string().nullish()
+})
+
+export const UpdateChannelMonitoringResponse = zod.object({
+  "id": zod.number(),
+  "monitoringApiTemp": zod.string().nullish(),
+  "monitoringApiWaterLevel": zod.string().nullish(),
+  "monitoringApiPh": zod.string().nullish()
+})
+
+
+/**
+ * @summary Create a rack in a channel
+ */
+export const CreateRackBody = zod.object({
+  "channelId": zod.number(),
+  "label": zod.string()
+})
+
+
+/**
+ * @summary Resolve a layout QR payload to channel monitoring config
+ */
+export const ResolveLayoutQrQueryParams = zod.object({
+  "room": zod.coerce.string().describe('Room name (seeding, fertigation, harvesting)'),
+  "channel": zod.coerce.string().describe('Channel label'),
+  "rack": zod.coerce.string().optional().describe('Optional rack label')
+})
+
+export const ResolveLayoutQrResponse = zod.object({
+  "channelId": zod.number(),
+  "room": zod.string(),
+  "channel": zod.string(),
+  "rack": zod.string().nullish(),
+  "rackId": zod.number().nullish(),
+  "trayCount": zod.number().nullish(),
+  "monitoringApiTemp": zod.string().nullish(),
+  "monitoringApiWaterLevel": zod.string().nullish(),
+  "monitoringApiPh": zod.string().nullish()
+})
+
+
+/**
+ * @summary Set the number of trays in a rack (creates or deletes to match target count)
+ */
+export const SetRackTrayCountParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const setRackTrayCountBodyCountMin = 0;
+
+
+
+export const SetRackTrayCountBody = zod.object({
+  "count": zod.number().min(setRackTrayCountBodyCountMin)
+})
+
+export const SetRackTrayCountResponse = zod.object({
+  "rackId": zod.number(),
+  "count": zod.number()
+})
+
+
+/**
+ * @summary Rename or reorder a rack
+ */
+export const UpdateRackParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateRackBody = zod.object({
+  "label": zod.string().optional(),
+  "positionIndex": zod.number().optional()
+})
+
+export const UpdateRackResponse = zod.object({
+  "id": zod.number(),
+  "label": zod.string(),
+  "positionIndex": zod.number(),
+  "trays": zod.array(zod.object({
+  "id": zod.number(),
+  "label": zod.string(),
+  "positionIndex": zod.number()
+}))
+})
+
+
+/**
+ * @summary Delete a rack (cascades trays)
+ */
+export const DeleteRackParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DeleteRackResponse = zod.object({
+  "success": zod.boolean()
+})
+
+
+/**
+ * @summary Create a tray in a rack
+ */
+export const CreateTrayBody = zod.object({
+  "rackId": zod.number(),
+  "label": zod.string()
+})
+
+
+/**
+ * @summary Delete a tray
+ */
+export const DeleteTrayParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DeleteTrayResponse = zod.object({
+  "success": zod.boolean()
+})
+
+

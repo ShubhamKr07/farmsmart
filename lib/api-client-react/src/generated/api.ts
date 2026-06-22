@@ -26,9 +26,15 @@ import type {
   AlertStatusUpdate,
   BadTrayEntryInput,
   BadTraysAnalysis,
+  ChannelItem,
+  ChannelMonitoringItem,
+  ChannelResolved,
   CompleteHarvestRequest,
+  CreateChannelInput,
   CreateCycleRequest,
   CreateManualCheckRequest,
+  CreateRackInput,
+  CreateTrayInput,
   Cycle,
   CycleDetail,
   DashboardStats,
@@ -43,11 +49,21 @@ import type {
   ListShipmentsParams,
   LookupSeedLotParams,
   ManualCheck,
+  MonitoringApiInput,
   MoveFertigationRequest,
+  RackItem,
+  ResolveLayoutQrParams,
+  RoomItem,
   SeedLot,
+  SetTrayCountInput,
   Shipment,
   ShipmentInput,
-  ShipmentStatusUpdate
+  ShipmentStatusUpdate,
+  SuccessResponse,
+  TrayCountResult,
+  TrayItem,
+  UpdateChannelInput,
+  UpdateRackInput
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -1794,5 +1810,877 @@ export const useCreateBadTrayEntry = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getCreateBadTrayEntryMutationOptions(options));
+    }
+
+export const getGetLayoutUrl = () => {
+
+
+
+
+  return `/api/layout`
+}
+
+/**
+ * @summary Get full facility layout (rooms → channels → racks → trays)
+ */
+export const getLayout = async ( options?: RequestInit): Promise<RoomItem[]> => {
+
+  return customFetch<RoomItem[]>(getGetLayoutUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetLayoutQueryKey = () => {
+    return [
+    `/api/layout`
+    ] as const;
+    }
+
+
+export const getGetLayoutQueryOptions = <TData = Awaited<ReturnType<typeof getLayout>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getLayout>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetLayoutQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getLayout>>> = ({ signal }) => getLayout({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getLayout>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetLayoutQueryResult = NonNullable<Awaited<ReturnType<typeof getLayout>>>
+export type GetLayoutQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get full facility layout (rooms → channels → racks → trays)
+ */
+
+export function useGetLayout<TData = Awaited<ReturnType<typeof getLayout>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getLayout>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetLayoutQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateChannelUrl = () => {
+
+
+
+
+  return `/api/layout/channels`
+}
+
+/**
+ * @summary Create a channel in a room
+ */
+export const createChannel = async (createChannelInput: CreateChannelInput, options?: RequestInit): Promise<ChannelItem> => {
+
+  return customFetch<ChannelItem>(getCreateChannelUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createChannelInput,)
+  }
+);}
+
+
+
+
+export const getCreateChannelMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createChannel>>, TError,{data: BodyType<CreateChannelInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createChannel>>, TError,{data: BodyType<CreateChannelInput>}, TContext> => {
+
+const mutationKey = ['createChannel'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createChannel>>, {data: BodyType<CreateChannelInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createChannel(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateChannelMutationResult = NonNullable<Awaited<ReturnType<typeof createChannel>>>
+    export type CreateChannelMutationBody = BodyType<CreateChannelInput>
+    export type CreateChannelMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create a channel in a room
+ */
+export const useCreateChannel = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createChannel>>, TError,{data: BodyType<CreateChannelInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createChannel>>,
+        TError,
+        {data: BodyType<CreateChannelInput>},
+        TContext
+      > => {
+      return useMutation(getCreateChannelMutationOptions(options));
+    }
+
+export const getUpdateChannelUrl = (id: number,) => {
+
+
+
+
+  return `/api/layout/channels/${id}`
+}
+
+/**
+ * @summary Rename or reorder a channel
+ */
+export const updateChannel = async (id: number,
+    updateChannelInput: UpdateChannelInput, options?: RequestInit): Promise<ChannelItem> => {
+
+  return customFetch<ChannelItem>(getUpdateChannelUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updateChannelInput,)
+  }
+);}
+
+
+
+
+export const getUpdateChannelMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateChannel>>, TError,{id: number;data: BodyType<UpdateChannelInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateChannel>>, TError,{id: number;data: BodyType<UpdateChannelInput>}, TContext> => {
+
+const mutationKey = ['updateChannel'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateChannel>>, {id: number;data: BodyType<UpdateChannelInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateChannel(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateChannelMutationResult = NonNullable<Awaited<ReturnType<typeof updateChannel>>>
+    export type UpdateChannelMutationBody = BodyType<UpdateChannelInput>
+    export type UpdateChannelMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Rename or reorder a channel
+ */
+export const useUpdateChannel = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateChannel>>, TError,{id: number;data: BodyType<UpdateChannelInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateChannel>>,
+        TError,
+        {id: number;data: BodyType<UpdateChannelInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateChannelMutationOptions(options));
+    }
+
+export const getDeleteChannelUrl = (id: number,) => {
+
+
+
+
+  return `/api/layout/channels/${id}`
+}
+
+/**
+ * @summary Delete a channel (cascades racks/trays)
+ */
+export const deleteChannel = async (id: number, options?: RequestInit): Promise<SuccessResponse> => {
+
+  return customFetch<SuccessResponse>(getDeleteChannelUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteChannelMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteChannel>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteChannel>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteChannel'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteChannel>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteChannel(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteChannelMutationResult = NonNullable<Awaited<ReturnType<typeof deleteChannel>>>
+
+    export type DeleteChannelMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Delete a channel (cascades racks/trays)
+ */
+export const useDeleteChannel = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteChannel>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteChannel>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteChannelMutationOptions(options));
+    }
+
+export const getUpdateChannelMonitoringUrl = (id: number,) => {
+
+
+
+
+  return `/api/layout/channels/${id}/monitoring`
+}
+
+/**
+ * @summary Save monitoring API URLs for a channel
+ */
+export const updateChannelMonitoring = async (id: number,
+    monitoringApiInput: MonitoringApiInput, options?: RequestInit): Promise<ChannelMonitoringItem> => {
+
+  return customFetch<ChannelMonitoringItem>(getUpdateChannelMonitoringUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      monitoringApiInput,)
+  }
+);}
+
+
+
+
+export const getUpdateChannelMonitoringMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateChannelMonitoring>>, TError,{id: number;data: BodyType<MonitoringApiInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateChannelMonitoring>>, TError,{id: number;data: BodyType<MonitoringApiInput>}, TContext> => {
+
+const mutationKey = ['updateChannelMonitoring'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateChannelMonitoring>>, {id: number;data: BodyType<MonitoringApiInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateChannelMonitoring(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateChannelMonitoringMutationResult = NonNullable<Awaited<ReturnType<typeof updateChannelMonitoring>>>
+    export type UpdateChannelMonitoringMutationBody = BodyType<MonitoringApiInput>
+    export type UpdateChannelMonitoringMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Save monitoring API URLs for a channel
+ */
+export const useUpdateChannelMonitoring = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateChannelMonitoring>>, TError,{id: number;data: BodyType<MonitoringApiInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateChannelMonitoring>>,
+        TError,
+        {id: number;data: BodyType<MonitoringApiInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateChannelMonitoringMutationOptions(options));
+    }
+
+export const getCreateRackUrl = () => {
+
+
+
+
+  return `/api/layout/racks`
+}
+
+/**
+ * @summary Create a rack in a channel
+ */
+export const createRack = async (createRackInput: CreateRackInput, options?: RequestInit): Promise<RackItem> => {
+
+  return customFetch<RackItem>(getCreateRackUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createRackInput,)
+  }
+);}
+
+
+
+
+export const getCreateRackMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createRack>>, TError,{data: BodyType<CreateRackInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createRack>>, TError,{data: BodyType<CreateRackInput>}, TContext> => {
+
+const mutationKey = ['createRack'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createRack>>, {data: BodyType<CreateRackInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createRack(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateRackMutationResult = NonNullable<Awaited<ReturnType<typeof createRack>>>
+    export type CreateRackMutationBody = BodyType<CreateRackInput>
+    export type CreateRackMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create a rack in a channel
+ */
+export const useCreateRack = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createRack>>, TError,{data: BodyType<CreateRackInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createRack>>,
+        TError,
+        {data: BodyType<CreateRackInput>},
+        TContext
+      > => {
+      return useMutation(getCreateRackMutationOptions(options));
+    }
+
+export const getResolveLayoutQrUrl = (params: ResolveLayoutQrParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/layout/resolve?${stringifiedParams}` : `/api/layout/resolve`
+}
+
+/**
+ * @summary Resolve a layout QR payload to channel monitoring config
+ */
+export const resolveLayoutQr = async (params: ResolveLayoutQrParams, options?: RequestInit): Promise<ChannelResolved> => {
+
+  return customFetch<ChannelResolved>(getResolveLayoutQrUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getResolveLayoutQrQueryKey = (params?: ResolveLayoutQrParams,) => {
+    return [
+    `/api/layout/resolve`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getResolveLayoutQrQueryOptions = <TData = Awaited<ReturnType<typeof resolveLayoutQr>>, TError = ErrorType<void>>(params: ResolveLayoutQrParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof resolveLayoutQr>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getResolveLayoutQrQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof resolveLayoutQr>>> = ({ signal }) => resolveLayoutQr(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof resolveLayoutQr>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ResolveLayoutQrQueryResult = NonNullable<Awaited<ReturnType<typeof resolveLayoutQr>>>
+export type ResolveLayoutQrQueryError = ErrorType<void>
+
+
+/**
+ * @summary Resolve a layout QR payload to channel monitoring config
+ */
+
+export function useResolveLayoutQr<TData = Awaited<ReturnType<typeof resolveLayoutQr>>, TError = ErrorType<void>>(
+ params: ResolveLayoutQrParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof resolveLayoutQr>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getResolveLayoutQrQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getSetRackTrayCountUrl = (id: number,) => {
+
+
+
+
+  return `/api/layout/racks/${id}/tray-count`
+}
+
+/**
+ * @summary Set the number of trays in a rack (creates or deletes to match target count)
+ */
+export const setRackTrayCount = async (id: number,
+    setTrayCountInput: SetTrayCountInput, options?: RequestInit): Promise<TrayCountResult> => {
+
+  return customFetch<TrayCountResult>(getSetRackTrayCountUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      setTrayCountInput,)
+  }
+);}
+
+
+
+
+export const getSetRackTrayCountMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setRackTrayCount>>, TError,{id: number;data: BodyType<SetTrayCountInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setRackTrayCount>>, TError,{id: number;data: BodyType<SetTrayCountInput>}, TContext> => {
+
+const mutationKey = ['setRackTrayCount'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setRackTrayCount>>, {id: number;data: BodyType<SetTrayCountInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  setRackTrayCount(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetRackTrayCountMutationResult = NonNullable<Awaited<ReturnType<typeof setRackTrayCount>>>
+    export type SetRackTrayCountMutationBody = BodyType<SetTrayCountInput>
+    export type SetRackTrayCountMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Set the number of trays in a rack (creates or deletes to match target count)
+ */
+export const useSetRackTrayCount = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setRackTrayCount>>, TError,{id: number;data: BodyType<SetTrayCountInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setRackTrayCount>>,
+        TError,
+        {id: number;data: BodyType<SetTrayCountInput>},
+        TContext
+      > => {
+      return useMutation(getSetRackTrayCountMutationOptions(options));
+    }
+
+export const getUpdateRackUrl = (id: number,) => {
+
+
+
+
+  return `/api/layout/racks/${id}`
+}
+
+/**
+ * @summary Rename or reorder a rack
+ */
+export const updateRack = async (id: number,
+    updateRackInput: UpdateRackInput, options?: RequestInit): Promise<RackItem> => {
+
+  return customFetch<RackItem>(getUpdateRackUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updateRackInput,)
+  }
+);}
+
+
+
+
+export const getUpdateRackMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateRack>>, TError,{id: number;data: BodyType<UpdateRackInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateRack>>, TError,{id: number;data: BodyType<UpdateRackInput>}, TContext> => {
+
+const mutationKey = ['updateRack'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateRack>>, {id: number;data: BodyType<UpdateRackInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateRack(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateRackMutationResult = NonNullable<Awaited<ReturnType<typeof updateRack>>>
+    export type UpdateRackMutationBody = BodyType<UpdateRackInput>
+    export type UpdateRackMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Rename or reorder a rack
+ */
+export const useUpdateRack = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateRack>>, TError,{id: number;data: BodyType<UpdateRackInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateRack>>,
+        TError,
+        {id: number;data: BodyType<UpdateRackInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateRackMutationOptions(options));
+    }
+
+export const getDeleteRackUrl = (id: number,) => {
+
+
+
+
+  return `/api/layout/racks/${id}`
+}
+
+/**
+ * @summary Delete a rack (cascades trays)
+ */
+export const deleteRack = async (id: number, options?: RequestInit): Promise<SuccessResponse> => {
+
+  return customFetch<SuccessResponse>(getDeleteRackUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteRackMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteRack>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteRack>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteRack'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteRack>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteRack(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteRackMutationResult = NonNullable<Awaited<ReturnType<typeof deleteRack>>>
+
+    export type DeleteRackMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Delete a rack (cascades trays)
+ */
+export const useDeleteRack = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteRack>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteRack>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteRackMutationOptions(options));
+    }
+
+export const getCreateTrayUrl = () => {
+
+
+
+
+  return `/api/layout/trays`
+}
+
+/**
+ * @summary Create a tray in a rack
+ */
+export const createTray = async (createTrayInput: CreateTrayInput, options?: RequestInit): Promise<TrayItem> => {
+
+  return customFetch<TrayItem>(getCreateTrayUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createTrayInput,)
+  }
+);}
+
+
+
+
+export const getCreateTrayMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createTray>>, TError,{data: BodyType<CreateTrayInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createTray>>, TError,{data: BodyType<CreateTrayInput>}, TContext> => {
+
+const mutationKey = ['createTray'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createTray>>, {data: BodyType<CreateTrayInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createTray(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateTrayMutationResult = NonNullable<Awaited<ReturnType<typeof createTray>>>
+    export type CreateTrayMutationBody = BodyType<CreateTrayInput>
+    export type CreateTrayMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create a tray in a rack
+ */
+export const useCreateTray = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createTray>>, TError,{data: BodyType<CreateTrayInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createTray>>,
+        TError,
+        {data: BodyType<CreateTrayInput>},
+        TContext
+      > => {
+      return useMutation(getCreateTrayMutationOptions(options));
+    }
+
+export const getDeleteTrayUrl = (id: number,) => {
+
+
+
+
+  return `/api/layout/trays/${id}`
+}
+
+/**
+ * @summary Delete a tray
+ */
+export const deleteTray = async (id: number, options?: RequestInit): Promise<SuccessResponse> => {
+
+  return customFetch<SuccessResponse>(getDeleteTrayUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteTrayMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteTray>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteTray>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteTray'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteTray>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteTray(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteTrayMutationResult = NonNullable<Awaited<ReturnType<typeof deleteTray>>>
+
+    export type DeleteTrayMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Delete a tray
+ */
+export const useDeleteTray = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteTray>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteTray>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteTrayMutationOptions(options));
     }
 

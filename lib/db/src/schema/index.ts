@@ -143,6 +143,48 @@ export const shipmentsTable = pgTable("shipments", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+export const roomNameEnum = pgEnum("room_name", [
+  "seeding",
+  "fertigation",
+  "harvesting",
+]);
+
+export const roomsTable = pgTable("rooms", {
+  id: serial("id").primaryKey(),
+  name: roomNameEnum("name").notNull().unique(),
+  sortOrder: integer("sort_order").notNull().default(0),
+});
+
+export const channelsTable = pgTable("channels", {
+  id: serial("id").primaryKey(),
+  roomId: integer("room_id")
+    .notNull()
+    .references(() => roomsTable.id, { onDelete: "cascade" }),
+  label: text("label").notNull(),
+  positionIndex: integer("position_index").notNull().default(0),
+  monitoringApiTemp: text("monitoring_api_temp"),
+  monitoringApiWaterLevel: text("monitoring_api_water_level"),
+  monitoringApiPh: text("monitoring_api_ph"),
+});
+
+export const racksTable = pgTable("racks", {
+  id: serial("id").primaryKey(),
+  channelId: integer("channel_id")
+    .notNull()
+    .references(() => channelsTable.id, { onDelete: "cascade" }),
+  label: text("label").notNull(),
+  positionIndex: integer("position_index").notNull().default(0),
+});
+
+export const traysTable = pgTable("trays", {
+  id: serial("id").primaryKey(),
+  rackId: integer("rack_id")
+    .notNull()
+    .references(() => racksTable.id, { onDelete: "cascade" }),
+  label: text("label").notNull(),
+  positionIndex: integer("position_index").notNull().default(0),
+});
+
 export const sensorStatusTable = pgTable("sensor_status", {
   id: serial("id").primaryKey(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),

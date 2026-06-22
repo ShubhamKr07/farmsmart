@@ -22,6 +22,10 @@ function NativeTabLayout() {
         <Icon sf={{ default: "leaf", selected: "leaf.fill" }} />
         <Label>Cycles</Label>
       </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="scan">
+        <Icon sf={{ default: "qrcode.viewfinder", selected: "qrcode.viewfinder" }} />
+        <Label>Scan</Label>
+      </NativeTabs.Trigger>
     </NativeTabs>
   );
 }
@@ -85,6 +89,18 @@ function ClassicTabLayout() {
               <SymbolView name="leaf" tintColor={color} size={24} />
             ) : (
               <Feather name="list" size={22} color={color} />
+            ),
+        }}
+      />
+      <Tabs.Screen
+        name="scan"
+        options={{
+          title: "Scan",
+          tabBarIcon: ({ color }) =>
+            isIOS ? (
+              <SymbolView name="qrcode.viewfinder" tintColor={color} size={24} />
+            ) : (
+              <Feather name="maximize" size={22} color={color} />
             ),
         }}
       />

@@ -11,6 +11,7 @@ import inventoryRouter from "./routes/inventory";
 import shipmentsRouter from "./routes/shipments";
 import badTraysRouter from "./routes/badTrays";
 import cyclesRouter from "./routes/cycles";
+import layoutRouter from "./routes/layout";
 import { logger } from "./lib/logger";
 import {
   CLERK_PROXY_PATH,
@@ -64,6 +65,7 @@ app.use("/api", shipmentsRouter);
 app.use("/api", badTraysRouter);
 // Cycles: GET routes are public for admin dashboard; write routes enforce auth internally
 app.use("/api", cyclesRouter);
+app.use("/api", layoutRouter);
 
 // Health + authenticated routes
 app.use("/api", healthRouter);
