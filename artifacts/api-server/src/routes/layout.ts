@@ -1,11 +1,12 @@
 import { Router, type Request, type Response } from "express";
-import { eq, asc } from "drizzle-orm";
+import { eq, asc, ne, count, like, and } from "drizzle-orm";
 import { db } from "@workspace/db";
 import {
   roomsTable,
   channelsTable,
   racksTable,
   traysTable,
+  cyclesTable,
 } from "@workspace/db";
 
 const router = Router();
@@ -408,10 +409,37 @@ router.get("/layout/resolve", async (req: Request, res: Response) => {
       return res.status(404).json({ error: "Channel not found" });
     }
 
+    // Total trays defined in this channel's layout
+    const [totalTraysRow] = await db
+      .select({ count: count(traysTable.id) })
+      .from(traysTable)
+      .innerJoin(racksTable, eq(traysTable.rackId, racksTable.id))
+      .where(eq(racksTable.channelId, channelRow.id));
+    const totalTrays = Number(totalTraysRow?.count ?? 0);
+
+    // Active (non-completed) cycles assigned to this channel
+    const [activeCyclesRow] = await db
+      .select({ count: count(cyclesTable.id) })
+      .from(cyclesTable)
+      .where(
+        and(
+          ne(cyclesTable.status, "completed"),
+          like(cyclesTable.trayPosition, `%"room":"${roomRow.name}"%`),
+          like(cyclesTable.trayPosition, `%"channel":"${channelRow.label}"%`),
+        ),
+      );
+    const activeCycles = Number(activeCyclesRow?.count ?? 0);
+    const availableTrays = Math.max(0, totalTrays - activeCycles);
+    const isFull = totalTrays > 0 && activeCycles >= totalTrays;
+
     const result: Record<string, unknown> = {
       channelId: channelRow.id,
       room: roomRow.name,
       channel: channelRow.label,
+      totalTrays,
+      activeCycles,
+      availableTrays,
+      isFull,
       monitoringApiTemp: channelRow.monitoringApiTemp ?? null,
       monitoringApiWaterLevel: channelRow.monitoringApiWaterLevel ?? null,
       monitoringApiPh: channelRow.monitoringApiPh ?? null,

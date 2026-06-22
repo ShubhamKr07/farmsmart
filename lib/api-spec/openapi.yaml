@@ -1572,6 +1572,18 @@ components:
           type: string
         channel:
           type: string
+        totalTrays:
+          type: integer
+          description: Total tray slots defined in layout for this channel
+        activeCycles:
+          type: integer
+          description: Non-completed cycles currently assigned to this channel
+        availableTrays:
+          type: integer
+          description: totalTrays minus activeCycles (min 0)
+        isFull:
+          type: boolean
+          description: True when activeCycles >= totalTrays and totalTrays > 0
         rack:
           type: string
           nullable: true
@@ -1590,4 +1602,4 @@ components:
         monitoringApiPh:
           type: string
           nullable: true
-      required: [channelId, room, channel]
+      required: [channelId, room, channel, totalTrays, activeCycles, availableTrays, isFull]

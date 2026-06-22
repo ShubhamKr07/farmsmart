@@ -20,14 +20,15 @@ import {
   useListGrowthProfiles,
   useLookupSeedLot,
   getLookupSeedLotQueryOptions,
+  getResolveLayoutQrQueryOptions,
   getListCyclesQueryKey,
   getGetDashboardQueryKey,
 } from "@workspace/api-client-react";
-import { useQueries } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import colors from "@/constants/colors";
 import QRScanner from "@/components/QRScanner";
 import RackReadingsCard from "@/components/RackReadingsCard";
-import { parseQR, type RackPositionQR, type SeedLotQR } from "@/utils/parseQR";
+import { parseQR, type RackPositionQR, type SeedLotQR, type LayoutQR } from "@/utils/parseQR";
 
 type Step = 1 | 2 | 3;
 
@@ -71,6 +72,7 @@ export default function SeedingWizard() {
   const [autoFillChip, setAutoFillChip] = useState<string | null>(null);
   const [rackReadings, setRackReadings] = useState<RackPositionQR | null>(null);
   const [scannedLots, setScannedLots] = useState<ScannedLotMeta[]>([]);
+  const [scannedChannelQR, setScannedChannelQR] = useState<LayoutQR | null>(null);
 
   const { data: profiles } = useListGrowthProfiles();
   const { mutateAsync: createCycle, isPending } = useCreateCycle();
@@ -84,6 +86,13 @@ export default function SeedingWizard() {
       getLookupSeedLotQueryOptions({ qrCode: qr }, { query: { retry: false } }),
     ),
   });
+
+  const { data: channelStatus, isLoading: channelLoading } = useQuery(
+    getResolveLayoutQrQueryOptions(
+      { room: scannedChannelQR?.room ?? "", channel: scannedChannelQR?.channel ?? "" },
+      { query: { enabled: !!scannedChannelQR, retry: false } },
+    ),
+  );
 
   useEffect(() => {
     if (seedLotData?.seedName) {
@@ -121,8 +130,13 @@ export default function SeedingWizard() {
     const parsed = parseQR(qr);
     if (parsed?.type === "rack_position") {
       setRackReadings(parsed as RackPositionQR);
+      setScannedChannelQR(null);
+    } else if (parsed?.type === "layout") {
+      setScannedChannelQR(parsed as LayoutQR);
+      setRackReadings(null);
     } else {
       setRackReadings(null);
+      setScannedChannelQR(null);
     }
   };
 
@@ -421,7 +435,7 @@ export default function SeedingWizard() {
               onPress={() => setStep(3)}
               disabled={!form.seedName || !form.growthProfileId}
             >
-              <Text style={s.nextBtnText}>Scan Rack Slot</Text>
+              <Text style={s.nextBtnText}>Scan Channel</Text>
               <Feather name="arrow-right" size={18} color="#fff" />
             </Pressable>
           </ScrollView>
@@ -430,31 +444,90 @@ export default function SeedingWizard() {
 
       {step === 3 && (
         <ScrollView contentContainerStyle={s.stepContent}>
-          <Text style={s.stepTitle}>Scan Rack Slot</Text>
+          <Text style={s.stepTitle}>Scan Channel QR</Text>
           <Text style={s.stepSubtitle}>
-            Scan the QR code on the rack slot where the trays will be placed.
+            Scan the QR code on the channel where the trays will be placed.
           </Text>
           <View style={s.qrTypeHint}>
             <Feather name="info" size={13} color={colors.light.primary} />
             <Text style={s.qrTypeHintText}>
-              Rack position QR codes include humidity, temperature, pH, water level and nutrient mix.
+              Channel QR codes are generated from the Layout tab in the admin dashboard.
             </Text>
           </View>
           <View style={s.scannerBox}>
             <QRScanner
               onScanned={handleRackScanned}
-              hint="Point camera at rack slot QR code"
+              hint="Point camera at channel QR code"
             />
           </View>
 
           {form.trayPosition ? (
             <>
+              {channelLoading && (
+                <View style={s.rackRawChip}>
+                  <ActivityIndicator size="small" color={colors.light.primary} />
+                  <Text style={s.rackRawText}>Resolving channel…</Text>
+                </View>
+              )}
+
+              {scannedChannelQR && channelStatus && (
+                <View style={[s.channelCard, channelStatus.isFull && s.channelCardFull]}>
+                  <View style={s.channelCardHeader}>
+                    <Feather name="layers" size={16} color={channelStatus.isFull ? "#ef4444" : colors.light.primary} />
+                    <Text style={[s.channelCardTitle, channelStatus.isFull && s.channelCardTitleFull]}>
+                      {channelStatus.channel}
+                    </Text>
+                    {channelStatus.isFull && (
+                      <View style={s.fullBadge}>
+                        <Text style={s.fullBadgeText}>FULL</Text>
+                      </View>
+                    )}
+                  </View>
+                  <Text style={s.channelCardRoom}>
+                    {channelStatus.room.charAt(0).toUpperCase() + channelStatus.room.slice(1)} room
+                  </Text>
+                  <View style={s.channelCapacityRow}>
+                    <View style={s.channelStat}>
+                      <Text style={s.channelStatVal}>{channelStatus.totalTrays}</Text>
+                      <Text style={s.channelStatLabel}>Total trays</Text>
+                    </View>
+                    <View style={s.channelStatDivider} />
+                    <View style={s.channelStat}>
+                      <Text style={[s.channelStatVal, { color: "#ef4444" }]}>{channelStatus.activeCycles}</Text>
+                      <Text style={s.channelStatLabel}>In use</Text>
+                    </View>
+                    <View style={s.channelStatDivider} />
+                    <View style={s.channelStat}>
+                      <Text style={[s.channelStatVal, { color: channelStatus.availableTrays > 0 ? "#22c55e" : "#ef4444" }]}>
+                        {channelStatus.availableTrays}
+                      </Text>
+                      <Text style={s.channelStatLabel}>Available</Text>
+                    </View>
+                  </View>
+                  {!channelStatus.isFull && channelStatus.totalTrays > 0 && (
+                    <Text style={s.channelTraysLeft}>
+                      {channelStatus.availableTrays} tray{channelStatus.availableTrays !== 1 ? "s" : ""} left to scan for this channel
+                    </Text>
+                  )}
+                  {channelStatus.isFull && (
+                    <Text style={s.channelFullWarning}>
+                      This channel is at full capacity. Consider choosing a different channel.
+                    </Text>
+                  )}
+                  {channelStatus.totalTrays === 0 && (
+                    <Text style={s.channelFullWarning}>
+                      No trays defined in layout for this channel. Add racks and trays in the admin dashboard.
+                    </Text>
+                  )}
+                </View>
+              )}
+
               {rackReadings ? (
                 <RackReadingsCard
                   data={rackReadings}
                   position={rackReadings.position ?? form.trayPosition}
                 />
-              ) : (
+              ) : !scannedChannelQR && (
                 <View style={s.rackRawChip}>
                   <Feather name="grid" size={14} color={colors.light.primary} />
                   <Text style={s.rackRawText}>{form.trayPosition}</Text>
@@ -471,6 +544,12 @@ export default function SeedingWizard() {
                 <Row label="Weight/Tray" value={`${form.seedWeightTray} g`} />
                 <Row label="Profile" value={selectedProfile?.name ?? "-"} />
                 <Row label="Seeding Date" value={form.seedingDate} />
+                {channelStatus && (
+                  <Row
+                    label="Channel"
+                    value={`${channelStatus.channel} (${channelStatus.room})`}
+                  />
+                )}
                 {form.seedLotQrCodes.length > 0 && (
                   <View style={s.summaryLots}>
                     <Text style={s.summaryLotsTitle}>
@@ -673,6 +752,93 @@ const s = StyleSheet.create({
     fontSize: 14,
     fontFamily: "Inter_500Medium",
     color: colors.light.foreground,
+  },
+  channelCard: {
+    backgroundColor: colors.light.secondary,
+    borderRadius: colors.radius,
+    padding: 14,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: colors.light.primary + "40",
+    gap: 6,
+  },
+  channelCardFull: {
+    borderColor: "#ef444440",
+    backgroundColor: "#fef2f2",
+  },
+  channelCardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  channelCardTitle: {
+    flex: 1,
+    fontSize: 16,
+    fontFamily: "Inter_600SemiBold",
+    color: colors.light.primary,
+  },
+  channelCardTitleFull: {
+    color: "#ef4444",
+  },
+  channelCardRoom: {
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    color: colors.light.mutedForeground,
+    marginLeft: 24,
+  },
+  channelCapacityRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 10,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: colors.light.border,
+  },
+  channelStat: {
+    flex: 1,
+    alignItems: "center",
+    gap: 2,
+  },
+  channelStatVal: {
+    fontSize: 22,
+    fontFamily: "Inter_700Bold",
+    color: colors.light.foreground,
+  },
+  channelStatLabel: {
+    fontSize: 11,
+    fontFamily: "Inter_400Regular",
+    color: colors.light.mutedForeground,
+  },
+  channelStatDivider: {
+    width: 1,
+    height: 32,
+    backgroundColor: colors.light.border,
+  },
+  channelTraysLeft: {
+    fontSize: 13,
+    fontFamily: "Inter_500Medium",
+    color: "#22c55e",
+    marginTop: 4,
+    textAlign: "center",
+  },
+  channelFullWarning: {
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    color: "#ef4444",
+    marginTop: 4,
+    textAlign: "center",
+  },
+  fullBadge: {
+    backgroundColor: "#ef4444",
+    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  fullBadgeText: {
+    color: "#fff",
+    fontSize: 10,
+    fontFamily: "Inter_700Bold",
+    letterSpacing: 0.5,
   },
   label: {
     fontSize: 13,

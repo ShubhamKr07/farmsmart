@@ -505,6 +505,10 @@ export interface ChannelResolved {
   channelId: number;
   room: string;
   channel: string;
+  totalTrays: number;
+  activeCycles: number;
+  availableTrays: number;
+  isFull: boolean;
   rack?: string | null;
   rackId?: number | null;
   trayCount?: number | null;

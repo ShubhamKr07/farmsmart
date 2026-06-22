@@ -417,6 +417,8 @@ function ChannelRow({
 
         <span className="text-xs text-muted-foreground mr-1">
           {channel.racks.length} rack{channel.racks.length !== 1 ? "s" : ""}
+          {" · "}
+          {channel.racks.reduce((sum, r) => sum + r.trays.length, 0)} tray{channel.racks.reduce((sum, r) => sum + r.trays.length, 0) !== 1 ? "s" : ""}
         </span>
 
         <Button
@@ -573,8 +575,8 @@ function QRModal({ target, onClose }: { target: QRTarget | null; onClose: () => 
 
   const payload = target
     ? target.type === "channel"
-      ? JSON.stringify({ type: "layout", facility: "HydroFarm", room: target.room, channel: target.channel })
-      : JSON.stringify({ type: "layout", facility: "HydroFarm", room: target.room, channel: target.channel, rack: target.rack })
+      ? JSON.stringify({ type: "layout", facility: "FarmEasy", room: target.room, channel: target.channel })
+      : JSON.stringify({ type: "layout", facility: "FarmEasy", room: target.room, channel: target.channel, rack: target.rack })
     : "";
 
   const handleDownload = useCallback(() => {
