@@ -40,6 +40,15 @@ interface FormData {
   trayPosition: string;
 }
 
+interface ScannedLotMeta {
+  qr: string;
+  seedName?: string;
+  variety?: string;
+  lotId?: string;
+  batchWeight?: number;
+  unit?: string;
+}
+
 const today = new Date().toISOString().split("T")[0];
 
 export default function SeedingWizard() {
@@ -59,6 +68,7 @@ export default function SeedingWizard() {
   const [pendingQr, setPendingQr] = useState("");
   const [autoFillChip, setAutoFillChip] = useState<string | null>(null);
   const [rackReadings, setRackReadings] = useState<RackPositionQR | null>(null);
+  const [scannedLots, setScannedLots] = useState<ScannedLotMeta[]>([]);
 
   const { data: profiles } = useListGrowthProfiles();
   const { mutateAsync: createCycle, isPending } = useCreateCycle();
@@ -75,18 +85,26 @@ export default function SeedingWizard() {
   }, [seedLotData]);
 
   const handleLotScanned = (qr: string) => {
-    if (!form.seedLotQrCodes.includes(qr)) {
-      setForm((f) => ({ ...f, seedLotQrCodes: [...f.seedLotQrCodes, qr] }));
-    }
-    // Try to parse structured seed lot QR
+    if (form.seedLotQrCodes.includes(qr)) return;
+    setForm((f) => ({ ...f, seedLotQrCodes: [...f.seedLotQrCodes, qr] }));
     const parsed = parseQR(qr);
+    const meta: ScannedLotMeta = { qr };
     if (parsed?.type === "seed_lot") {
       const lot = parsed as SeedLotQR;
+      meta.seedName = lot.seedName;
+      meta.variety = lot.variety;
+      meta.lotId = lot.lotId;
+      meta.batchWeight = lot.batchWeight;
+      meta.unit = lot.unit;
       if (lot.seedName) {
         setForm((f) => ({ ...f, seedName: lot.seedName! }));
         setAutoFillChip(lot.seedName!);
       }
+      if (lot.batchWeight && lot.batchWeight > 0) {
+        setForm((f) => ({ ...f, seedWeightTray: String(lot.batchWeight) }));
+      }
     }
+    setScannedLots((prev) => [...prev.filter((l) => l.qr !== qr), meta]);
     setPendingQr(qr);
   };
 
@@ -183,31 +201,42 @@ export default function SeedingWizard() {
               multiScan
             />
           </View>
-          {form.seedLotQrCodes.length > 0 && (
-            <View style={s.qrChips}>
-              {form.seedLotQrCodes.map((qr) => {
-                const parsed = parseQR(qr);
-                const label =
-                  parsed?.type === "seed_lot" && (parsed as SeedLotQR).seedName
-                    ? `${(parsed as SeedLotQR).seedName} · ${(parsed as SeedLotQR).lotId ?? qr}`
-                    : qr;
-                return (
-                  <View key={qr} style={s.qrChip}>
-                    <Feather name="check-circle" size={13} color={colors.light.primary} />
-                    <Text style={s.qrChipText} numberOfLines={1}>{label}</Text>
+          {scannedLots.length > 0 && (
+            <View style={s.lotCards}>
+              {scannedLots.map((meta) => (
+                <View key={meta.qr} style={s.lotCard}>
+                  <View style={s.lotCardHeader}>
+                    <Feather name="check-circle" size={14} color={colors.light.primary} />
+                    <Text style={s.lotCardName} numberOfLines={1}>
+                      {meta.seedName ?? meta.qr}
+                    </Text>
                     <Pressable
-                      onPress={() =>
-                        setForm((f) => ({
-                          ...f,
-                          seedLotQrCodes: f.seedLotQrCodes.filter((q) => q !== qr),
-                        }))
-                      }
+                      onPress={() => {
+                        setForm((f) => ({ ...f, seedLotQrCodes: f.seedLotQrCodes.filter((q) => q !== meta.qr) }));
+                        setScannedLots((prev) => prev.filter((l) => l.qr !== meta.qr));
+                      }}
                     >
-                      <Feather name="x" size={14} color={colors.light.mutedForeground} />
+                      <Feather name="x" size={15} color={colors.light.mutedForeground} />
                     </Pressable>
                   </View>
-                );
-              })}
+                  <View style={s.lotCardMeta}>
+                    {meta.lotId && (
+                      <Text style={s.lotMetaText}>Lot: {meta.lotId}</Text>
+                    )}
+                    {meta.variety && (
+                      <Text style={s.lotMetaText}>Variety: {meta.variety}</Text>
+                    )}
+                    {meta.batchWeight != null && (
+                      <Text style={s.lotMetaText}>
+                        Batch: {meta.batchWeight}{meta.unit ?? "g"}
+                      </Text>
+                    )}
+                    {!meta.lotId && !meta.variety && !meta.batchWeight && (
+                      <Text style={s.lotMetaText} numberOfLines={1}>{meta.qr}</Text>
+                    )}
+                  </View>
+                </View>
+              ))}
             </View>
           )}
           <Pressable
@@ -416,7 +445,6 @@ export default function SeedingWizard() {
 
               <View style={s.summaryCard}>
                 <Text style={s.summaryTitle}>Confirm Seeding</Text>
-                <Row label="Seed Lots" value={form.seedLotQrCodes.length.toString()} />
                 <Row label="Seed Name" value={form.seedName} />
                 <Row
                   label="Trays"
@@ -425,6 +453,34 @@ export default function SeedingWizard() {
                 <Row label="Weight/Tray" value={`${form.seedWeightTray} g`} />
                 <Row label="Profile" value={selectedProfile?.name ?? "-"} />
                 <Row label="Seeding Date" value={form.seedingDate} />
+                {scannedLots.length > 0 && (
+                  <View style={s.summaryLots}>
+                    <Text style={s.summaryLotsTitle}>
+                      Seed Lots ({scannedLots.length})
+                    </Text>
+                    {scannedLots.map((meta) => (
+                      <View key={meta.qr} style={s.summaryLotRow}>
+                        <Feather name="package" size={12} color={colors.light.primary} />
+                        <View style={{ flex: 1 }}>
+                          <Text style={s.summaryLotName}>
+                            {meta.seedName ?? meta.qr}
+                            {meta.variety ? ` · ${meta.variety}` : ""}
+                          </Text>
+                          {(meta.lotId || meta.batchWeight != null) && (
+                            <Text style={s.summaryLotSub}>
+                              {[
+                                meta.lotId && `Lot: ${meta.lotId}`,
+                                meta.batchWeight != null && `${meta.batchWeight}${meta.unit ?? "g"}`,
+                              ]
+                                .filter(Boolean)
+                                .join("  ·  ")}
+                            </Text>
+                          )}
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                )}
               </View>
             </>
           ) : (
@@ -529,22 +585,63 @@ const s = StyleSheet.create({
     marginBottom: 16,
     backgroundColor: colors.light.muted,
   },
-  qrChips: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 16 },
-  qrChip: {
+  lotCards: { gap: 8, marginBottom: 16 },
+  lotCard: {
+    backgroundColor: colors.light.secondary,
+    borderRadius: colors.radius,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: colors.light.primary + "30",
+  },
+  lotCardHeader: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    backgroundColor: colors.light.secondary,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 20,
-    maxWidth: "100%",
+    gap: 8,
+    marginBottom: 4,
   },
-  qrChipText: {
+  lotCardName: {
+    flex: 1,
+    fontSize: 14,
+    fontFamily: "Inter_600SemiBold",
+    color: colors.light.primary,
+  },
+  lotCardMeta: { gap: 2, paddingLeft: 22 },
+  lotMetaText: {
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    color: colors.light.mutedForeground,
+  },
+  summaryLots: {
+    marginTop: 10,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: colors.light.border,
+    gap: 8,
+  },
+  summaryLotsTitle: {
+    fontSize: 12,
+    fontFamily: "Inter_600SemiBold",
+    color: colors.light.mutedForeground,
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+    marginBottom: 2,
+  },
+  summaryLotRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+  },
+  summaryLotName: {
     fontSize: 13,
     fontFamily: "Inter_500Medium",
-    color: colors.light.primary,
-    flexShrink: 1,
+    color: colors.light.foreground,
+  },
+  summaryLotSub: {
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    color: colors.light.mutedForeground,
+    marginTop: 1,
   },
   rackRawChip: {
     flexDirection: "row",
