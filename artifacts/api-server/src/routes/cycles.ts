@@ -169,7 +169,7 @@ function formatCheck(c: typeof manualChecksTable.$inferSelect) {
 
 // ── Routes ────────────────────────────────────────────────────────────────────
 
-router.get("/cycles", enforceAuth, async (req, res) => {
+router.get("/cycles", async (req, res) => {
   try {
     const role = extractRole(req);
     const status = (req.query.status as string) || "ongoing";
@@ -283,7 +283,7 @@ router.post("/cycles", enforceAuth, async (req, res) => {
   }
 });
 
-router.get("/cycles/:id", enforceAuth, async (req, res) => {
+router.get("/cycles/:id", async (req, res) => {
   try {
     const id = parseParamId(req);
     const role = extractRole(req);
@@ -507,7 +507,7 @@ router.post("/cycles/:id/complete-harvest", enforceAuth, async (req, res) => {
   }
 });
 
-router.get("/cycles/:id/manual-checks", enforceAuth, async (req, res) => {
+router.get("/cycles/:id/manual-checks", async (req, res) => {
   try {
     const id = parseParamId(req);
     const role = extractRole(req);
