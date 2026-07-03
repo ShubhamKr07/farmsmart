@@ -1,6 +1,6 @@
 import { Router, type Request, type Response, type NextFunction } from "express";
 import { getAuth } from "@clerk/express";
-import { eq, ne, count, and } from "drizzle-orm";
+import { eq, ne, count } from "drizzle-orm";
 import { db } from "@workspace/db";
 import {
   cyclesTable,
@@ -9,10 +9,10 @@ import {
   seedLotsTable,
   alertsTable,
   sensorStatusTable,
+  channelsTable,
 } from "@workspace/db";
 import { calcDaysOverdue, seedingWeight } from "../lib/utils";
 
-const TOTAL_CHANNELS = 20;
 const router = Router();
 
 type UserRole = "technician" | "supervisor" | "quality_lead" | "facility_lead";
@@ -81,37 +81,8 @@ router.get("/dashboard", async (req: Request, res: Response) => {
       }
     }
 
-    // Auto-create alerts for overdue cycles (idempotent: skip if open alert already exists)
-    for (const item of actionRequired) {
-      const title =
-        item.type === "harvest"
-          ? `Overdue Harvest: ${item.seedName}`
-          : `Overdue Fertigation Transition: ${item.seedName}`;
-      const location = item.trayPosition ?? `Cycle ${item.cycleShortId}`;
-
-      const existing = await db
-        .select({ id: alertsTable.id })
-        .from(alertsTable)
-        .where(
-          and(
-            eq(alertsTable.title, title),
-            eq(alertsTable.location, location),
-            eq(alertsTable.status, "current"),
-          ),
-        )
-        .limit(1);
-
-      if (existing.length === 0) {
-        await db.insert(alertsTable).values({
-          title,
-          description: `Cycle #${item.cycleShortId} (${item.seedName}) is ${item.daysOverdue} day(s) overdue for ${item.type === "harvest" ? "harvesting" : "fertigation transition"}.`,
-          severity: item.daysOverdue >= 3 ? "critical" : "warning",
-          location,
-          status: "current",
-          actionType: item.type,
-        });
-      }
-    }
+    // Note: alert auto-creation for overdue cycles moved to a scheduled job
+    // (lib/overdue-scanner) — GET /dashboard is now read-only (R6).
 
     const completedRows = await db
       .select({
@@ -236,27 +207,28 @@ router.get("/dashboard", async (req: Request, res: Response) => {
       return c.createdAt >= d;
     }).length;
 
-    // Sensor status
-    let sensorStatus = {
-      sensorsOnline: 4,
-      sensorsTotal: 4,
-      acidityPh: 6.5,
-      waterLevelPct: 78,
-      tempCelsius: 22.5,
-      humidityPct: 65,
-    };
+    // Sensor status — no fabricated fallback (G11). Absent readings are null.
     const sensorRows = await db.select().from(sensorStatusTable).limit(1);
-    if (sensorRows.length > 0) {
-      const s = sensorRows[0];
-      sensorStatus = {
-        sensorsOnline: s.sensorsOnline,
-        sensorsTotal: s.sensorsTotal,
-        acidityPh: Number(s.acidityPh),
-        waterLevelPct: Number(s.waterLevelPct),
-        tempCelsius: Number(s.tempCelsius),
-        humidityPct: Number(s.humidityPct),
-      };
-    }
+    const s = sensorRows[0];
+    const num = (v: number | null | undefined): number | null =>
+      v === null || v === undefined ? null : Number(v);
+    const sensorStatus = s
+      ? {
+          sensorsOnline: s.sensorsOnline,
+          sensorsTotal: s.sensorsTotal,
+          acidityPh: num(s.acidityPh),
+          waterLevelPct: num(s.waterLevelPct),
+          tempCelsius: num(s.tempCelsius),
+          humidityPct: num(s.humidityPct),
+        }
+      : {
+          sensorsOnline: null,
+          sensorsTotal: null,
+          acidityPh: null,
+          waterLevelPct: null,
+          tempCelsius: null,
+          humidityPct: null,
+        };
 
     // Current alerts count
     const currentAlerts = await db
@@ -264,10 +236,14 @@ router.get("/dashboard", async (req: Request, res: Response) => {
       .from(alertsTable)
       .where(eq(alertsTable.status, "current"));
 
+    // Channel utilization denominator: real channel count, not a hardcoded const (R9).
+    const channelCountRows = await db.select({ c: count() }).from(channelsTable);
+    const totalChannels = Number(channelCountRows[0]?.c ?? 0);
+
     return res.json({
-      channelUtilization: runningRows.length / TOTAL_CHANNELS,
+      channelUtilization: totalChannels > 0 ? runningRows.length / totalChannels : 0,
       totalRunningCycles: runningRows.length,
-      totalChannels: TOTAL_CHANNELS,
+      totalChannels,
       totalYieldThisWeek,
       totalYieldThisMonth,
       activeSeedLots,

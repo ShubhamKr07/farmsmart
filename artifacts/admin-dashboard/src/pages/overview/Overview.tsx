@@ -42,7 +42,7 @@ export function Overview() {
   }
 
   const running = dashboard?.totalRunningCycles || 0;
-  const total = dashboard?.totalChannels || 20;
+  const total = dashboard?.totalChannels ?? 0;
   const utilPct = ((dashboard?.channelUtilization || 0) * 100).toFixed(1);
 
   const yieldByDayData = dashboard?.yieldByDay || [];

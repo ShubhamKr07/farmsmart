@@ -1,5 +1,5 @@
 import { Router, type Request, type Response } from "express";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { db } from "@workspace/db";
 import { manualChecksTable, cyclesTable, alertsTable } from "@workspace/db";
 
@@ -106,27 +106,16 @@ router.post("/bad-trays/manual-checks", async (req: Request, res: Response) => {
     if (totalTrays >= HIGH_SEVERITY_THRESHOLD) {
       const location = cycle.trayPosition ?? `Cycle ${cycle.shortId}`;
       const alertTitle = `High Bad Tray Count: ${issue}`;
-      const existing = await db
-        .select({ id: alertsTable.id })
-        .from(alertsTable)
-        .where(
-          and(
-            eq(alertsTable.title, alertTitle),
-            eq(alertsTable.location, location),
-            eq(alertsTable.status, "current"),
-          ),
-        )
-        .limit(1);
-
-      if (existing.length === 0) {
-        await db.insert(alertsTable).values({
+      await db
+        .insert(alertsTable)
+        .values({
           title: alertTitle,
           description: `${totalTrays} bad trays reported in ${location} due to "${issue}". Manual check logged for cycle ${cycle.shortId}.`,
           severity: "critical",
           location,
           status: "current",
-        });
-      }
+        })
+        .onConflictDoNothing();
     }
 
     return res.status(201).json({

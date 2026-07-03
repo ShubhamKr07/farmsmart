@@ -50,32 +50,28 @@ router.post("/shipments", async (req: Request, res: Response) => {
     if (!client) return res.status(400).json({ error: "client is required" });
 
     let shortId = generateShortId();
-    let exists = await db
-      .select({ id: shipmentsTable.id })
-      .from(shipmentsTable)
-      .where(eq(shipmentsTable.shortId, shortId))
-      .limit(1);
-    while (exists.length > 0) {
+    let shipment: typeof shipmentsTable.$inferSelect | undefined;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      [shipment] = await db
+        .insert(shipmentsTable)
+        .values({
+          shortId,
+          client,
+          productDescription: productDescription ?? null,
+          yieldSoldKg: yieldSoldKg ? String(yieldSoldKg) : null,
+          revenueUsd: revenueUsd ? String(revenueUsd) : null,
+          shippingDate: shippingDate ?? null,
+          status: status ?? "pending",
+        })
+        .onConflictDoNothing({ target: [shipmentsTable.shortId] })
+        .returning();
+      if (shipment) break;
       shortId = generateShortId();
-      exists = await db
-        .select({ id: shipmentsTable.id })
-        .from(shipmentsTable)
-        .where(eq(shipmentsTable.shortId, shortId))
-        .limit(1);
     }
 
-    const [shipment] = await db
-      .insert(shipmentsTable)
-      .values({
-        shortId,
-        client,
-        productDescription: productDescription ?? null,
-        yieldSoldKg: yieldSoldKg ? String(yieldSoldKg) : null,
-        revenueUsd: revenueUsd ? String(revenueUsd) : null,
-        shippingDate: shippingDate ?? null,
-        status: status ?? "pending",
-      })
-      .returning();
+    if (!shipment) {
+      return res.status(500).json({ error: "Failed to generate a unique shipment short ID" });
+    }
 
     return res.status(201).json(formatShipment(shipment));
   } catch (err) {

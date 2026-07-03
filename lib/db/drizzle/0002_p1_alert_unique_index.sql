@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "alerts_current_title_location_uniq" ON "alerts" USING btree ("title","location") WHERE "alerts"."status" = 'current';

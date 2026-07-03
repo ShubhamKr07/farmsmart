@@ -64,7 +64,7 @@ export function RightSidebar() {
                   </span>
                 )}
                 <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
-                  {dashboard?.sensorStatus?.sensorsOnline} / {dashboard?.sensorStatus?.sensorsTotal} Online
+                  {dashboard?.sensorStatus?.sensorsOnline ?? "—"} / {dashboard?.sensorStatus?.sensorsTotal ?? "—"} Online
                 </Badge>
               </div>
             </div>
@@ -74,28 +74,28 @@ export function RightSidebar() {
                 <CardContent className="p-3 flex flex-col items-center justify-center text-center">
                   <Droplets className="h-4 w-4 text-primary mb-1" />
                   <span className="text-xs text-muted-foreground">pH</span>
-                  <span className="font-semibold text-sm">{dashboard?.sensorStatus?.acidityPh}</span>
+                  <span className="font-semibold text-sm">{dashboard?.sensorStatus?.acidityPh ?? "—"}</span>
                 </CardContent>
               </Card>
               <Card className="shadow-none border-border/50 bg-muted/30">
                 <CardContent className="p-3 flex flex-col items-center justify-center text-center">
                   <Droplets className="h-4 w-4 text-primary mb-1" />
                   <span className="text-xs text-muted-foreground">Water</span>
-                  <span className="font-semibold text-sm">{dashboard?.sensorStatus?.waterLevelPct}%</span>
+                  <span className="font-semibold text-sm">{dashboard?.sensorStatus?.waterLevelPct != null ? `${dashboard.sensorStatus.waterLevelPct}%` : "—"}</span>
                 </CardContent>
               </Card>
               <Card className="shadow-none border-border/50 bg-muted/30">
                 <CardContent className="p-3 flex flex-col items-center justify-center text-center">
                   <Thermometer className="h-4 w-4 text-primary mb-1" />
                   <span className="text-xs text-muted-foreground">Temp</span>
-                  <span className="font-semibold text-sm">{dashboard?.sensorStatus?.tempCelsius}°C</span>
+                  <span className="font-semibold text-sm">{dashboard?.sensorStatus?.tempCelsius != null ? `${dashboard.sensorStatus.tempCelsius}°C` : "—"}</span>
                 </CardContent>
               </Card>
               <Card className="shadow-none border-border/50 bg-muted/30">
                 <CardContent className="p-3 flex flex-col items-center justify-center text-center">
                   <Wind className="h-4 w-4 text-primary mb-1" />
                   <span className="text-xs text-muted-foreground">Humidity</span>
-                  <span className="font-semibold text-sm">{dashboard?.sensorStatus?.humidityPct}%</span>
+                  <span className="font-semibold text-sm">{dashboard?.sensorStatus?.humidityPct != null ? `${dashboard.sensorStatus.humidityPct}%` : "—"}</span>
                 </CardContent>
               </Card>
             </div>

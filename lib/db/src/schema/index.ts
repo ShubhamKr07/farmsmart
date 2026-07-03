@@ -8,8 +8,11 @@ import {
   timestamp,
   pgEnum,
   index,
+  uniqueIndex,
   real,
+  check,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 
 export const cycleStatusEnum = pgEnum("cycle_status", [
   "germination",
@@ -83,7 +86,13 @@ export const cyclesTable = pgTable(
     createdBy: text("created_by"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
-  (table) => [index("cycles_status_idx").on(table.status)],
+  (table) => [
+    index("cycles_status_idx").on(table.status),
+    index("cycles_closed_at_idx").on(table.closedAt),
+    index("cycles_created_at_idx").on(table.createdAt),
+    check("cycles_full_trays_nonneg", sql`${table.fullTrays} >= 0`),
+    check("cycles_half_trays_nonneg", sql`${table.halfTrays} >= 0`),
+  ],
 );
 
 export const manualChecksTable = pgTable(
@@ -92,7 +101,7 @@ export const manualChecksTable = pgTable(
     id: serial("id").primaryKey(),
     cycleId: integer("cycle_id")
       .notNull()
-      .references(() => cyclesTable.id),
+      .references(() => cyclesTable.id, { onDelete: "restrict" }),
     fullTrays: integer("full_trays").notNull().default(0),
     halfTrays: integer("half_trays").notNull().default(0),
     isBadTrays: boolean("is_bad_trays").notNull().default(false),
@@ -102,7 +111,10 @@ export const manualChecksTable = pgTable(
     createdBy: text("created_by"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
-  (table) => [index("manual_checks_created_at_idx").on(table.createdAt)],
+  (table) => [
+    index("manual_checks_created_at_idx").on(table.createdAt),
+    index("manual_checks_cycle_id_idx").on(table.cycleId),
+  ],
 );
 
 export const alertsTable = pgTable("alerts", {
@@ -116,7 +128,14 @@ export const alertsTable = pgTable("alerts", {
   actionNotes: text("action_notes"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   resolvedAt: timestamp("resolved_at"),
-});
+},
+  (table) => [
+    index("alerts_status_idx").on(table.status),
+    uniqueIndex("alerts_current_title_location_uniq")
+      .on(table.title, table.location)
+      .where(sql`${table.status} = 'current'`),
+  ],
+);
 
 export const inventoryItemsTable = pgTable("inventory_items", {
   id: serial("id").primaryKey(),
@@ -129,7 +148,12 @@ export const inventoryItemsTable = pgTable("inventory_items", {
   unit: text("unit").notNull().default("g"),
   arrivalDate: text("arrival_date"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+},
+  (table) => [
+    index("inventory_category_idx").on(table.category),
+    check("inventory_qty_range", sql`${table.currentQty} <= ${table.maxQty}`),
+  ],
+);
 
 export const shipmentsTable = pgTable("shipments", {
   id: serial("id").primaryKey(),
@@ -141,7 +165,12 @@ export const shipmentsTable = pgTable("shipments", {
   shippingDate: text("shipping_date"),
   status: shipmentStatusEnum("status").notNull().default("pending"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+},
+  (table) => [
+    index("shipments_status_idx").on(table.status),
+    index("shipments_shipping_date_idx").on(table.shippingDate),
+  ],
+);
 
 export const roomNameEnum = pgEnum("room_name", [
   "seeding",
@@ -188,11 +217,11 @@ export const traysTable = pgTable("trays", {
 export const sensorStatusTable = pgTable("sensor_status", {
   id: serial("id").primaryKey(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
-  sensorsOnline: integer("sensors_online").notNull().default(24),
-  sensorsTotal: integer("sensors_total").notNull().default(24),
-  acidityPh: real("acidity_ph").notNull().default(6.0),
-  waterLevelPct: real("water_level_pct").notNull().default(95),
-  tempCelsius: real("temp_celsius").notNull().default(30),
-  humidityPct: real("humidity_pct").notNull().default(65),
+  sensorsOnline: integer("sensors_online"),
+  sensorsTotal: integer("sensors_total"),
+  acidityPh: real("acidity_ph"),
+  waterLevelPct: real("water_level_pct"),
+  tempCelsius: real("temp_celsius"),
+  humidityPct: real("humidity_pct"),
   nutrientMix: text("nutrient_mix"),
 });

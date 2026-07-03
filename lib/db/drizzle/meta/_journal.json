@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1783107369873,
+      "tag": "0000_baseline",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1783107901236,
+      "tag": "0001_p1_indexes_constraints_truthful_sensors",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1783108302561,
+      "tag": "0002_p1_alert_unique_index",
+      "breakpoints": true
+    }
+  ]
+}

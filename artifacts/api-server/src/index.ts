@@ -1,6 +1,7 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 import { seedDataIfEmpty } from "./routes/growthProfiles";
+import { scanOverdueCyclesAndAlert } from "./lib/overdue-scanner";
 
 const rawPort = process.env["PORT"];
 
@@ -17,6 +18,15 @@ if (Number.isNaN(port) || port <= 0) {
 }
 
 await seedDataIfEmpty();
+
+// Overdue-cycle alert scan (R6): runs on startup and every 5 min. Removed from
+// GET /dashboard so that endpoint stays read-only.
+const runScan = () =>
+  scanOverdueCyclesAndAlert(logger).catch((err) =>
+    logger.error({ err }, "overdue scan failed"),
+  );
+void runScan();
+setInterval(runScan, 5 * 60 * 1000);
 
 app.listen(port, (err) => {
   if (err) {

@@ -1,6 +1,6 @@
 import { Router, type Request, type Response, type NextFunction } from "express";
 import { getAuth } from "@clerk/express";
-import { eq, ne, desc } from "drizzle-orm";
+import { eq, ne, desc, and } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@workspace/db";
 import {
@@ -219,39 +219,35 @@ router.post("/cycles", enforceAuth, async (req, res) => {
       return res.status(400).json({ error: "Growth profile not found" });
     }
 
+    const auth = getAuth(req);
     let shortId = generateShortId();
-    let exists = await db
-      .select({ id: cyclesTable.id })
-      .from(cyclesTable)
-      .where(eq(cyclesTable.shortId, shortId))
-      .limit(1);
-    while (exists.length > 0) {
+    let cycle: typeof cyclesTable.$inferSelect | undefined;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      [cycle] = await db
+        .insert(cyclesTable)
+        .values({
+          shortId,
+          seedLotQrCodes: body.seedLotQrCodes,
+          seedName: body.seedName,
+          fullTrays: body.fullTrays,
+          halfTrays: body.halfTrays,
+          seedWeightTray: String(body.seedWeightTray),
+          growthProfileId: body.growthProfileId,
+          seedingDate: body.seedingDate,
+          status: "germination",
+          trayPosition: body.trayPosition,
+          germinationStartedAt: new Date(),
+          createdBy: auth?.userId ?? null,
+        })
+        .onConflictDoNothing({ target: [cyclesTable.shortId] })
+        .returning();
+      if (cycle) break;
       shortId = generateShortId();
-      exists = await db
-        .select({ id: cyclesTable.id })
-        .from(cyclesTable)
-        .where(eq(cyclesTable.shortId, shortId))
-        .limit(1);
     }
 
-    const auth = getAuth(req);
-    const [cycle] = await db
-      .insert(cyclesTable)
-      .values({
-        shortId,
-        seedLotQrCodes: body.seedLotQrCodes,
-        seedName: body.seedName,
-        fullTrays: body.fullTrays,
-        halfTrays: body.halfTrays,
-        seedWeightTray: String(body.seedWeightTray),
-        growthProfileId: body.growthProfileId,
-        seedingDate: body.seedingDate,
-        status: "germination",
-        trayPosition: body.trayPosition,
-        germinationStartedAt: new Date(),
-        createdBy: auth?.userId ?? null,
-      })
-      .returning();
+    if (!cycle) {
+      return res.status(500).json({ error: "Failed to generate a unique cycle short ID" });
+    }
 
     const hasSensorData =
       body.humidity !== undefined ||
@@ -366,8 +362,14 @@ router.post("/cycles/:id/fertigation", enforceAuth, async (req, res) => {
     const [updated] = await db
       .update(cyclesTable)
       .set({ status: "fertigation", fertigationStartedAt: new Date() })
-      .where(eq(cyclesTable.id, id))
+      .where(and(eq(cyclesTable.id, id), eq(cyclesTable.status, "germination")))
       .returning();
+
+    if (!updated) {
+      return res
+        .status(409)
+        .json({ error: "Cycle is no longer in germination status (concurrent transition)" });
+    }
 
     const hasSensorData =
       body.humidity !== undefined ||
@@ -440,8 +442,14 @@ router.post("/cycles/:id/harvest", enforceAuth, async (req, res) => {
         harvestStartedAt: new Date(),
         trayPosition: body.trayQrCode ?? cycle.trayPosition,
       })
-      .where(eq(cyclesTable.id, id))
+      .where(and(eq(cyclesTable.id, id), eq(cyclesTable.status, "fertigation")))
       .returning();
+
+    if (!updated) {
+      return res
+        .status(409)
+        .json({ error: "Cycle is no longer in fertigation status (concurrent transition)" });
+    }
 
     return res.json(formatCycle(updated, profile));
   } catch (err) {
@@ -474,30 +482,41 @@ router.post("/cycles/:id/complete-harvest", enforceAuth, async (req, res) => {
 
     const auth = getAuth(req);
 
-    const [updated] = await db
-      .update(cyclesTable)
-      .set({
-        status: "completed",
-        fullTrays: body.fullTrays ?? cycle.fullTrays,
-        halfTrays: body.halfTrays ?? cycle.halfTrays,
-        harvestedQty: String(body.harvestedQty),
-        closedAt: new Date(),
-        trayPosition: body.trayQrCode ?? cycle.trayPosition,
-      })
-      .where(eq(cyclesTable.id, id))
-      .returning();
+    const updated = await db.transaction(async (tx) => {
+      const [row] = await tx
+        .update(cyclesTable)
+        .set({
+          status: "completed",
+          fullTrays: body.fullTrays ?? cycle.fullTrays,
+          halfTrays: body.halfTrays ?? cycle.halfTrays,
+          harvestedQty: String(body.harvestedQty),
+          closedAt: new Date(),
+          trayPosition: body.trayQrCode ?? cycle.trayPosition,
+        })
+        .where(and(eq(cyclesTable.id, id), eq(cyclesTable.status, "harvest")))
+        .returning();
 
-    if (body.isBadTrays) {
-      await db.insert(manualChecksTable).values({
-        cycleId: id,
-        fullTrays: body.fullTrays ?? cycle.fullTrays,
-        halfTrays: body.halfTrays ?? cycle.halfTrays,
-        isBadTrays: true,
-        issue: body.issue ?? null,
-        notes: "Flagged at harvest",
-        photoUrls: [],
-        createdBy: auth?.userId ?? null,
-      });
+      if (!row) return null; // concurrent transition — another request beat us (I2)
+
+      if (body.isBadTrays) {
+        await tx.insert(manualChecksTable).values({
+          cycleId: id,
+          fullTrays: body.fullTrays ?? cycle.fullTrays,
+          halfTrays: body.halfTrays ?? cycle.halfTrays,
+          isBadTrays: true,
+          issue: body.issue ?? null,
+          notes: "Flagged at harvest",
+          photoUrls: [],
+          createdBy: auth?.userId ?? null,
+        });
+      }
+      return row;
+    });
+
+    if (!updated) {
+      return res
+        .status(409)
+        .json({ error: "Cycle is no longer in harvest status (concurrent transition)" });
     }
 
     return res.json(formatCycle(updated, profile));
