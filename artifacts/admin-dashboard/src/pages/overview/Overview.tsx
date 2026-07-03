@@ -3,19 +3,22 @@ import { useGetDashboard, useListAlerts } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  AreaChart, Area, CartesianGrid, Legend
+  AreaChart, Area, CartesianGrid, Legend, LineChart, Line
 } from "recharts";
 import { formatNumber } from "@/lib/format";
 import {
-  ArrowUpRight, Sprout, Layers, Factory, AlertTriangle,
-  TrendingUp, Leaf, Package
+  Sprout, Layers, Factory, AlertTriangle,
+  TrendingUp, Leaf, Package, ArrowUp, ArrowDown
 } from "lucide-react";
 import { usePanel } from "@/context/PanelContext";
+import { QueryError } from "@/components/ui/query-error";
+import { a11yClick } from "@/lib/utils";
 
 export function Overview() {
-  const { data: dashboard, isLoading } = useGetDashboard();
+  const { data: dashboard, isLoading, isError, refetch } = useGetDashboard();
   const { data: alerts } = useListAlerts({ status: "current", limit: 3 });
   const { open } = usePanel();
 
@@ -30,6 +33,14 @@ export function Overview() {
     );
   }
 
+  if (isError) {
+    return (
+      <div className="p-6">
+        <QueryError resource="the dashboard" onRetry={() => refetch()} />
+      </div>
+    );
+  }
+
   const running = dashboard?.totalRunningCycles || 0;
   const total = dashboard?.totalChannels || 20;
   const utilPct = ((dashboard?.channelUtilization || 0) * 100).toFixed(1);
@@ -38,6 +49,9 @@ export function Overview() {
   const seedingByDayData = dashboard?.seedingByDay || [];
   const badTrayByDayData = dashboard?.badTrayByDay || [];
   const yieldByWeekData = dashboard?.yieldByWeek || [];
+  const lastYw = yieldByWeekData[yieldByWeekData.length - 1]?.value ?? 0;
+  const prevYw = yieldByWeekData[yieldByWeekData.length - 2]?.value ?? 0;
+  const yieldDeltaPct = prevYw > 0 ? ((lastYw - prevYw) / prevYw) * 100 : null;
 
   const combinedDayData = yieldByDayData.map((d, i) => ({
     label: d.label,
@@ -63,16 +77,31 @@ export function Overview() {
             <div className="text-2xl font-bold" data-testid="text-yield-week">
               {formatNumber(dashboard?.totalYieldThisWeek || 0)} kg
             </div>
-            <p className="text-xs text-muted-foreground mt-1 flex items-center">
-              <ArrowUpRight className="h-3 w-3 mr-1 text-primary" />
-              {formatNumber(dashboard?.totalYieldThisMonth || 0)} kg this month
-            </p>
+            {yieldDeltaPct != null ? (
+              <p className={`text-xs mt-1 flex items-center gap-1 ${yieldDeltaPct >= 0 ? "text-status-ok" : "text-status-warn"}`}>
+                {yieldDeltaPct >= 0 ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
+                {Math.abs(yieldDeltaPct).toFixed(0)}% vs last week
+              </p>
+            ) : (
+              <p className="text-xs text-muted-foreground mt-1">
+                {formatNumber(dashboard?.totalYieldThisMonth || 0)} kg this month
+              </p>
+            )}
+            {yieldByWeekData.length > 1 && (
+              <div className="h-8 mt-2" aria-hidden="true">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={yieldByWeekData}>
+                    <Line type="monotone" dataKey="value" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            )}
           </CardContent>
         </Card>
 
         <Card
-          className="shadow-sm cursor-pointer hover:border-primary/50 transition-colors"
-          onClick={() => open("cycles")}
+          className="shadow-sm cursor-pointer hover:border-primary/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          {...a11yClick(() => open("cycles"))}
           title="Open Active Cycles"
         >
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
@@ -105,8 +134,8 @@ export function Overview() {
         </Card>
 
         <Card
-          className="shadow-sm cursor-pointer hover:border-destructive/50 transition-colors"
-          onClick={() => open("bad-trays")}
+          className="shadow-sm cursor-pointer hover:border-destructive/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          {...a11yClick(() => open("bad-trays"))}
           title="Open Bad Trays Analysis"
         >
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
@@ -127,8 +156,8 @@ export function Overview() {
       {/* Secondary KPI Row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card
-          className="shadow-sm cursor-pointer hover:border-primary/50 transition-colors"
-          onClick={() => open("seed-lots")}
+          className="shadow-sm cursor-pointer hover:border-primary/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          {...a11yClick(() => open("seed-lots"))}
           title="Open Active Seed Lots"
         >
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
@@ -144,16 +173,16 @@ export function Overview() {
         </Card>
 
         <Card
-          className="shadow-sm cursor-pointer hover:border-orange-400/50 transition-colors"
-          onClick={() => open("alerts")}
+          className="shadow-sm cursor-pointer hover:border-status-warn/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          {...a11yClick(() => open("alerts"))}
           title="Open System Alerts"
         >
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-sm font-medium text-muted-foreground">Alerts Requiring Action</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-orange-500" />
+            <AlertTriangle className="h-4 w-4 text-status-warn" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-600">{(alerts || []).length}</div>
+            <div className="text-2xl font-bold text-status-warn">{(alerts || []).length}</div>
             <p className="text-xs text-muted-foreground mt-1">
               {(dashboard as { criticalAlertsCount?: number })?.criticalAlertsCount || 0} critical · <span className="text-primary">View →</span>
             </p>
@@ -161,8 +190,8 @@ export function Overview() {
         </Card>
 
         <Card
-          className="shadow-sm cursor-pointer hover:border-primary/50 transition-colors"
-          onClick={() => open("action-required")}
+          className="shadow-sm cursor-pointer hover:border-primary/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          {...a11yClick(() => open("action-required"))}
           title="Open Cycles Needing Action"
         >
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
@@ -218,13 +247,14 @@ export function Overview() {
                 <BarChart data={combinedDayData}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
                   <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{fontSize: 12}} dy={10} />
-                  <YAxis axisLine={false} tickLine={false} tick={{fontSize: 12}} dx={-10} />
+                  <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{fontSize: 12}} dx={-10} />
+                  <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{fontSize: 12}} dx={10} />
                   <Tooltip
                     contentStyle={{ backgroundColor: 'hsl(var(--card))', borderRadius: '8px', border: '1px solid hsl(var(--border))' }}
                   />
                   <Legend />
-                  <Bar dataKey="yield" name="Yield (kg)" fill="hsl(var(--primary))" radius={[4,4,0,0]} />
-                  <Bar dataKey="seeding" name="Seeding (g)" fill="hsl(var(--chart-2))" radius={[4,4,0,0]} />
+                  <Bar yAxisId="left" dataKey="yield" name="Yield (kg)" fill="hsl(var(--primary))" radius={[4,4,0,0]} />
+                  <Bar yAxisId="right" dataKey="seeding" name="Seeding (g)" fill="hsl(var(--chart-2))" radius={[4,4,0,0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -236,32 +266,24 @@ export function Overview() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="shadow-sm">
           <CardHeader>
-            <CardTitle>Channel Grid</CardTitle>
+            <CardTitle>Channel Utilization</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-5 gap-2 mb-4">
-              {Array.from({ length: total }).map((_, i) => (
-                <div
-                  key={i}
-                  className={`h-10 w-full rounded-md flex items-center justify-center text-xs font-medium ${
-                    i < running
-                      ? "bg-primary/20 text-primary border border-primary/40"
-                      : "bg-muted text-muted-foreground border border-border"
-                  }`}
-                  title={i < running ? "Active" : "Empty"}
-                >
-                  {i + 1}
-                </div>
-              ))}
+            <div className="flex flex-col items-center justify-center text-center py-4">
+              <div className="text-4xl font-bold text-primary">{utilPct}%</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {running} of {total} channels active
+              </p>
             </div>
+            <Progress value={Number(utilPct)} className="h-2 mb-4" />
             <div className="flex justify-center gap-4 text-xs text-muted-foreground">
               <div className="flex items-center gap-1">
-                <div className="w-3 h-3 rounded-sm bg-primary/20 border border-primary/40" />
+                <div className="w-3 h-3 rounded-sm bg-primary" />
                 <span>Active ({running})</span>
               </div>
               <div className="flex items-center gap-1">
                 <div className="w-3 h-3 rounded-sm bg-muted border border-border" />
-                <span>Empty ({Math.max(0, total - running)})</span>
+                <span>Idle ({Math.max(0, total - running)})</span>
               </div>
             </div>
           </CardContent>

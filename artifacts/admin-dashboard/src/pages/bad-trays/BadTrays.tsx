@@ -15,7 +15,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { formatNumber, formatCurrency, formatDate } from "@/lib/format";
 import { AlertTriangle, Plus, DollarSign, Sprout, Bug, Thermometer, Droplets, Biohazard } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
+import { QueryError } from "@/components/ui/query-error";
 
 const entrySchema = z.object({
   cycleId: z.coerce.number().min(1, "Cycle ID is required"),
@@ -38,10 +39,9 @@ function IssueIcon({ issue }: { issue: string }) {
 }
 
 export function BadTrays() {
-  const { data: analysis, isLoading } = useGetBadTraysAnalysis();
+  const { data: analysis, isLoading, isError, refetch } = useGetBadTraysAnalysis();
   const createEntry = useCreateBadTrayEntry();
   const queryClient = useQueryClient();
-  const { toast } = useToast();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   const form = useForm<z.infer<typeof entrySchema>>({
@@ -61,15 +61,23 @@ export function BadTrays() {
         queryClient.invalidateQueries({ queryKey: getGetBadTraysAnalysisQueryKey() });
         setIsAddModalOpen(false);
         form.reset();
-        toast({ title: "Entry added successfully" });
+        toast("Entry added successfully");
       },
       onError: () => {
-        toast({ title: "Failed to add entry", variant: "destructive" });
+        toast.error("Failed to add entry");
       }
     });
   };
 
   if (isLoading) return <div className="p-6 space-y-6"><Skeleton className="h-[400px] w-full" /></div>;
+
+  if (isError) {
+    return (
+      <div className="p-6">
+        <QueryError resource="bad-trays analysis" onRetry={() => refetch()} />
+      </div>
+    );
+  }
 
   const data = analysis || { totalBadTrays: 0, estimatedLoss: 0, issues: [], manualEntries: [] };
   const topIssues = [...data.issues].sort((a, b) => b.affectedTrays - a.affectedTrays).slice(0, 4);
@@ -130,14 +138,14 @@ export function BadTrays() {
             <p className="text-xs text-destructive/70 mt-1">Across all active cycles</p>
           </CardContent>
         </Card>
-        <Card className="shadow-sm border-orange-500/20 bg-orange-500/5">
+        <Card className="shadow-sm border-status-warn/20 bg-status-warn/5">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-orange-700 dark:text-orange-400">Estimated Loss</CardTitle>
-            <DollarSign className="h-4 w-4 text-orange-500" />
+            <CardTitle className="text-sm font-medium text-status-warn">Estimated Loss</CardTitle>
+            <DollarSign className="h-4 w-4 text-status-warn" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-orange-700 dark:text-orange-400">{formatCurrency(data.estimatedLoss)}</div>
-            <p className="text-xs text-orange-700/70 mt-1">Based on projected yield value</p>
+            <div className="text-3xl font-bold text-status-warn">{formatCurrency(data.estimatedLoss)}</div>
+            <p className="text-xs text-status-warn/70 mt-1">Based on projected yield value</p>
           </CardContent>
         </Card>
       </div>
@@ -192,12 +200,12 @@ export function BadTrays() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b bg-muted/50">
-                    <th className="p-3 text-left font-medium">Date</th>
-                    <th className="p-3 text-left font-medium">Tray ID</th>
-                    <th className="p-3 text-left font-medium">Zone</th>
-                    <th className="p-3 text-left font-medium">Crop</th>
-                    <th className="p-3 text-left font-medium">Issue</th>
-                    <th className="p-3 text-left font-medium">Severity</th>
+                    <th scope="col" className="p-3 text-left font-medium">Date</th>
+                    <th scope="col" className="p-3 text-left font-medium">Tray ID</th>
+                    <th scope="col" className="p-3 text-left font-medium">Zone</th>
+                    <th scope="col" className="p-3 text-left font-medium">Crop</th>
+                    <th scope="col" className="p-3 text-left font-medium">Issue</th>
+                    <th scope="col" className="p-3 text-left font-medium">Severity</th>
                   </tr>
                 </thead>
                 <tbody>

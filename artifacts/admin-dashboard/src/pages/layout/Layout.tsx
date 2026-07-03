@@ -23,7 +23,8 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
+import { QueryError } from "@/components/ui/query-error";
 import {
   useGetLayout,
   getGetLayoutQueryKey,
@@ -45,15 +46,15 @@ const ROOM_LABELS: Record<string, string> = {
 };
 
 const ROOM_COLORS: Record<string, string> = {
-  seeding: "bg-green-50 border-green-200",
-  fertigation: "bg-blue-50 border-blue-200",
-  harvesting: "bg-amber-50 border-amber-200",
+  seeding: "bg-status-ok/5 border-status-ok/20",
+  fertigation: "bg-primary/5 border-primary/20",
+  harvesting: "bg-status-warn/5 border-status-warn/20",
 };
 
 const ROOM_HEADER_COLORS: Record<string, string> = {
-  seeding: "bg-green-100 text-green-800",
-  fertigation: "bg-blue-100 text-blue-800",
-  harvesting: "bg-amber-100 text-amber-800",
+  seeding: "bg-status-ok/15 text-status-ok",
+  fertigation: "bg-primary/15 text-primary",
+  harvesting: "bg-status-warn/15 text-status-warn",
 };
 
 interface QRTarget {
@@ -108,10 +109,10 @@ function InlineEdit({
         }}
       />
       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onSave(val)}>
-        <Check className="h-3.5 w-3.5 text-green-600" />
+        <Check className="h-3.5 w-3.5 text-status-ok" />
       </Button>
       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onCancel}>
-        <X className="h-3.5 w-3.5 text-red-500" />
+        <X className="h-3.5 w-3.5 text-destructive" />
       </Button>
     </div>
   );
@@ -238,7 +239,7 @@ function TrayCountInput({
   };
 
   return (
-    <div className="flex items-center gap-2 px-3 py-2 border-t border-gray-100">
+    <div className="flex items-center gap-2 px-3 py-2 border-t border-border">
       <Label className="text-xs text-muted-foreground whitespace-nowrap">Number of trays</Label>
       <Input
         type="number"
@@ -286,7 +287,7 @@ function RackRow({
   const [editing, setEditing] = useState(false);
 
   return (
-    <div className="rounded border border-gray-200 bg-gray-50">
+    <div className="rounded border border-border bg-muted/30">
       <div className="flex items-center gap-1 px-2 py-1.5">
         <Button
           variant="ghost"
@@ -387,7 +388,7 @@ function ChannelRow({
   const [editing, setEditing] = useState(false);
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white">
+    <div className="rounded-lg border border-border bg-card">
       <div className="flex items-center gap-1.5 px-3 py-2">
         <Button
           variant="ghost"
@@ -521,8 +522,8 @@ function RoomSection({
   onSetTrayCount: (rackId: number, count: number) => void;
 }) {
   const [open, setOpen] = useState(true);
-  const colorClass = ROOM_COLORS[room.name] ?? "bg-gray-50 border-gray-200";
-  const headerClass = ROOM_HEADER_COLORS[room.name] ?? "bg-gray-100 text-gray-800";
+  const colorClass = ROOM_COLORS[room.name] ?? "bg-muted/30 border-border";
+  const headerClass = ROOM_HEADER_COLORS[room.name] ?? "bg-muted text-muted-foreground";
 
   return (
     <div className={`rounded-xl border ${colorClass}`}>
@@ -575,8 +576,8 @@ function QRModal({ target, onClose }: { target: QRTarget | null; onClose: () => 
 
   const payload = target
     ? target.type === "channel"
-      ? JSON.stringify({ type: "layout", facility: "FarmEasy", room: target.room, channel: target.channel })
-      : JSON.stringify({ type: "layout", facility: "FarmEasy", room: target.room, channel: target.channel, rack: target.rack })
+      ? JSON.stringify({ type: "layout", facility: "FarmSmart", room: target.room, channel: target.channel })
+      : JSON.stringify({ type: "layout", facility: "FarmSmart", room: target.room, channel: target.channel, rack: target.rack })
     : "";
 
   const handleDownload = useCallback(() => {
@@ -729,9 +730,8 @@ function MonitoringModal({
 }
 
 export function Layout() {
-  const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { data: rooms = [], isLoading } = useGetLayout();
+  const { data: rooms = [], isLoading, isError, refetch } = useGetLayout();
 
   const [qrTarget, setQrTarget] = useState<QRTarget | null>(null);
   const [monTarget, setMonTarget] = useState<MonitoringTarget | null>(null);
@@ -765,16 +765,16 @@ export function Layout() {
         createChannel.mutate(
           { data: { roomId: parentId, label } },
           {
-            onSuccess: () => { invalidate(); toast({ title: "Channel added" }); },
-            onError: () => toast({ title: "Failed to add channel", variant: "destructive" }),
+            onSuccess: () => { invalidate(); toast("Channel added"); },
+            onError: () => toast.error("Failed to add channel"),
           },
         );
       } else {
         createRack.mutate(
           { data: { channelId: parentId, label } },
           {
-            onSuccess: () => { invalidate(); toast({ title: "Rack added" }); },
-            onError: () => toast({ title: "Failed to add rack", variant: "destructive" }),
+            onSuccess: () => { invalidate(); toast("Rack added"); },
+            onError: () => toast.error("Failed to add rack"),
           },
         );
       }
@@ -796,16 +796,16 @@ export function Layout() {
         deleteChannel.mutate(
           { id },
           {
-            onSuccess: () => { invalidate(); toast({ title: "Channel deleted" }); },
-            onError: () => toast({ title: "Failed to delete channel", variant: "destructive" }),
+            onSuccess: () => { invalidate(); toast("Channel deleted"); },
+            onError: () => toast.error("Failed to delete channel"),
           },
         );
       } else {
         deleteRack.mutate(
           { id },
           {
-            onSuccess: () => { invalidate(); toast({ title: "Rack deleted" }); },
-            onError: () => toast({ title: "Failed to delete rack", variant: "destructive" }),
+            onSuccess: () => { invalidate(); toast("Rack deleted"); },
+            onError: () => toast.error("Failed to delete rack"),
           },
         );
       }
@@ -819,8 +819,8 @@ export function Layout() {
       updateChannel.mutate(
         { id, data: { label: label.trim() } },
         {
-          onSuccess: () => { invalidate(); toast({ title: "Channel renamed" }); },
-          onError: () => toast({ title: "Failed to rename channel", variant: "destructive" }),
+          onSuccess: () => { invalidate(); toast("Channel renamed"); },
+          onError: () => toast.error("Failed to rename channel"),
         },
       );
     },
@@ -833,8 +833,8 @@ export function Layout() {
       updateRack.mutate(
         { id, data: { label: label.trim() } },
         {
-          onSuccess: () => { invalidate(); toast({ title: "Rack renamed" }); },
-          onError: () => toast({ title: "Failed to rename rack", variant: "destructive" }),
+          onSuccess: () => { invalidate(); toast("Rack renamed"); },
+          onError: () => toast.error("Failed to rename rack"),
         },
       );
     },
@@ -846,8 +846,8 @@ export function Layout() {
       setTrayCount.mutate(
         { id: rackId, data: { count } },
         {
-          onSuccess: () => { invalidate(); toast({ title: `Tray count updated to ${count}` }); },
-          onError: () => toast({ title: "Failed to update tray count", variant: "destructive" }),
+          onSuccess: () => { invalidate(); toast(`Tray count updated to ${count}`); },
+          onError: () => toast.error("Failed to update tray count"),
         },
       );
     },
@@ -869,9 +869,9 @@ export function Layout() {
           onSuccess: () => {
             invalidate();
             setMonTarget(null);
-            toast({ title: "Monitoring config saved" });
+            toast("Monitoring config saved");
           },
-          onError: () => toast({ title: "Failed to save monitoring config", variant: "destructive" }),
+          onError: () => toast.error("Failed to save monitoring config"),
         },
       );
     },
@@ -886,8 +886,16 @@ export function Layout() {
     );
   }
 
+  if (isError) {
+    return (
+      <div className="p-6">
+        <QueryError resource="facility layout" onRetry={() => refetch()} />
+      </div>
+    );
+  }
+
   return (
-    <div className="p-6 max-w-4xl mx-auto space-y-4">
+    <div className="p-6 max-w-[1400px] mx-auto space-y-4">
       <div className="mb-6">
         <h1 className="text-2xl font-bold tracking-tight">Facility Layout</h1>
         <p className="text-muted-foreground text-sm mt-1">

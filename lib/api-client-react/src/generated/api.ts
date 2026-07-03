@@ -38,6 +38,7 @@ import type {
   Cycle,
   CycleDetail,
   DashboardStats,
+  DeleteResult,
   ErrorResponse,
   GrowthProfile,
   HealthStatus,
@@ -59,6 +60,7 @@ import type {
   Shipment,
   ShipmentInput,
   ShipmentStatusUpdate,
+  ShipmentUpdate,
   SuccessResponse,
   TrayCountResult,
   TrayItem,
@@ -1437,6 +1439,76 @@ export const useUpdateInventoryItem = <TError = ErrorType<ErrorResponse>,
       return useMutation(getUpdateInventoryItemMutationOptions(options));
     }
 
+export const getDeleteInventoryItemUrl = (id: number,) => {
+
+
+
+
+  return `/api/inventory/${id}`
+}
+
+/**
+ * @summary Delete an inventory item
+ */
+export const deleteInventoryItem = async (id: number, options?: RequestInit): Promise<DeleteResult> => {
+
+  return customFetch<DeleteResult>(getDeleteInventoryItemUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteInventoryItemMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteInventoryItem>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteInventoryItem>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteInventoryItem'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteInventoryItem>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteInventoryItem(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteInventoryItemMutationResult = NonNullable<Awaited<ReturnType<typeof deleteInventoryItem>>>
+
+    export type DeleteInventoryItemMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Delete an inventory item
+ */
+export const useDeleteInventoryItem = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteInventoryItem>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteInventoryItem>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteInventoryItemMutationOptions(options));
+    }
+
 export const getListShipmentsUrl = (params?: ListShipmentsParams,) => {
   const normalizedParams = new URLSearchParams();
 
@@ -1590,6 +1662,148 @@ export const useCreateShipment = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getCreateShipmentMutationOptions(options));
+    }
+
+export const getUpdateShipmentUrl = (id: number,) => {
+
+
+
+
+  return `/api/shipments/${id}`
+}
+
+/**
+ * @summary Update a shipment
+ */
+export const updateShipment = async (id: number,
+    shipmentUpdate: ShipmentUpdate, options?: RequestInit): Promise<Shipment> => {
+
+  return customFetch<Shipment>(getUpdateShipmentUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      shipmentUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateShipmentMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateShipment>>, TError,{id: number;data: BodyType<ShipmentUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateShipment>>, TError,{id: number;data: BodyType<ShipmentUpdate>}, TContext> => {
+
+const mutationKey = ['updateShipment'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateShipment>>, {id: number;data: BodyType<ShipmentUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateShipment(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateShipmentMutationResult = NonNullable<Awaited<ReturnType<typeof updateShipment>>>
+    export type UpdateShipmentMutationBody = BodyType<ShipmentUpdate>
+    export type UpdateShipmentMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Update a shipment
+ */
+export const useUpdateShipment = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateShipment>>, TError,{id: number;data: BodyType<ShipmentUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateShipment>>,
+        TError,
+        {id: number;data: BodyType<ShipmentUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateShipmentMutationOptions(options));
+    }
+
+export const getDeleteShipmentUrl = (id: number,) => {
+
+
+
+
+  return `/api/shipments/${id}`
+}
+
+/**
+ * @summary Delete a shipment
+ */
+export const deleteShipment = async (id: number, options?: RequestInit): Promise<DeleteResult> => {
+
+  return customFetch<DeleteResult>(getDeleteShipmentUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteShipmentMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteShipment>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteShipment>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteShipment'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteShipment>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteShipment(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteShipmentMutationResult = NonNullable<Awaited<ReturnType<typeof deleteShipment>>>
+
+    export type DeleteShipmentMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Delete a shipment
+ */
+export const useDeleteShipment = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteShipment>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteShipment>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteShipmentMutationOptions(options));
     }
 
 export const getUpdateShipmentStatusUrl = (id: number,) => {

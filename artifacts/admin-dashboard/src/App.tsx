@@ -1,12 +1,13 @@
 import { setBaseUrl } from "@workspace/api-client-react";
 import { Switch, Route, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Toaster } from "@/components/ui/toaster";
+import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Overview } from "@/pages/overview/Overview";
+import { Cycles } from "@/pages/cycles/Cycles";
 import { Inventory } from "@/pages/inventory/Inventory";
 import { Shipments } from "@/pages/shipments/Shipments";
 import { Layout } from "@/pages/layout/Layout";
@@ -23,6 +24,7 @@ function Router() {
     <AppLayout>
       <Switch>
         <Route path="/" component={Overview} />
+        <Route path="/cycles" component={Cycles} />
         <Route path="/inventory" component={Inventory} />
         <Route path="/shipments" component={Shipments} />
         <Route path="/layout" component={Layout} />

@@ -9,6 +9,7 @@ import { BadTrays } from "@/pages/bad-trays/BadTrays";
 import { CyclesPanel } from "@/pages/panels/CyclesPanel";
 import { SeedLotsPanel } from "@/pages/panels/SeedLotsPanel";
 import { ActionRequiredPanel } from "@/pages/panels/ActionRequiredPanel";
+import { CommandPalette } from "@/components/command-palette";
 
 function PanelSheets() {
   const { openPanel, close } = usePanel();
@@ -72,6 +73,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         <RightSidebar />
       </div>
       <PanelSheets />
+      <CommandPalette />
     </PanelProvider>
   );
 }

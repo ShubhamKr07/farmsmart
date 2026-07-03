@@ -488,6 +488,19 @@ export const UpdateInventoryItemResponse = zod.object({
 
 
 /**
+ * @summary Delete an inventory item
+ */
+export const DeleteInventoryItemParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DeleteInventoryItemResponse = zod.object({
+  "ok": zod.boolean(),
+  "id": zod.number()
+})
+
+
+/**
  * @summary List shipments
  */
 export const ListShipmentsQueryParams = zod.object({
@@ -519,6 +532,48 @@ export const CreateShipmentBody = zod.object({
   "revenueUsd": zod.number().optional(),
   "shippingDate": zod.string().optional(),
   "status": zod.enum(['in_progress', 'complete', 'pending']).optional()
+})
+
+
+/**
+ * @summary Update a shipment
+ */
+export const UpdateShipmentParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateShipmentBody = zod.object({
+  "client": zod.string().optional(),
+  "productDescription": zod.string().optional(),
+  "yieldSoldKg": zod.number().optional(),
+  "revenueUsd": zod.number().optional(),
+  "shippingDate": zod.string().optional(),
+  "status": zod.enum(['in_progress', 'complete', 'pending']).optional()
+})
+
+export const UpdateShipmentResponse = zod.object({
+  "id": zod.number(),
+  "shortId": zod.string(),
+  "client": zod.string(),
+  "productDescription": zod.string().nullish(),
+  "yieldSoldKg": zod.number().nullish(),
+  "revenueUsd": zod.number().nullish(),
+  "shippingDate": zod.string().nullish(),
+  "status": zod.enum(['in_progress', 'complete', 'pending']),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Delete a shipment
+ */
+export const DeleteShipmentParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DeleteShipmentResponse = zod.object({
+  "ok": zod.boolean(),
+  "id": zod.number()
 })
 
 
@@ -707,6 +762,10 @@ export const ResolveLayoutQrResponse = zod.object({
   "channelId": zod.number(),
   "room": zod.string(),
   "channel": zod.string(),
+  "totalTrays": zod.number().describe('Total tray slots defined in layout for this channel'),
+  "activeCycles": zod.number().describe('Non-completed cycles currently assigned to this channel'),
+  "availableTrays": zod.number().describe('totalTrays minus activeCycles (min 0)'),
+  "isFull": zod.boolean().describe('True when activeCycles >= totalTrays and totalTrays > 0'),
   "rack": zod.string().nullish(),
   "rackId": zod.number().nullish(),
   "trayCount": zod.number().nullish(),

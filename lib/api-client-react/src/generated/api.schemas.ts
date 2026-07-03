@@ -363,6 +363,29 @@ export interface ShipmentStatusUpdate {
   status: ShipmentStatusUpdateStatus;
 }
 
+export type ShipmentUpdateStatus = typeof ShipmentUpdateStatus[keyof typeof ShipmentUpdateStatus];
+
+
+export const ShipmentUpdateStatus = {
+  in_progress: 'in_progress',
+  complete: 'complete',
+  pending: 'pending',
+} as const;
+
+export interface ShipmentUpdate {
+  client?: string;
+  productDescription?: string;
+  yieldSoldKg?: number;
+  revenueUsd?: number;
+  shippingDate?: string;
+  status?: ShipmentUpdateStatus;
+}
+
+export interface DeleteResult {
+  ok: boolean;
+  id: number;
+}
+
 export interface IssueAggregate {
   issue: string;
   frequency: number;
@@ -505,9 +528,13 @@ export interface ChannelResolved {
   channelId: number;
   room: string;
   channel: string;
+  /** Total tray slots defined in layout for this channel */
   totalTrays: number;
+  /** Non-completed cycles currently assigned to this channel */
   activeCycles: number;
+  /** totalTrays minus activeCycles (min 0) */
   availableTrays: number;
+  /** True when activeCycles >= totalTrays and totalTrays > 0 */
   isFull: boolean;
   rack?: string | null;
   rackId?: number | null;

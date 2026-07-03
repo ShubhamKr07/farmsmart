@@ -1,21 +1,47 @@
 import React, { useState, useRef } from "react";
-import { useListInventory, useCreateInventoryItem, useGetDashboard, getListInventoryQueryKey } from "@workspace/api-client-react";
+import {
+  useListInventory,
+  useCreateInventoryItem,
+  useUpdateInventoryItem,
+  useDeleteInventoryItem,
+  useGetDashboard,
+  getListInventoryQueryKey,
+  type InventoryItem,
+} from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { formatNumber } from "@/lib/format";
-import { Package, Plus, AlertCircle, Sprout, QrCode, Printer, Download } from "lucide-react";
+import { Package, Plus, AlertCircle, Sprout, QrCode, Printer, Download, Pencil, Trash2 } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from "recharts";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
+import { QueryError } from "@/components/ui/query-error";
+import { DataTable, type Column } from "@/components/data-table";
 import QRCodeSVG from "react-qr-code";
 
 type SeedLot = { id: number; seedName: string; qrCode: string };
@@ -30,14 +56,74 @@ const itemSchema = z.object({
 });
 
 export function Inventory() {
-  const { data: inventory, isLoading: inventoryLoading } = useListInventory();
+  const { data: inventory, isLoading: inventoryLoading, isError: inventoryError, refetch: refetchInventory } = useListInventory();
   const { data: dashboard, isLoading: dashboardLoading } = useGetDashboard();
   const createItem = useCreateInventoryItem();
+  const updateItem = useUpdateInventoryItem();
+  const deleteItem = useDeleteInventoryItem();
   const queryClient = useQueryClient();
-  const { toast } = useToast();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editing, setEditing] = useState<InventoryItem | null>(null);
+  const [deleting, setDeleting] = useState<InventoryItem | null>(null);
   const [qrLot, setQrLot] = useState<SeedLot | null>(null);
   const printRef = useRef<HTMLDivElement>(null);
+
+  const invalidate = () =>
+    queryClient.invalidateQueries({ queryKey: getListInventoryQueryKey() });
+
+  const form = useForm<z.infer<typeof itemSchema>>({
+    resolver: zodResolver(itemSchema),
+    defaultValues: { name: "", brand: "", category: "", currentQty: 0, maxQty: 100, unit: "kg" },
+  });
+
+  const openEdit = (item: InventoryItem) => {
+    setEditing(item);
+    form.reset({
+      name: item.name,
+      brand: item.brand ?? "",
+      category: item.category ?? "",
+      currentQty: item.currentQty,
+      maxQty: item.maxQty,
+      unit: item.unit,
+    });
+  };
+
+  const onCreateSubmit = (data: z.infer<typeof itemSchema>) => {
+    createItem.mutate({ data }, {
+      onSuccess: () => {
+        invalidate();
+        setIsAddModalOpen(false);
+        form.reset();
+        toast("Item added successfully");
+      },
+      onError: () => toast.error("Failed to add item"),
+    });
+  };
+
+  const onEditSubmit = (data: z.infer<typeof itemSchema>) => {
+    if (!editing) return;
+    updateItem.mutate({ id: editing.id, data }, {
+      onSuccess: () => {
+        invalidate();
+        setEditing(null);
+        form.reset();
+        toast("Item updated");
+      },
+      onError: () => toast.error("Failed to update item"),
+    });
+  };
+
+  const confirmDelete = () => {
+    if (!deleting) return;
+    deleteItem.mutate({ id: deleting.id }, {
+      onSuccess: () => {
+        invalidate();
+        toast("Item deleted");
+      },
+      onError: () => toast.error("Failed to delete item"),
+    });
+    setDeleting(null);
+  };
 
   const handlePrint = () => {
     if (!qrLot) return;
@@ -64,7 +150,7 @@ export function Inventory() {
           ${svgData}
           <div class="seed-name">${qrLot.seedName}</div>
           <div class="lot-code">${qrLot.qrCode}</div>
-          <div class="label">Seed Lot · HydroFarm</div>
+          <div class="label">Seed Lot · FarmSmart</div>
           <script>window.onload = () => { window.print(); window.onafterprint = () => window.close(); }<\/script>
         </body>
       </html>
@@ -86,53 +172,103 @@ export function Inventory() {
     URL.revokeObjectURL(url);
   };
 
-  const form = useForm<z.infer<typeof itemSchema>>({
-    resolver: zodResolver(itemSchema),
-    defaultValues: {
-      name: "",
-      brand: "",
-      category: "",
-      currentQty: 0,
-      maxQty: 100,
-      unit: "kg",
-    },
-  });
-
-  const onSubmit = (data: z.infer<typeof itemSchema>) => {
-    createItem.mutate({ data }, {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: getListInventoryQueryKey() });
-        setIsAddModalOpen(false);
-        form.reset();
-        toast({ title: "Item added successfully" });
-      },
-      onError: () => {
-        toast({ title: "Failed to add item", variant: "destructive" });
-      }
-    });
-  };
-
   if (inventoryLoading || dashboardLoading) {
     return <div className="p-6 space-y-6"><Skeleton className="h-[400px] w-full" /></div>;
   }
 
+  if (inventoryError) {
+    return (
+      <div className="p-6">
+        <QueryError resource="inventory" onRetry={() => refetchInventory()} />
+      </div>
+    );
+  }
+
   const items = inventory || [];
-  const lowStockItems = items.filter(item => (item.currentQty / item.maxQty) < 0.2);
+  const lowStockItems = items.filter((item) => item.currentQty / item.maxQty < 0.2);
 
   const chartData = items.reduce((acc, item) => {
-    const cat = item.category || 'Other';
-    const existing = acc.find(x => x.name === cat);
-    if (existing) {
-      existing.value += 1;
-    } else {
-      acc.push({ name: cat, value: 1 });
-    }
+    const cat = item.category || "Other";
+    const existing = acc.find((x) => x.name === cat);
+    if (existing) existing.value += 1;
+    else acc.push({ name: cat, value: 1 });
     return acc;
-  }, [] as {name: string, value: number}[]);
+  }, [] as { name: string; value: number }[]);
 
-  const COLORS = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))'];
+  const COLORS = ["hsl(var(--chart-1))", "hsl(var(--chart-2))", "hsl(var(--chart-3))", "hsl(var(--chart-4))", "hsl(var(--chart-5))"];
 
   const seedLots = (dashboard as { activeSeedLotDetails?: { id: number; seedName: string; qrCode: string }[] })?.activeSeedLotDetails || [];
+
+  const itemForm = (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(editing ? onEditSubmit : onCreateSubmit)} className="space-y-4">
+        <FormField control={form.control} name="name" render={({ field }) => (
+          <FormItem><FormLabel>Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+        )} />
+        <div className="grid grid-cols-2 gap-4">
+          <FormField control={form.control} name="brand" render={({ field }) => (
+            <FormItem><FormLabel>Brand</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+          )} />
+          <FormField control={form.control} name="category" render={({ field }) => (
+            <FormItem><FormLabel>Category</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+          )} />
+        </div>
+        <div className="grid grid-cols-3 gap-4">
+          <FormField control={form.control} name="currentQty" render={({ field }) => (
+            <FormItem><FormLabel>Current Qty</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+          )} />
+          <FormField control={form.control} name="maxQty" render={({ field }) => (
+            <FormItem><FormLabel>Max Qty</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+          )} />
+          <FormField control={form.control} name="unit" render={({ field }) => (
+            <FormItem><FormLabel>Unit</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+          )} />
+        </div>
+        <Button type="submit" className="w-full" disabled={createItem.isPending || updateItem.isPending}>
+          {editing ? (updateItem.isPending ? "Saving..." : "Save Changes") : (createItem.isPending ? "Adding..." : "Add Item")}
+        </Button>
+      </form>
+    </Form>
+  );
+
+  const itemColumns: Column<InventoryItem>[] = [
+    { key: "name", header: "Item", accessor: (i) => i.name, sortable: true, cell: (i) => <span className="font-medium">{i.name}</span> },
+    { key: "category", header: "Category", accessor: (i) => i.category ?? "", sortable: true, cell: (i) => <span className="text-muted-foreground">{i.category ?? "—"}</span> },
+    {
+      key: "stock",
+      header: "Stock Level",
+      accessor: (i) => (i.maxQty ? (i.currentQty / i.maxQty) * 100 : 0),
+      sortable: true,
+      cell: (i) => {
+        const pct = i.maxQty ? (i.currentQty / i.maxQty) * 100 : 0;
+        const isLow = pct < 20;
+        return (
+          <div className="flex items-center gap-2">
+            <Progress value={pct} className={`h-2 w-24 ${isLow ? "[&>div]:bg-destructive" : ""}`} />
+            <span className={`text-xs ${isLow ? "text-destructive font-medium" : "text-muted-foreground"}`}>
+              {pct.toFixed(0)}%
+            </span>
+          </div>
+        );
+      },
+    },
+    { key: "qty", header: "Qty", accessor: (i) => i.currentQty, sortable: true, align: "right", cell: (i) => `${formatNumber(i.currentQty)} ${i.unit}` },
+    {
+      key: "actions",
+      header: "Actions",
+      align: "right",
+      cell: (i) => (
+        <div className="flex items-center justify-end gap-1">
+          <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={`Edit ${i.name}`} onClick={() => openEdit(i)}>
+            <Pencil className="h-3.5 w-3.5" />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" aria-label={`Delete ${i.name}`} onClick={() => setDeleting(i)}>
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      ),
+    },
+  ];
 
   return (
     <div className="p-6 space-y-6 max-w-[1400px] mx-auto">
@@ -146,38 +282,8 @@ export function Inventory() {
             </Button>
           </DialogTrigger>
           <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add New Inventory Item</DialogTitle>
-            </DialogHeader>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <FormField control={form.control} name="name" render={({ field }) => (
-                  <FormItem><FormLabel>Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                )} />
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField control={form.control} name="brand" render={({ field }) => (
-                    <FormItem><FormLabel>Brand</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                  )} />
-                  <FormField control={form.control} name="category" render={({ field }) => (
-                    <FormItem><FormLabel>Category</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                  )} />
-                </div>
-                <div className="grid grid-cols-3 gap-4">
-                  <FormField control={form.control} name="currentQty" render={({ field }) => (
-                    <FormItem><FormLabel>Current Qty</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
-                  )} />
-                  <FormField control={form.control} name="maxQty" render={({ field }) => (
-                    <FormItem><FormLabel>Max Qty</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
-                  )} />
-                  <FormField control={form.control} name="unit" render={({ field }) => (
-                    <FormItem><FormLabel>Unit</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                  )} />
-                </div>
-                <Button type="submit" className="w-full" disabled={createItem.isPending}>
-                  {createItem.isPending ? "Adding..." : "Add Item"}
-                </Button>
-              </form>
-            </Form>
+            <DialogHeader><DialogTitle>Add New Inventory Item</DialogTitle></DialogHeader>
+            {itemForm}
           </DialogContent>
         </Dialog>
       </div>
@@ -186,7 +292,7 @@ export function Inventory() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Supply Items</CardTitle>
+            <span className="text-sm font-medium text-muted-foreground">Total Supply Items</span>
             <Package className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
@@ -196,7 +302,7 @@ export function Inventory() {
         </Card>
         <Card className="shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Low Stock Alerts</CardTitle>
+            <span className="text-sm font-medium text-muted-foreground">Low Stock Alerts</span>
             <AlertCircle className="h-4 w-4 text-destructive" />
           </CardHeader>
           <CardContent>
@@ -206,7 +312,7 @@ export function Inventory() {
         </Card>
         <Card className="shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Active Seed Lots</CardTitle>
+            <span className="text-sm font-medium text-muted-foreground">Active Seed Lots</span>
             <Sprout className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
@@ -216,7 +322,7 @@ export function Inventory() {
         </Card>
         <Card className="shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Active Crop Types</CardTitle>
+            <span className="text-sm font-medium text-muted-foreground">Active Crop Types</span>
             <Sprout className="h-4 w-4 text-chart-2" />
           </CardHeader>
           <CardContent>
@@ -229,37 +335,28 @@ export function Inventory() {
       {/* Active Seed Lots */}
       {seedLots.length > 0 && (
         <Card className="shadow-sm">
-          <CardHeader>
-            <CardTitle>Active Seed Lots in Rotation</CardTitle>
-          </CardHeader>
+          <CardHeader><span className="text-base font-semibold">Active Seed Lots in Rotation</span></CardHeader>
           <CardContent>
             <div className="rounded-md border">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b bg-muted/50">
-                    <th className="p-3 text-left font-medium">Lot Code</th>
-                    <th className="p-3 text-left font-medium">Crop Name</th>
-                    <th className="p-3 text-left font-medium">Status</th>
-                    <th className="p-3 text-right font-medium">QR Code</th>
+                    <th scope="col" className="p-3 text-left font-medium">Lot Code</th>
+                    <th scope="col" className="p-3 text-left font-medium">Crop Name</th>
+                    <th scope="col" className="p-3 text-left font-medium">Status</th>
+                    <th scope="col" className="p-3 text-right font-medium">QR Code</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {seedLots.map(lot => (
+                  {seedLots.map((lot) => (
                     <tr key={lot.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
                       <td className="p-3 font-mono text-xs text-muted-foreground">{lot.qrCode}</td>
                       <td className="p-3 font-medium">{lot.seedName}</td>
                       <td className="p-3">
-                        <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
-                          Growing
-                        </Badge>
+                        <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">Growing</Badge>
                       </td>
                       <td className="p-3 text-right">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="gap-1.5 text-xs"
-                          onClick={() => setQrLot(lot)}
-                        >
+                        <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => setQrLot(lot)}>
                           <QrCode className="h-3.5 w-3.5" />
                           Generate QR
                         </Button>
@@ -282,46 +379,22 @@ export function Inventory() {
               Seed Lot QR Code
             </DialogTitle>
           </DialogHeader>
-
           {qrLot && (
             <div className="flex flex-col items-center gap-4 py-2">
-              {/* QR display */}
-              <div
-                ref={printRef}
-                className="bg-white p-4 rounded-xl border-2 border-border shadow-sm"
-              >
-                <QRCodeSVG
-                  value={qrLot.qrCode}
-                  size={180}
-                  bgColor="#ffffff"
-                  fgColor="#1a1a1a"
-                  level="M"
-                />
+              <div ref={printRef} className="bg-white p-4 rounded-xl border-2 border-border shadow-sm">
+                <QRCodeSVG value={qrLot.qrCode} size={180} bgColor="#ffffff" fgColor="#1a1a1a" level="M" />
               </div>
-
-              {/* Lot info */}
               <div className="text-center space-y-0.5">
                 <p className="text-base font-bold text-foreground">{qrLot.seedName}</p>
                 <p className="text-xs font-mono text-muted-foreground">{qrLot.qrCode}</p>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">
-                  Seed Lot · HydroFarm
-                </p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">Seed Lot · FarmSmart</p>
               </div>
-
-              {/* Actions */}
               <div className="flex gap-2 w-full pt-1">
-                <Button
-                  variant="outline"
-                  className="flex-1 gap-2"
-                  onClick={handleDownloadSVG}
-                >
+                <Button variant="outline" className="flex-1 gap-2" onClick={handleDownloadSVG}>
                   <Download className="h-4 w-4" />
                   Download SVG
                 </Button>
-                <Button
-                  className="flex-1 gap-2"
-                  onClick={handlePrint}
-                >
+                <Button className="flex-1 gap-2" onClick={handlePrint}>
                   <Printer className="h-4 w-4" />
                   Print
                 </Button>
@@ -335,52 +408,28 @@ export function Inventory() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-4">
           <Card className="shadow-sm">
-            <CardHeader>
-              <CardTitle>Supplies Stock</CardTitle>
-            </CardHeader>
+            <CardHeader><span className="text-base font-semibold">Supplies Stock</span></CardHeader>
             <CardContent>
-              <div className="rounded-md border">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b bg-muted/50">
-                      <th className="p-3 text-left font-medium">Item</th>
-                      <th className="p-3 text-left font-medium">Category</th>
-                      <th className="p-3 text-left font-medium">Stock Level</th>
-                      <th className="p-3 text-right font-medium">Qty</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {items.map(item => {
-                      const percentage = (item.currentQty / item.maxQty) * 100;
-                      const isLow = percentage < 20;
-                      return (
-                        <tr key={item.id} className="border-b last:border-0">
-                          <td className="p-3 font-medium">{item.name}</td>
-                          <td className="p-3 text-muted-foreground">{item.category}</td>
-                          <td className="p-3">
-                            <div className="flex items-center gap-2">
-                              <Progress value={percentage} className={`h-2 w-24 ${isLow ? '[&>div]:bg-destructive' : ''}`} />
-                              <span className={`text-xs ${isLow ? 'text-destructive font-medium' : 'text-muted-foreground'}`}>
-                                {percentage.toFixed(0)}%
-                              </span>
-                            </div>
-                          </td>
-                          <td className="p-3 text-right">{formatNumber(item.currentQty)} {item.unit}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+              <DataTable
+                data={items}
+                columns={itemColumns}
+                rowKey={(i) => i.id}
+                searchFn={(i, t) =>
+                  i.name.toLowerCase().includes(t) ||
+                  (i.brand ?? "").toLowerCase().includes(t) ||
+                  (i.category ?? "").toLowerCase().includes(t)
+                }
+                searchPlaceholder="Filter by item, brand, or category…"
+                emptyState="No inventory items yet."
+                caption="Supplies stock"
+              />
             </CardContent>
           </Card>
         </div>
 
         <div className="space-y-4">
           <Card className="shadow-sm">
-            <CardHeader>
-              <CardTitle>By Category</CardTitle>
-            </CardHeader>
+            <CardHeader><span className="text-base font-semibold">By Category</span></CardHeader>
             <CardContent>
               <div className="h-[250px]">
                 <ResponsiveContainer width="100%" height="100%">
@@ -395,7 +444,7 @@ export function Inventory() {
               <div className="flex flex-wrap gap-2 justify-center mt-4">
                 {chartData.map((entry, index) => (
                   <div key={entry.name} className="flex items-center gap-1 text-xs">
-                    <div className="w-2 h-2 rounded-full" style={{backgroundColor: COLORS[index % COLORS.length]}} />
+                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
                     <span>{entry.name}</span>
                   </div>
                 ))}
@@ -404,6 +453,35 @@ export function Inventory() {
           </Card>
         </div>
       </div>
+
+      {/* Edit dialog */}
+      <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Edit Inventory Item</DialogTitle></DialogHeader>
+          {itemForm}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete confirm */}
+      <AlertDialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete "{deleting?.name}"?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently removes the item from inventory. This action can't be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={confirmDelete}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

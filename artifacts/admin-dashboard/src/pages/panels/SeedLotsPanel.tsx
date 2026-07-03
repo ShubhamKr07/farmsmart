@@ -3,6 +3,7 @@ import { useListCycles } from "@workspace/api-client-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Leaf, Sprout, Droplets, Scissors } from "lucide-react";
+import { QueryError } from "@/components/ui/query-error";
 
 const STAGE_BADGE: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   germination: { label: "Germination", variant: "secondary" },
@@ -18,7 +19,7 @@ interface SeedGroup {
 }
 
 export function SeedLotsPanel() {
-  const { data: cycles, isLoading } = useListCycles({ status: "ongoing" });
+  const { data: cycles, isLoading, isError, refetch } = useListCycles({ status: "ongoing" });
 
   const grouped: SeedGroup[] = React.useMemo(() => {
     if (!cycles) return [];
@@ -69,6 +70,8 @@ export function SeedLotsPanel() {
         <div className="space-y-3">
           {[1,2,3,4].map((i) => <Skeleton key={i} className="h-28 w-full" />)}
         </div>
+      ) : isError ? (
+        <QueryError resource="seed lots" onRetry={() => refetch()} />
       ) : grouped.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
           <Leaf className="h-10 w-10 mb-3 opacity-30" />

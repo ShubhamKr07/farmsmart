@@ -4,18 +4,19 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format";
 import { Factory, Sprout, Droplets, Scissors } from "lucide-react";
+import { QueryError } from "@/components/ui/query-error";
 
 const STAGE_META: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
-  germination: { label: "Germination", color: "bg-emerald-100 text-emerald-700 border-emerald-200", icon: <Sprout className="h-3 w-3" /> },
-  fertigation: { label: "Fertigation", color: "bg-blue-100 text-blue-700 border-blue-200", icon: <Droplets className="h-3 w-3" /> },
-  harvest:     { label: "Harvest Ready", color: "bg-orange-100 text-orange-700 border-orange-200", icon: <Scissors className="h-3 w-3" /> },
+  germination: { label: "Germination", color: "bg-status-ok/10 text-status-ok border-status-ok/20", icon: <Sprout className="h-3 w-3" /> },
+  fertigation: { label: "Fertigation", color: "bg-primary/10 text-primary border-primary/20", icon: <Droplets className="h-3 w-3" /> },
+  harvest:     { label: "Harvest Ready", color: "bg-status-warn/10 text-status-warn border-status-warn/20", icon: <Scissors className="h-3 w-3" /> },
 };
 
 type StageFilter = "all" | "germination" | "fertigation" | "harvest";
 
 export function CyclesPanel() {
   const [stageFilter, setStageFilter] = useState<StageFilter>("all");
-  const { data: cycles, isLoading } = useListCycles({ status: "ongoing" });
+  const { data: cycles, isLoading, isError, refetch } = useListCycles({ status: "ongoing" });
 
   const filtered = (cycles || []).filter(
     (c) => stageFilter === "all" || c.status === stageFilter
@@ -83,6 +84,8 @@ export function CyclesPanel() {
         <div className="space-y-3">
           {[1,2,3,4,5].map((i) => <Skeleton key={i} className="h-14 w-full" />)}
         </div>
+      ) : isError ? (
+        <QueryError resource="cycles" onRetry={() => refetch()} />
       ) : filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
           <Factory className="h-10 w-10 mb-3 opacity-30" />
@@ -93,13 +96,13 @@ export function CyclesPanel() {
           <table className="w-full text-sm">
             <thead className="bg-muted/50">
               <tr>
-                <th className="text-left px-4 py-3 font-medium text-muted-foreground">ID</th>
-                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Crop</th>
-                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Stage</th>
-                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Position</th>
-                <th className="text-right px-4 py-3 font-medium text-muted-foreground">Trays</th>
-                <th className="text-right px-4 py-3 font-medium text-muted-foreground">Seeded</th>
-                <th className="text-right px-4 py-3 font-medium text-muted-foreground">Overdue</th>
+                <th scope="col" className="text-left px-4 py-3 font-medium text-muted-foreground">ID</th>
+                <th scope="col" className="text-left px-4 py-3 font-medium text-muted-foreground">Crop</th>
+                <th scope="col" className="text-left px-4 py-3 font-medium text-muted-foreground">Stage</th>
+                <th scope="col" className="text-left px-4 py-3 font-medium text-muted-foreground">Position</th>
+                <th scope="col" className="text-right px-4 py-3 font-medium text-muted-foreground">Trays</th>
+                <th scope="col" className="text-right px-4 py-3 font-medium text-muted-foreground">Seeded</th>
+                <th scope="col" className="text-right px-4 py-3 font-medium text-muted-foreground">Overdue</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">

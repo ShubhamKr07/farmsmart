@@ -15,7 +15,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { formatDate } from "@/lib/format";
 import { AlertCircle, AlertTriangle, CheckCircle, Clock, CalendarDays } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
+import { QueryError } from "@/components/ui/query-error";
 import type { AlertStatus, Alert } from "@workspace/api-client-react";
 
 const actionSchema = z.object({
@@ -28,12 +29,11 @@ type DateRange = "today" | "week" | "all";
 export function Alerts() {
   const [activeTab, setActiveTab] = useState<AlertStatus>("current");
   const [dateRange, setDateRange] = useState<DateRange>("all");
-  const { data: alerts, isLoading } = useListAlerts({ status: activeTab });
+  const { data: alerts, isLoading, isError, refetch } = useListAlerts({ status: activeTab });
 
   const updateStatus = useUpdateAlertStatus();
   const takeAction = useTakeAlertAction();
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
   const [isActionModalOpen, setIsActionModalOpen] = useState(false);
@@ -54,10 +54,10 @@ export function Alerts() {
         setIsActionModalOpen(false);
         setSelectedAlert(null);
         form.reset();
-        toast({ title: "Action taken successfully" });
+        toast("Action taken successfully");
       },
       onError: () => {
-        toast({ title: "Failed to take action", variant: "destructive" });
+        toast.error("Failed to take action");
       }
     });
   };
@@ -66,7 +66,7 @@ export function Alerts() {
     updateStatus.mutate({ id, data: { status: "dismissed" } }, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getListAlertsQueryKey({ status: activeTab }) });
-        toast({ title: "Alert dismissed" });
+        toast("Alert dismissed");
       }
     });
   };
@@ -91,6 +91,14 @@ export function Alerts() {
   }, [allItems, dateRange, cutoffs]);
 
   if (isLoading) return <div className="p-6 space-y-6"><Skeleton className="h-[400px] w-full" /></div>;
+
+  if (isError) {
+    return (
+      <div className="p-6">
+        <QueryError resource="alerts" onRetry={() => refetch()} />
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6 max-w-[1000px] mx-auto">
@@ -128,14 +136,14 @@ export function Alerts() {
             </Card>
           ) : (
             filteredItems.map(alert => (
-              <Card key={alert.id} className={`shadow-sm border-l-4 ${alert.severity === "critical" ? "border-l-destructive" : "border-l-orange-500"}`}>
+              <Card key={alert.id} className={`shadow-sm border-l-4 ${alert.severity === "critical" ? "border-l-destructive" : "border-l-status-warn"}`}>
                 <CardContent className="p-5 flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
                   <div className="flex gap-4 flex-1 min-w-0">
                     <div className="mt-1 shrink-0">
                       {alert.severity === "critical" ? (
                         <AlertCircle className="h-5 w-5 text-destructive" />
                       ) : (
-                        <AlertTriangle className="h-5 w-5 text-orange-500" />
+                        <AlertTriangle className="h-5 w-5 text-status-warn" />
                       )}
                     </div>
                     <div className="min-w-0">
@@ -182,7 +190,7 @@ export function Alerts() {
                         }}
                       >
                         <DialogTrigger asChild>
-                          <Button size="sm" className="w-full">Take Action</Button>
+                          <Button size="sm" className="w-full h-10">Take Action</Button>
                         </DialogTrigger>
                         <DialogContent className="sm:max-w-[480px]">
                           <DialogHeader>
@@ -190,12 +198,12 @@ export function Alerts() {
                           </DialogHeader>
                           {/* Alert detail card inside modal */}
                           {selectedAlert && (
-                            <div className={`rounded-md border-l-4 p-4 bg-muted/40 ${selectedAlert.severity === "critical" ? "border-l-destructive" : "border-l-orange-500"}`}>
+                            <div className={`rounded-md border-l-4 p-4 bg-muted/40 ${selectedAlert.severity === "critical" ? "border-l-destructive" : "border-l-status-warn"}`}>
                               <div className="flex items-center gap-2 mb-1">
                                 {selectedAlert.severity === "critical" ? (
                                   <AlertCircle className="h-4 w-4 text-destructive shrink-0" />
                                 ) : (
-                                  <AlertTriangle className="h-4 w-4 text-orange-500 shrink-0" />
+                                  <AlertTriangle className="h-4 w-4 text-status-warn shrink-0" />
                                 )}
                                 <span className="font-semibold text-sm">{selectedAlert.title}</span>
                               </div>
@@ -245,7 +253,7 @@ export function Alerts() {
                           </Form>
                         </DialogContent>
                       </Dialog>
-                      <Button variant="outline" size="sm" className="w-full" onClick={() => handleDismiss(alert.id)}>
+                      <Button variant="outline" size="sm" className="w-full h-10" onClick={() => handleDismiss(alert.id)}>
                         Dismiss
                       </Button>
                     </div>

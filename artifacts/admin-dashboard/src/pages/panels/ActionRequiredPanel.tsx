@@ -3,9 +3,10 @@ import { useGetDashboard } from "@workspace/api-client-react";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TrendingUp, Scissors, Droplets, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { QueryError } from "@/components/ui/query-error";
 
 export function ActionRequiredPanel() {
-  const { data: dashboard, isLoading } = useGetDashboard();
+  const { data: dashboard, isLoading, isError, refetch } = useGetDashboard();
   const items = dashboard?.actionRequired || [];
 
   const harvests = items.filter((i) => i.type === "harvest");
@@ -33,14 +34,14 @@ export function ActionRequiredPanel() {
         </div>
         <div className="rounded-lg border bg-card p-4">
           <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
-            <Scissors className="h-3 w-3 text-orange-500" /> Harvest
+            <Scissors className="h-3 w-3 text-status-warn" /> Harvest
           </p>
           <p className="text-2xl font-bold">{harvests.length}</p>
           <p className="text-xs text-muted-foreground">ready to cut</p>
         </div>
         <div className="rounded-lg border bg-card p-4">
           <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
-            <Droplets className="h-3 w-3 text-blue-500" /> Fertigation
+            <Droplets className="h-3 w-3 text-primary" /> Fertigation
           </p>
           <p className="text-2xl font-bold">{fertigations.length}</p>
           <p className="text-xs text-muted-foreground">transition needed</p>
@@ -52,6 +53,8 @@ export function ActionRequiredPanel() {
         <div className="space-y-3">
           {[1,2,3,4].map((i) => <Skeleton key={i} className="h-20 w-full" />)}
         </div>
+      ) : isError ? (
+        <QueryError resource="action-required cycles" onRetry={() => refetch()} />
       ) : items.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
           <CheckCircle2 className="h-10 w-10 mb-3 text-primary/40" />
@@ -67,14 +70,14 @@ export function ActionRequiredPanel() {
               <div
                 key={item.cycleId}
                 className={`flex items-center justify-between p-4 rounded-lg border ${
-                  isCritical ? "border-destructive/40 bg-destructive/5" : "border-orange-300/40 bg-orange-50/30"
+                  isCritical ? "border-destructive/40 bg-destructive/5" : "border-status-warn/30 bg-status-warn/5"
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-md ${isCritical ? "bg-destructive/10" : "bg-orange-100/60"}`}>
+                  <div className={`p-2 rounded-md ${isCritical ? "bg-destructive/10" : "bg-status-warn/10"}`}>
                     {isHarvest
-                      ? <Scissors className={`h-4 w-4 ${isCritical ? "text-destructive" : "text-orange-500"}`} />
-                      : <Droplets className={`h-4 w-4 ${isCritical ? "text-destructive" : "text-orange-500"}`} />
+                      ? <Scissors className={`h-4 w-4 ${isCritical ? "text-destructive" : "text-status-warn"}`} />
+                      : <Droplets className={`h-4 w-4 ${isCritical ? "text-destructive" : "text-status-warn"}`} />
                     }
                   </div>
                   <div>
@@ -91,7 +94,7 @@ export function ActionRequiredPanel() {
                   <Badge variant={isCritical ? "destructive" : "secondary"}>
                     {isHarvest ? "Harvest" : "Fertigation"}
                   </Badge>
-                  <span className={`text-sm font-bold ${isCritical ? "text-destructive" : "text-orange-600"}`}>
+                  <span className={`text-sm font-bold ${isCritical ? "text-destructive" : "text-status-warn"}`}>
                     {item.daysOverdue}d overdue
                   </span>
                 </div>

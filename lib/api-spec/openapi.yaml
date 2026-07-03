@@ -431,6 +431,29 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteInventoryItem
+      tags: [inventory]
+      summary: Delete an inventory item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Item deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeleteResult"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   /shipments:
     get:
@@ -473,6 +496,60 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Shipment"
+
+  /shipments/{id}:
+    patch:
+      operationId: updateShipment
+      tags: [shipments]
+      summary: Update a shipment
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ShipmentUpdate"
+      responses:
+        "200":
+          description: Shipment updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Shipment"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteShipment
+      tags: [shipments]
+      summary: Delete a shipment
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Shipment deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeleteResult"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   /shipments/{id}/status:
     patch:
@@ -1337,6 +1414,32 @@ components:
           type: string
           enum: [in_progress, complete, pending]
       required: [status]
+
+    ShipmentUpdate:
+      type: object
+      properties:
+        client:
+          type: string
+        productDescription:
+          type: string
+        yieldSoldKg:
+          type: number
+        revenueUsd:
+          type: number
+        shippingDate:
+          type: string
+        status:
+          type: string
+          enum: [in_progress, complete, pending]
+
+    DeleteResult:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        id:
+          type: integer
+      required: [ok, id]
 
     BadTraysAnalysis:
       type: object

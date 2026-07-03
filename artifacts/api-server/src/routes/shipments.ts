@@ -107,4 +107,52 @@ router.patch("/shipments/:id/status", async (req: Request, res: Response) => {
   }
 });
 
+router.patch("/shipments/:id", async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params["id"] as string, 10);
+    const { client, productDescription, yieldSoldKg, revenueUsd, shippingDate, status } = req.body;
+
+    const updateData: Partial<typeof shipmentsTable.$inferInsert> = {};
+    if (client !== undefined) updateData.client = client;
+    if (productDescription !== undefined) updateData.productDescription = productDescription;
+    if (yieldSoldKg !== undefined) updateData.yieldSoldKg = yieldSoldKg ? String(yieldSoldKg) : null;
+    if (revenueUsd !== undefined) updateData.revenueUsd = revenueUsd ? String(revenueUsd) : null;
+    if (shippingDate !== undefined) updateData.shippingDate = shippingDate;
+    if (status !== undefined) {
+      if (!["in_progress", "complete", "pending"].includes(status)) {
+        return res.status(400).json({ error: "Invalid status" });
+      }
+      updateData.status = status;
+    }
+
+    const [shipment] = await db
+      .update(shipmentsTable)
+      .set(updateData)
+      .where(eq(shipmentsTable.id, id))
+      .returning();
+
+    if (!shipment) return res.status(404).json({ error: "Shipment not found" });
+    return res.json(formatShipment(shipment));
+  } catch (err) {
+    req.log.error(err);
+    return res.status(500).json({ error: "Failed to update shipment" });
+  }
+});
+
+router.delete("/shipments/:id", async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params["id"] as string, 10);
+    const [shipment] = await db
+      .delete(shipmentsTable)
+      .where(eq(shipmentsTable.id, id))
+      .returning();
+
+    if (!shipment) return res.status(404).json({ error: "Shipment not found" });
+    return res.json({ ok: true, id });
+  } catch (err) {
+    req.log.error(err);
+    return res.status(500).json({ error: "Failed to delete shipment" });
+  }
+});
+
 export default router;

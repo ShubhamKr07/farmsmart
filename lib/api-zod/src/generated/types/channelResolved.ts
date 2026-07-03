@@ -10,9 +10,13 @@ export interface ChannelResolved {
   channelId: number;
   room: string;
   channel: string;
+  /** Total tray slots defined in layout for this channel */
   totalTrays: number;
+  /** Non-completed cycles currently assigned to this channel */
   activeCycles: number;
+  /** totalTrays minus activeCycles (min 0) */
   availableTrays: number;
+  /** True when activeCycles >= totalTrays and totalTrays > 0 */
   isFull: boolean;
   rack?: string | null;
   rackId?: number | null;

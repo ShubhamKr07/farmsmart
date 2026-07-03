@@ -45,6 +45,13 @@
   --color-chart-4: hsl(var(--chart-4));
   --color-chart-5: hsl(var(--chart-5));
 
+  --color-status-ok: hsl(var(--status-ok));
+  --color-status-ok-foreground: hsl(var(--status-ok-foreground));
+  --color-status-warn: hsl(var(--status-warn));
+  --color-status-warn-foreground: hsl(var(--status-warn-foreground));
+  --color-status-critical: hsl(var(--status-critical));
+  --color-status-critical-foreground: hsl(var(--status-critical-foreground));
+
   --color-sidebar: hsl(var(--sidebar));
   --color-sidebar-foreground: hsl(var(--sidebar-foreground));
   --color-sidebar-border: hsl(var(--sidebar-border));
@@ -109,6 +116,13 @@
   --chart-4: 220 15% 40%;
   --chart-5: 220 15% 60%;
 
+  --status-ok: 142 45% 32%;
+  --status-ok-foreground: 0 0% 100%;
+  --status-warn: 38 85% 42%;
+  --status-warn-foreground: 0 0% 100%;
+  --status-critical: 0 72% 45%;
+  --status-critical-foreground: 0 0% 100%;
+
   --app-font-sans: 'Inter', sans-serif;
   --app-font-serif: Georgia, serif;
   --app-font-mono: Menlo, monospace;
@@ -165,6 +179,13 @@
   --chart-3: 142 20% 80%;
   --chart-4: 220 15% 60%;
   --chart-5: 220 15% 80%;
+
+  --status-ok: 142 40% 45%;
+  --status-ok-foreground: 0 0% 100%;
+  --status-warn: 38 80% 55%;
+  --status-warn-foreground: 0 0% 10%;
+  --status-critical: 0 70% 55%;
+  --status-critical-foreground: 0 0% 100%;
 }
 
 @layer base {

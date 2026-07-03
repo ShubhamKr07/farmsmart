@@ -83,4 +83,20 @@ router.patch("/inventory/:id", async (req: Request, res: Response) => {
   }
 });
 
+router.delete("/inventory/:id", async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params["id"] as string, 10);
+    const [item] = await db
+      .delete(inventoryItemsTable)
+      .where(eq(inventoryItemsTable.id, id))
+      .returning();
+
+    if (!item) return res.status(404).json({ error: "Item not found" });
+    return res.json({ ok: true, id });
+  } catch (err) {
+    req.log.error(err);
+    return res.status(500).json({ error: "Failed to delete inventory item" });
+  }
+});
+
 export default router;

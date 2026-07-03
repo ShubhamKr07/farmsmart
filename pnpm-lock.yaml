@@ -157,6 +157,9 @@ importers:
 
   .:
     dependencies:
+      '@expo/ngrok-bin-darwin-arm64':
+        specifier: ^2.3.42
+        version: 2.3.42
       '@replit/connectors-sdk':
         specifier: ^0.4.1
         version: 0.4.1
@@ -1616,6 +1619,11 @@ packages:
 
   '@expo/metro@54.2.0':
     resolution: {integrity: sha512-h68TNZPGsk6swMmLm9nRSnE2UXm48rWwgcbtAHVMikXvbxdS41NDHHeqg1rcQ9AbznDRp6SQVC2MVpDnsRKU1w==}
+
+  '@expo/ngrok-bin-darwin-arm64@2.3.42':
+    resolution: {integrity: sha512-dbV/0nyQ8tefbNGVIPnzKgumz4yqqvrpH6WYt+PH2+kolYTFFgO6uka3/lAyoi3o+Zrzpg+/kBC+S3i1HLoQQQ==}
+    cpu: [arm64]
+    os: [darwin]
 
   '@expo/ngrok-bin-linux-x64@2.3.41':
     resolution: {integrity: sha512-LcU3MbYHv7Sn2eFz8Yzo2rXduufOvX1/hILSirwCkH+9G8PYzpwp2TeGqVWuO+EmvtBe6NEYwgdQjJjN6I4L1A==}
@@ -8146,6 +8154,8 @@ snapshots:
       - bufferutil
       - supports-color
       - utf-8-validate
+
+  '@expo/ngrok-bin-darwin-arm64@2.3.42': {}
 
   '@expo/ngrok-bin-linux-x64@2.3.41':
     optional: true
