@@ -12,6 +12,9 @@ import shipmentsRouter from "./routes/shipments";
 import badTraysRouter from "./routes/badTrays";
 import cyclesRouter from "./routes/cycles";
 import layoutRouter from "./routes/layout";
+import sensorsRouter from "./routes/sensors";
+import sensorReadingsRouter from "./routes/sensor-readings";
+import tasksRouter from "./routes/tasks";
 import { logger } from "./lib/logger";
 import {
   CLERK_PROXY_PATH,
@@ -69,6 +72,9 @@ app.use("/api", requireSignedIn, shipmentsRouter);
 app.use("/api", requireSignedIn, badTraysRouter);
 app.use("/api", requireSignedIn, cyclesRouter);
 app.use("/api", requireSignedIn, layoutRouter);
+app.use("/api", requireSignedIn, sensorsRouter);
+app.use("/api", requireSignedIn, sensorReadingsRouter);
+app.use("/api", requireSignedIn, tasksRouter);
 app.use("/api", requireSignedIn, router);
 
 export default app;

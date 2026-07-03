@@ -1,0 +1,91 @@
+import { Router, type Request, type Response } from "express";
+import { eq, and, isNull } from "drizzle-orm";
+import { db } from "@workspace/db";
+import { tasksTable } from "@workspace/db";
+
+const router = Router();
+
+function formatTask(t: typeof tasksTable.$inferSelect) {
+  return {
+    id: t.id,
+    cycleId: t.cycleId ?? null,
+    type: t.type,
+    status: t.status,
+    assignee: t.assignee ?? null,
+    dueAt: t.dueAt?.toISOString() ?? null,
+    completedAt: t.completedAt?.toISOString() ?? null,
+    createdBy: t.createdBy ?? null,
+    createdAt: t.createdAt.toISOString(),
+  };
+}
+
+router.get("/tasks", async (req: Request, res: Response) => {
+  try {
+    const status = req.query["status"] as string | undefined;
+    const conds = [];
+    if (status === "pending" || status === "in_progress" || status === "done") {
+      conds.push(eq(tasksTable.status, status));
+    }
+    conds.push(isNull(tasksTable.completedAt)); // default: open tasks
+    const rows = await db
+      .select()
+      .from(tasksTable)
+      .where(and(...conds))
+      .orderBy(tasksTable.dueAt);
+    return res.json(rows.map(formatTask));
+  } catch (err) {
+    req.log.error(err);
+    return res.status(500).json({ error: "Failed to fetch tasks" });
+  }
+});
+
+router.post("/tasks", async (req: Request, res: Response) => {
+  try {
+    const { cycleId, type, assignee, dueAt } = req.body;
+    if (!type) return res.status(400).json({ error: "type is required" });
+    const [t] = await db
+      .insert(tasksTable)
+      .values({
+        cycleId: cycleId ?? null,
+        type,
+        status: "pending",
+        assignee: assignee ?? null,
+        dueAt: dueAt ? new Date(dueAt) : null,
+      })
+      .returning();
+    return res.status(201).json(formatTask(t));
+  } catch (err) {
+    req.log.error(err);
+    return res.status(500).json({ error: "Failed to create task" });
+  }
+});
+
+router.patch("/tasks/:id", async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params["id"] as string, 10);
+    const { status, assignee, dueAt, completedAt } = req.body;
+    const update: Partial<typeof tasksTable.$inferInsert> = {};
+    if (status !== undefined) {
+      if (!["pending", "in_progress", "done"].includes(status)) {
+        return res.status(400).json({ error: "Invalid status" });
+      }
+      update.status = status as "pending" | "in_progress" | "done";
+      if (status === "done") update.completedAt = completedAt ? new Date(completedAt) : new Date();
+    }
+    if (assignee !== undefined) update.assignee = assignee;
+    if (dueAt !== undefined) update.dueAt = dueAt ? new Date(dueAt) : null;
+
+    const [t] = await db
+      .update(tasksTable)
+      .set(update)
+      .where(eq(tasksTable.id, id))
+      .returning();
+    if (!t) return res.status(404).json({ error: "Task not found" });
+    return res.json(formatTask(t));
+  } catch (err) {
+    req.log.error(err);
+    return res.status(500).json({ error: "Failed to update task" });
+  }
+});
+
+export default router;

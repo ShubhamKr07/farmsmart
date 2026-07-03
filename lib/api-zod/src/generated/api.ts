@@ -853,3 +853,120 @@ export const DeleteTrayResponse = zod.object({
 })
 
 
+/**
+ * @summary List sensors
+ */
+export const ListSensorsResponseItem = zod.object({
+  "id": zod.number(),
+  "channelId": zod.number().nullish(),
+  "rackId": zod.number().nullish(),
+  "type": zod.enum(['temp', 'ph', 'water', 'humidity', 'ec']),
+  "label": zod.string(),
+  "unit": zod.string().nullish(),
+  "lastValue": zod.number().nullish(),
+  "lastReadAt": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+})
+export const ListSensorsResponse = zod.array(ListSensorsResponseItem)
+
+
+/**
+ * @summary Register a sensor
+ */
+export const CreateSensorBody = zod.object({
+  "channelId": zod.number().optional(),
+  "rackId": zod.number().optional(),
+  "type": zod.enum(['temp', 'ph', 'water', 'humidity', 'ec']),
+  "label": zod.string(),
+  "unit": zod.string().optional()
+})
+
+
+/**
+ * @summary List sensor readings (history)
+ */
+export const ListSensorReadingsQueryParams = zod.object({
+  "sensorId": zod.coerce.number().optional(),
+  "from": zod.date().optional(),
+  "to": zod.date().optional()
+})
+
+export const ListSensorReadingsResponseItem = zod.object({
+  "id": zod.number(),
+  "sensorId": zod.number(),
+  "metric": zod.string(),
+  "value": zod.number(),
+  "readAt": zod.coerce.date()
+})
+export const ListSensorReadingsResponse = zod.array(ListSensorReadingsResponseItem)
+
+
+/**
+ * @summary Ingest a sensor reading
+ */
+export const CreateSensorReadingBody = zod.object({
+  "sensorId": zod.number(),
+  "metric": zod.string(),
+  "value": zod.number()
+})
+
+
+/**
+ * @summary List open tasks
+ */
+export const ListTasksQueryParams = zod.object({
+  "status": zod.enum(['pending', 'in_progress', 'done']).optional()
+})
+
+export const ListTasksResponseItem = zod.object({
+  "id": zod.number(),
+  "cycleId": zod.number().nullish(),
+  "type": zod.enum(['seed', 'transplant', 'harvest', 'inspect']),
+  "status": zod.enum(['pending', 'in_progress', 'done']),
+  "assignee": zod.string().nullish(),
+  "dueAt": zod.string().nullish(),
+  "completedAt": zod.string().nullish(),
+  "createdBy": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+})
+export const ListTasksResponse = zod.array(ListTasksResponseItem)
+
+
+/**
+ * @summary Create a task
+ */
+export const CreateTaskBody = zod.object({
+  "cycleId": zod.number().optional(),
+  "type": zod.enum(['seed', 'transplant', 'harvest', 'inspect']),
+  "assignee": zod.string().optional(),
+  "dueAt": zod.string().optional()
+})
+
+
+/**
+ * @summary Update a task
+ */
+export const UpdateTaskParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateTaskBody = zod.object({
+  "status": zod.enum(['pending', 'in_progress', 'done']).optional(),
+  "assignee": zod.string().optional(),
+  "dueAt": zod.string().optional(),
+  "completedAt": zod.string().optional()
+})
+
+export const UpdateTaskResponse = zod.object({
+  "id": zod.number(),
+  "cycleId": zod.number().nullish(),
+  "type": zod.enum(['seed', 'transplant', 'harvest', 'inspect']),
+  "status": zod.enum(['pending', 'in_progress', 'done']),
+  "assignee": zod.string().nullish(),
+  "dueAt": zod.string().nullish(),
+  "completedAt": zod.string().nullish(),
+  "createdBy": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+})
+
+

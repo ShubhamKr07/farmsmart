@@ -873,6 +873,154 @@ paths:
               schema:
                 $ref: "#/components/schemas/SuccessResponse"
 
+  /sensors:
+    get:
+      operationId: listSensors
+      tags: [sensors]
+      summary: List sensors
+      responses:
+        "200":
+          description: List of sensors
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Sensor"
+    post:
+      operationId: createSensor
+      tags: [sensors]
+      summary: Register a sensor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SensorInput"
+      responses:
+        "201":
+          description: Sensor created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Sensor"
+
+  /sensor-readings:
+    get:
+      operationId: listSensorReadings
+      tags: [sensors]
+      summary: List sensor readings (history)
+      parameters:
+        - name: sensorId
+          in: query
+          schema:
+            type: integer
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date-time
+      responses:
+        "200":
+          description: List of readings (newest first)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SensorReading"
+    post:
+      operationId: createSensorReading
+      tags: [sensors]
+      summary: Ingest a sensor reading
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SensorReadingInput"
+      responses:
+        "201":
+          description: Reading recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SensorReading"
+
+  /tasks:
+    get:
+      operationId: listTasks
+      tags: [tasks]
+      summary: List open tasks
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, in_progress, done]
+      responses:
+        "200":
+          description: List of tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Task"
+    post:
+      operationId: createTask
+      tags: [tasks]
+      summary: Create a task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaskInput"
+      responses:
+        "201":
+          description: Task created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+
+  /tasks/{id}:
+    patch:
+      operationId: updateTask
+      tags: [tasks]
+      summary: Update a task
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaskUpdate"
+      responses:
+        "200":
+          description: Task updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
 components:
   schemas:
     HealthStatus:
@@ -1706,3 +1854,134 @@ components:
           type: string
           nullable: true
       required: [channelId, room, channel, totalTrays, activeCycles, availableTrays, isFull]
+
+    Sensor:
+      type: object
+      properties:
+        id:
+          type: integer
+        channelId:
+          type: integer
+          nullable: true
+        rackId:
+          type: integer
+          nullable: true
+        type:
+          type: string
+          enum: [temp, ph, water, humidity, ec]
+        label:
+          type: string
+        unit:
+          type: string
+          nullable: true
+        lastValue:
+          type: number
+          nullable: true
+        lastReadAt:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, type, label, createdAt]
+
+    SensorInput:
+      type: object
+      properties:
+        channelId:
+          type: integer
+        rackId:
+          type: integer
+        type:
+          type: string
+          enum: [temp, ph, water, humidity, ec]
+        label:
+          type: string
+        unit:
+          type: string
+      required: [type, label]
+
+    SensorReading:
+      type: object
+      properties:
+        id:
+          type: integer
+        sensorId:
+          type: integer
+        metric:
+          type: string
+        value:
+          type: number
+        readAt:
+          type: string
+          format: date-time
+      required: [id, sensorId, metric, value, readAt]
+
+    SensorReadingInput:
+      type: object
+      properties:
+        sensorId:
+          type: integer
+        metric:
+          type: string
+        value:
+          type: number
+      required: [sensorId, metric, value]
+
+    Task:
+      type: object
+      properties:
+        id:
+          type: integer
+        cycleId:
+          type: integer
+          nullable: true
+        type:
+          type: string
+          enum: [seed, transplant, harvest, inspect]
+        status:
+          type: string
+          enum: [pending, in_progress, done]
+        assignee:
+          type: string
+          nullable: true
+        dueAt:
+          type: string
+          nullable: true
+        completedAt:
+          type: string
+          nullable: true
+        createdBy:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, type, status, createdAt]
+
+    TaskInput:
+      type: object
+      properties:
+        cycleId:
+          type: integer
+        type:
+          type: string
+          enum: [seed, transplant, harvest, inspect]
+        assignee:
+          type: string
+        dueAt:
+          type: string
+      required: [type]
+
+    TaskUpdate:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [pending, in_progress, done]
+        assignee:
+          type: string
+        dueAt:
+          type: string
+        completedAt:
+          type: string

@@ -47,7 +47,9 @@ import type {
   InventoryItemUpdate,
   ListAlertsParams,
   ListCyclesParams,
+  ListSensorReadingsParams,
   ListShipmentsParams,
+  ListTasksParams,
   LookupSeedLotParams,
   ManualCheck,
   MonitoringApiInput,
@@ -56,12 +58,19 @@ import type {
   ResolveLayoutQrParams,
   RoomItem,
   SeedLot,
+  Sensor,
+  SensorInput,
+  SensorReading,
+  SensorReadingInput,
   SetTrayCountInput,
   Shipment,
   ShipmentInput,
   ShipmentStatusUpdate,
   ShipmentUpdate,
   SuccessResponse,
+  Task,
+  TaskInput,
+  TaskUpdate,
   TrayCountResult,
   TrayItem,
   UpdateChannelInput,
@@ -2896,5 +2905,535 @@ export const useDeleteTray = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getDeleteTrayMutationOptions(options));
+    }
+
+export const getListSensorsUrl = () => {
+
+
+
+
+  return `/api/sensors`
+}
+
+/**
+ * @summary List sensors
+ */
+export const listSensors = async ( options?: RequestInit): Promise<Sensor[]> => {
+
+  return customFetch<Sensor[]>(getListSensorsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListSensorsQueryKey = () => {
+    return [
+    `/api/sensors`
+    ] as const;
+    }
+
+
+export const getListSensorsQueryOptions = <TData = Awaited<ReturnType<typeof listSensors>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSensors>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListSensorsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSensors>>> = ({ signal }) => listSensors({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listSensors>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListSensorsQueryResult = NonNullable<Awaited<ReturnType<typeof listSensors>>>
+export type ListSensorsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List sensors
+ */
+
+export function useListSensors<TData = Awaited<ReturnType<typeof listSensors>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSensors>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListSensorsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateSensorUrl = () => {
+
+
+
+
+  return `/api/sensors`
+}
+
+/**
+ * @summary Register a sensor
+ */
+export const createSensor = async (sensorInput: SensorInput, options?: RequestInit): Promise<Sensor> => {
+
+  return customFetch<Sensor>(getCreateSensorUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      sensorInput,)
+  }
+);}
+
+
+
+
+export const getCreateSensorMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSensor>>, TError,{data: BodyType<SensorInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createSensor>>, TError,{data: BodyType<SensorInput>}, TContext> => {
+
+const mutationKey = ['createSensor'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createSensor>>, {data: BodyType<SensorInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createSensor(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateSensorMutationResult = NonNullable<Awaited<ReturnType<typeof createSensor>>>
+    export type CreateSensorMutationBody = BodyType<SensorInput>
+    export type CreateSensorMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Register a sensor
+ */
+export const useCreateSensor = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSensor>>, TError,{data: BodyType<SensorInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createSensor>>,
+        TError,
+        {data: BodyType<SensorInput>},
+        TContext
+      > => {
+      return useMutation(getCreateSensorMutationOptions(options));
+    }
+
+export const getListSensorReadingsUrl = (params?: ListSensorReadingsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/sensor-readings?${stringifiedParams}` : `/api/sensor-readings`
+}
+
+/**
+ * @summary List sensor readings (history)
+ */
+export const listSensorReadings = async (params?: ListSensorReadingsParams, options?: RequestInit): Promise<SensorReading[]> => {
+
+  return customFetch<SensorReading[]>(getListSensorReadingsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListSensorReadingsQueryKey = (params?: ListSensorReadingsParams,) => {
+    return [
+    `/api/sensor-readings`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListSensorReadingsQueryOptions = <TData = Awaited<ReturnType<typeof listSensorReadings>>, TError = ErrorType<unknown>>(params?: ListSensorReadingsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSensorReadings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListSensorReadingsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSensorReadings>>> = ({ signal }) => listSensorReadings(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listSensorReadings>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListSensorReadingsQueryResult = NonNullable<Awaited<ReturnType<typeof listSensorReadings>>>
+export type ListSensorReadingsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List sensor readings (history)
+ */
+
+export function useListSensorReadings<TData = Awaited<ReturnType<typeof listSensorReadings>>, TError = ErrorType<unknown>>(
+ params?: ListSensorReadingsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSensorReadings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListSensorReadingsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateSensorReadingUrl = () => {
+
+
+
+
+  return `/api/sensor-readings`
+}
+
+/**
+ * @summary Ingest a sensor reading
+ */
+export const createSensorReading = async (sensorReadingInput: SensorReadingInput, options?: RequestInit): Promise<SensorReading> => {
+
+  return customFetch<SensorReading>(getCreateSensorReadingUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      sensorReadingInput,)
+  }
+);}
+
+
+
+
+export const getCreateSensorReadingMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSensorReading>>, TError,{data: BodyType<SensorReadingInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createSensorReading>>, TError,{data: BodyType<SensorReadingInput>}, TContext> => {
+
+const mutationKey = ['createSensorReading'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createSensorReading>>, {data: BodyType<SensorReadingInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createSensorReading(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateSensorReadingMutationResult = NonNullable<Awaited<ReturnType<typeof createSensorReading>>>
+    export type CreateSensorReadingMutationBody = BodyType<SensorReadingInput>
+    export type CreateSensorReadingMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Ingest a sensor reading
+ */
+export const useCreateSensorReading = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSensorReading>>, TError,{data: BodyType<SensorReadingInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createSensorReading>>,
+        TError,
+        {data: BodyType<SensorReadingInput>},
+        TContext
+      > => {
+      return useMutation(getCreateSensorReadingMutationOptions(options));
+    }
+
+export const getListTasksUrl = (params?: ListTasksParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/tasks?${stringifiedParams}` : `/api/tasks`
+}
+
+/**
+ * @summary List open tasks
+ */
+export const listTasks = async (params?: ListTasksParams, options?: RequestInit): Promise<Task[]> => {
+
+  return customFetch<Task[]>(getListTasksUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListTasksQueryKey = (params?: ListTasksParams,) => {
+    return [
+    `/api/tasks`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListTasksQueryOptions = <TData = Awaited<ReturnType<typeof listTasks>>, TError = ErrorType<unknown>>(params?: ListTasksParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listTasks>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListTasksQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listTasks>>> = ({ signal }) => listTasks(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listTasks>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListTasksQueryResult = NonNullable<Awaited<ReturnType<typeof listTasks>>>
+export type ListTasksQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List open tasks
+ */
+
+export function useListTasks<TData = Awaited<ReturnType<typeof listTasks>>, TError = ErrorType<unknown>>(
+ params?: ListTasksParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listTasks>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListTasksQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateTaskUrl = () => {
+
+
+
+
+  return `/api/tasks`
+}
+
+/**
+ * @summary Create a task
+ */
+export const createTask = async (taskInput: TaskInput, options?: RequestInit): Promise<Task> => {
+
+  return customFetch<Task>(getCreateTaskUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      taskInput,)
+  }
+);}
+
+
+
+
+export const getCreateTaskMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createTask>>, TError,{data: BodyType<TaskInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createTask>>, TError,{data: BodyType<TaskInput>}, TContext> => {
+
+const mutationKey = ['createTask'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createTask>>, {data: BodyType<TaskInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createTask(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateTaskMutationResult = NonNullable<Awaited<ReturnType<typeof createTask>>>
+    export type CreateTaskMutationBody = BodyType<TaskInput>
+    export type CreateTaskMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create a task
+ */
+export const useCreateTask = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createTask>>, TError,{data: BodyType<TaskInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createTask>>,
+        TError,
+        {data: BodyType<TaskInput>},
+        TContext
+      > => {
+      return useMutation(getCreateTaskMutationOptions(options));
+    }
+
+export const getUpdateTaskUrl = (id: number,) => {
+
+
+
+
+  return `/api/tasks/${id}`
+}
+
+/**
+ * @summary Update a task
+ */
+export const updateTask = async (id: number,
+    taskUpdate: TaskUpdate, options?: RequestInit): Promise<Task> => {
+
+  return customFetch<Task>(getUpdateTaskUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      taskUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateTaskMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateTask>>, TError,{id: number;data: BodyType<TaskUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateTask>>, TError,{id: number;data: BodyType<TaskUpdate>}, TContext> => {
+
+const mutationKey = ['updateTask'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateTask>>, {id: number;data: BodyType<TaskUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateTask(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateTaskMutationResult = NonNullable<Awaited<ReturnType<typeof updateTask>>>
+    export type UpdateTaskMutationBody = BodyType<TaskUpdate>
+    export type UpdateTaskMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Update a task
+ */
+export const useUpdateTask = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateTask>>, TError,{id: number;data: BodyType<TaskUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateTask>>,
+        TError,
+        {id: number;data: BodyType<TaskUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateTaskMutationOptions(options));
     }
 

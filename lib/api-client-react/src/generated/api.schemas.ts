@@ -544,6 +544,126 @@ export interface ChannelResolved {
   monitoringApiPh?: string | null;
 }
 
+export type SensorType = typeof SensorType[keyof typeof SensorType];
+
+
+export const SensorType = {
+  temp: 'temp',
+  ph: 'ph',
+  water: 'water',
+  humidity: 'humidity',
+  ec: 'ec',
+} as const;
+
+export interface Sensor {
+  id: number;
+  channelId?: number | null;
+  rackId?: number | null;
+  type: SensorType;
+  label: string;
+  unit?: string | null;
+  lastValue?: number | null;
+  lastReadAt?: string | null;
+  createdAt: string;
+}
+
+export type SensorInputType = typeof SensorInputType[keyof typeof SensorInputType];
+
+
+export const SensorInputType = {
+  temp: 'temp',
+  ph: 'ph',
+  water: 'water',
+  humidity: 'humidity',
+  ec: 'ec',
+} as const;
+
+export interface SensorInput {
+  channelId?: number;
+  rackId?: number;
+  type: SensorInputType;
+  label: string;
+  unit?: string;
+}
+
+export interface SensorReading {
+  id: number;
+  sensorId: number;
+  metric: string;
+  value: number;
+  readAt: string;
+}
+
+export interface SensorReadingInput {
+  sensorId: number;
+  metric: string;
+  value: number;
+}
+
+export type TaskType = typeof TaskType[keyof typeof TaskType];
+
+
+export const TaskType = {
+  seed: 'seed',
+  transplant: 'transplant',
+  harvest: 'harvest',
+  inspect: 'inspect',
+} as const;
+
+export type TaskStatus = typeof TaskStatus[keyof typeof TaskStatus];
+
+
+export const TaskStatus = {
+  pending: 'pending',
+  in_progress: 'in_progress',
+  done: 'done',
+} as const;
+
+export interface Task {
+  id: number;
+  cycleId?: number | null;
+  type: TaskType;
+  status: TaskStatus;
+  assignee?: string | null;
+  dueAt?: string | null;
+  completedAt?: string | null;
+  createdBy?: string | null;
+  createdAt: string;
+}
+
+export type TaskInputType = typeof TaskInputType[keyof typeof TaskInputType];
+
+
+export const TaskInputType = {
+  seed: 'seed',
+  transplant: 'transplant',
+  harvest: 'harvest',
+  inspect: 'inspect',
+} as const;
+
+export interface TaskInput {
+  cycleId?: number;
+  type: TaskInputType;
+  assignee?: string;
+  dueAt?: string;
+}
+
+export type TaskUpdateStatus = typeof TaskUpdateStatus[keyof typeof TaskUpdateStatus];
+
+
+export const TaskUpdateStatus = {
+  pending: 'pending',
+  in_progress: 'in_progress',
+  done: 'done',
+} as const;
+
+export interface TaskUpdate {
+  status?: TaskUpdateStatus;
+  assignee?: string;
+  dueAt?: string;
+  completedAt?: string;
+}
+
 export type LookupSeedLotParams = {
 qrCode: string;
 };
@@ -602,4 +722,23 @@ channel: string;
  */
 rack?: string;
 };
+
+export type ListSensorReadingsParams = {
+sensorId?: number;
+from?: string;
+to?: string;
+};
+
+export type ListTasksParams = {
+status?: ListTasksStatus;
+};
+
+export type ListTasksStatus = typeof ListTasksStatus[keyof typeof ListTasksStatus];
+
+
+export const ListTasksStatus = {
+  pending: 'pending',
+  in_progress: 'in_progress',
+  done: 'done',
+} as const;
 
