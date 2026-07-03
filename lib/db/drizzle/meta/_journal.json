@@ -29,6 +29,13 @@
       "when": 1783111315625,
       "tag": "0003_p2a_additive_schema",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1783112668262,
+      "tag": "0004_p2b_type_conversions",
+      "breakpoints": true
     }
   ]
 }
