@@ -1,4 +1,6 @@
-import { setBaseUrl } from "@workspace/api-client-react";
+import { useEffect } from "react";
+import { useAuth, SignIn } from "@clerk/clerk-react";
+import { setBaseUrl, setAuthTokenGetter } from "@workspace/api-client-react";
 import { Switch, Route, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/sonner";
@@ -36,12 +38,46 @@ function Router() {
   );
 }
 
+/**
+ * Wires the Clerk session token into the shared API client so every request
+ * carries `Authorization: Bearer <token>`. The server's `clerkMiddleware`
+ * validates it. Re-registers the getter when the auth state changes.
+ */
+function ClerkAuthBridge() {
+  const { getToken } = useAuth();
+  useEffect(() => {
+    setAuthTokenGetter(async () => (await getToken()) ?? null);
+  }, [getToken]);
+  return null;
+}
+
+/** Shows Clerk's sign-in screen until the user is authenticated. */
+function AuthGate() {
+  const { isLoaded, isSignedIn } = useAuth();
+  if (!isLoaded) {
+    return (
+      <div className="h-[100dvh] flex items-center justify-center text-muted-foreground">
+        Loading…
+      </div>
+    );
+  }
+  if (!isSignedIn) {
+    return (
+      <div className="h-[100dvh] flex items-center justify-center bg-background">
+        <SignIn />
+      </div>
+    );
+  }
+  return <Router />;
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-          <Router />
+          <ClerkAuthBridge />
+          <AuthGate />
         </WouterRouter>
         <Toaster />
       </TooltipProvider>

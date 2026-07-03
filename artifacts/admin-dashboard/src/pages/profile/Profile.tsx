@@ -1,9 +1,17 @@
 import React from "react";
+import { useUser } from "@clerk/clerk-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { User } from "lucide-react";
 
 export function Profile() {
+  const { user, isLoaded } = useUser();
+  const name = user?.fullName ?? user?.firstName ?? "Operator";
+  const email = user?.primaryEmailAddress?.emailAddress ?? "—";
+  const initials =
+    ((user?.firstName?.[0] ?? "") + (user?.lastName?.[0] ?? "")).toUpperCase() ||
+    "O";
+
   return (
     <div className="p-6 space-y-6 max-w-[1400px] mx-auto">
       <div className="flex items-center gap-3">
@@ -22,21 +30,22 @@ export function Profile() {
         </CardHeader>
         <CardContent className="flex items-center gap-4">
           <Avatar className="h-14 w-14">
-            <AvatarFallback className="bg-primary/10 text-primary">
-              <User className="h-6 w-6" />
+            {isLoaded && user?.imageUrl ? <AvatarImage src={user.imageUrl} alt={name} /> : null}
+            <AvatarFallback className="bg-primary/10 text-primary text-lg font-semibold">
+              {initials}
             </AvatarFallback>
           </Avatar>
           <div className="space-y-0.5">
-            <p className="font-semibold">Operator</p>
-            <p className="text-xs text-muted-foreground">Shared facility login</p>
+            <p className="font-semibold">{name}</p>
+            <p className="text-xs text-muted-foreground">{email}</p>
           </div>
         </CardContent>
       </Card>
 
       <Card className="shadow-sm border-dashed max-w-md">
         <CardContent className="p-4 text-sm text-muted-foreground">
-          Signed-in identity (name, email, role) and per-operator actions will appear here
-          once web-client auth is wired. Today the dashboard runs on a shared operator login.
+          Roles and per-operator permissions will appear here once role metadata is
+          persisted server-side (the DB evaluation's I6 item).
         </CardContent>
       </Card>
     </div>

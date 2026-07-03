@@ -57,18 +57,18 @@ function requireSignedIn(req: Request, res: Response, next: NextFunction) {
   next();
 }
 
-// Public admin routes (no auth required)
-app.use("/api", dashboardRouter);
-app.use("/api", alertsRouter);
-app.use("/api", inventoryRouter);
-app.use("/api", shipmentsRouter);
-app.use("/api", badTraysRouter);
-// Cycles: GET routes are public for admin dashboard; write routes enforce auth internally
-app.use("/api", cyclesRouter);
-app.use("/api", layoutRouter);
-
-// Health + authenticated routes
+// Public: health check only.
 app.use("/api", healthRouter);
+
+// Everything else requires a signed-in Clerk session (S1/S2). Per-route
+// `enforceAuth` handlers in cycles/media remain as defense-in-depth.
+app.use("/api", requireSignedIn, dashboardRouter);
+app.use("/api", requireSignedIn, alertsRouter);
+app.use("/api", requireSignedIn, inventoryRouter);
+app.use("/api", requireSignedIn, shipmentsRouter);
+app.use("/api", requireSignedIn, badTraysRouter);
+app.use("/api", requireSignedIn, cyclesRouter);
+app.use("/api", requireSignedIn, layoutRouter);
 app.use("/api", requireSignedIn, router);
 
 export default app;
