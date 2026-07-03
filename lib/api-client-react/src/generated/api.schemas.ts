@@ -664,6 +664,44 @@ export interface TaskUpdate {
   completedAt?: string;
 }
 
+export type CropCategory = typeof CropCategory[keyof typeof CropCategory] | null;
+
+
+export const CropCategory = {
+  leafy: 'leafy',
+  herb: 'herb',
+  brassica: 'brassica',
+  legume: 'legume',
+  cereal: 'cereal',
+  other: 'other',
+} as const;
+
+export interface Crop {
+  id: number;
+  name: string;
+  scientificName?: string | null;
+  category?: CropCategory;
+  createdAt: string;
+}
+
+export type CropInputCategory = typeof CropInputCategory[keyof typeof CropInputCategory];
+
+
+export const CropInputCategory = {
+  leafy: 'leafy',
+  herb: 'herb',
+  brassica: 'brassica',
+  legume: 'legume',
+  cereal: 'cereal',
+  other: 'other',
+} as const;
+
+export interface CropInput {
+  name: string;
+  scientificName?: string;
+  category?: CropInputCategory;
+}
+
 export type LookupSeedLotParams = {
 qrCode: string;
 };

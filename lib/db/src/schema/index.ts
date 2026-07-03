@@ -73,12 +73,44 @@ export const stockMovementReasonEnum = pgEnum("stock_movement_reason", [
   "adjust",
 ]);
 
+export const cropCategoryEnum = pgEnum("crop_category", [
+  "leafy",
+  "herb",
+  "brassica",
+  "legume",
+  "cereal",
+  "other",
+]);
+
+export const cropsTable = pgTable("crops", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  scientificName: text("scientific_name"),
+  category: cropCategoryEnum("category"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 export const growthProfilesTable = pgTable("growth_profiles", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   seedName: text("seed_name").notNull(),
   germinationDays: integer("germination_days").notNull(),
   fertigationDays: integer("fertigation_days").notNull(),
+  cropId: integer("crop_id").references(() => cropsTable.id, {
+    onDelete: "set null",
+  }),
+  lightPpfd: integer("light_ppfd"),
+  lightHours: numeric("light_hours"),
+  germinationTempC: numeric("germination_temp_c"),
+  germinationRhPct: numeric("germination_rh_pct"),
+  fertigationTempC: numeric("fertigation_temp_c"),
+  fertigationRhPct: numeric("fertigation_rh_pct"),
+  ecTarget: numeric("ec_target"),
+  phTargetMin: numeric("ph_target_min"),
+  phTargetMax: numeric("ph_target_max"),
+  expectedYieldPerTrayKg: numeric("expected_yield_per_tray_kg"),
+  seedDensityGramsPerTray: numeric("seed_density_grams_per_tray"),
+  trayType: text("tray_type"),
 });
 
 export const seedLotsTable = pgTable("seed_lots", {

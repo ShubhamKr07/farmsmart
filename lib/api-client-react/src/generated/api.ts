@@ -35,6 +35,8 @@ import type {
   CreateManualCheckRequest,
   CreateRackInput,
   CreateTrayInput,
+  Crop,
+  CropInput,
   Cycle,
   CycleDetail,
   DashboardStats,
@@ -3435,5 +3437,153 @@ export const useUpdateTask = <TError = ErrorType<ErrorResponse>,
         TContext
       > => {
       return useMutation(getUpdateTaskMutationOptions(options));
+    }
+
+export const getListCropsUrl = () => {
+
+
+
+
+  return `/api/crops`
+}
+
+/**
+ * @summary List crops (catalog)
+ */
+export const listCrops = async ( options?: RequestInit): Promise<Crop[]> => {
+
+  return customFetch<Crop[]>(getListCropsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListCropsQueryKey = () => {
+    return [
+    `/api/crops`
+    ] as const;
+    }
+
+
+export const getListCropsQueryOptions = <TData = Awaited<ReturnType<typeof listCrops>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCrops>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListCropsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCrops>>> = ({ signal }) => listCrops({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCrops>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListCropsQueryResult = NonNullable<Awaited<ReturnType<typeof listCrops>>>
+export type ListCropsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List crops (catalog)
+ */
+
+export function useListCrops<TData = Awaited<ReturnType<typeof listCrops>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCrops>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListCropsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateCropUrl = () => {
+
+
+
+
+  return `/api/crops`
+}
+
+/**
+ * @summary Create a crop catalog entry
+ */
+export const createCrop = async (cropInput: CropInput, options?: RequestInit): Promise<Crop> => {
+
+  return customFetch<Crop>(getCreateCropUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      cropInput,)
+  }
+);}
+
+
+
+
+export const getCreateCropMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCrop>>, TError,{data: BodyType<CropInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createCrop>>, TError,{data: BodyType<CropInput>}, TContext> => {
+
+const mutationKey = ['createCrop'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createCrop>>, {data: BodyType<CropInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createCrop(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateCropMutationResult = NonNullable<Awaited<ReturnType<typeof createCrop>>>
+    export type CreateCropMutationBody = BodyType<CropInput>
+    export type CreateCropMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create a crop catalog entry
+ */
+export const useCreateCrop = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCrop>>, TError,{data: BodyType<CropInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createCrop>>,
+        TError,
+        {data: BodyType<CropInput>},
+        TContext
+      > => {
+      return useMutation(getCreateCropMutationOptions(options));
     }
 

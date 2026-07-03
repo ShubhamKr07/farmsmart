@@ -36,6 +36,13 @@
       "when": 1783112668262,
       "tag": "0004_p2b_type_conversions",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1783114602795,
+      "tag": "0005_p3_crop_catalog_growth_profiles",
+      "breakpoints": true
     }
   ]
 }

@@ -1,6 +1,6 @@
 import { Router, type Request, type Response, type NextFunction } from "express";
 import { getAuth } from "@clerk/express";
-import { eq, ne, count } from "drizzle-orm";
+import { eq, ne, count, sql } from "drizzle-orm";
 import { db } from "@workspace/db";
 import {
   cyclesTable,
@@ -92,15 +92,6 @@ router.get("/dashboard", async (req: Request, res: Response) => {
       .from(cyclesTable)
       .where(eq(cyclesTable.status, "completed"));
 
-    const allCycles = await db
-      .select({
-        fullTrays: cyclesTable.fullTrays,
-        halfTrays: cyclesTable.halfTrays,
-        seedWeightTray: cyclesTable.seedWeightTray,
-        createdAt: cyclesTable.createdAt,
-      })
-      .from(cyclesTable);
-
     const badTrayChecks = await db
       .select({
         fullTrays: manualChecksTable.fullTrays,
@@ -127,58 +118,51 @@ router.get("/dashboard", async (req: Request, res: Response) => {
       if (c.closedAt >= monthStart) totalYieldThisMonth += qty;
     }
 
-    function seedingWeight(fullTrays: number, halfTrays: number, seedWeightTray: string | null): number {
-      return Number(seedWeightTray ?? 0) * (fullTrays + halfTrays * 0.5);
+    // Time-series via SQL generate_series + date_trunc + SUM (R5: replaces
+    // JS-over-full-tables bucketing). Fragments are hardcoded safe SQL.
+    async function bucketSeries(
+      bucket: "day" | "week",
+      count: number,
+      valueExpr: string,
+      joinExpr: string,
+      dateColExpr: string,
+      onExtra = "",
+    ): Promise<{ label: string; value: number }[]> {
+      const back = `${count - 1} ${bucket}s`;
+      const interval = bucket === "day" ? "1 day" : "1 week";
+      const labelExpr = bucket === "day" ? `to_char(gs.d, 'Dy')` : `NULL`;
+      const res = await db.execute(sql`
+        SELECT ${sql.raw(labelExpr)} AS label, COALESCE(SUM(${sql.raw(valueExpr)}), 0) AS value
+        FROM generate_series(
+          date_trunc(${sql.raw(bucket)}, now() - interval ${sql.raw(`'${back}'`)}),
+          date_trunc(${sql.raw(bucket)}, now()),
+          interval ${sql.raw(`'${interval}'`)}
+        ) AS gs(d)
+        LEFT JOIN ${sql.raw(joinExpr)}
+          ON date_trunc(${sql.raw(bucket)}, ${sql.raw(dateColExpr)}) = gs.d ${sql.raw(onExtra)}
+        GROUP BY gs.d
+        ORDER BY gs.d
+      `);
+      const rows = res.rows as { label: string | null; value: string | number }[];
+      return rows.map((r, i) => ({
+        label: bucket === "day" ? (r.label ?? "") : `W${i + 1}`,
+        value: Number(r.value),
+      }));
     }
 
-    const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-    const yieldByDay: { label: string; value: number }[] = [];
-    const seedingByDay: { label: string; value: number }[] = [];
-    const badTrayByDay: { label: string; value: number }[] = [];
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      d.setHours(0, 0, 0, 0);
-      const next = new Date(d);
-      next.setDate(next.getDate() + 1);
-      const yieldTotal = completedRows
-        .filter((c) => c.closedAt && c.closedAt >= d && c.closedAt < next)
-        .reduce((sum, c) => sum + Number(c.harvestedQty ?? 0), 0);
-      const seedingTotal = allCycles
-        .filter((c) => c.createdAt >= d && c.createdAt < next)
-        .reduce((sum, c) => sum + seedingWeight(c.fullTrays, c.halfTrays, c.seedWeightTray), 0);
-      const badTrayTotal = badTrayChecks
-        .filter((c) => c.createdAt >= d && c.createdAt < next)
-        .reduce((sum, c) => sum + seedingWeight(c.fullTrays, c.halfTrays, c.seedWeightTray), 0);
-      const label = DAY_LABELS[d.getDay()];
-      yieldByDay.push({ label, value: yieldTotal });
-      seedingByDay.push({ label, value: seedingTotal });
-      badTrayByDay.push({ label, value: badTrayTotal });
-    }
+    const seedWtExpr = "c.seed_weight_tray * (c.full_trays + c.half_trays * 0.5)";
+    const badSeedWtExpr = "c.seed_weight_tray * (mc.full_trays + mc.half_trays * 0.5)";
+    const badJoin = "manual_checks mc LEFT JOIN cycles c ON c.id = mc.cycle_id";
 
-    const yieldByWeek: { label: string; value: number }[] = [];
-    const seedingByWeek: { label: string; value: number }[] = [];
-    const badTrayByWeek: { label: string; value: number }[] = [];
-    for (let i = 3; i >= 0; i--) {
-      const wStart = new Date();
-      wStart.setDate(wStart.getDate() - (i + 1) * 7);
-      wStart.setHours(0, 0, 0, 0);
-      const wEnd = new Date(wStart);
-      wEnd.setDate(wEnd.getDate() + 7);
-      const yieldTotal = completedRows
-        .filter((c) => c.closedAt && c.closedAt >= wStart && c.closedAt < wEnd)
-        .reduce((sum, c) => sum + Number(c.harvestedQty ?? 0), 0);
-      const seedingTotal = allCycles
-        .filter((c) => c.createdAt >= wStart && c.createdAt < wEnd)
-        .reduce((sum, c) => sum + seedingWeight(c.fullTrays, c.halfTrays, c.seedWeightTray), 0);
-      const badTrayTotal = badTrayChecks
-        .filter((c) => c.createdAt >= wStart && c.createdAt < wEnd)
-        .reduce((sum, c) => sum + seedingWeight(c.fullTrays, c.halfTrays, c.seedWeightTray), 0);
-      const label = `W${4 - i}`;
-      yieldByWeek.push({ label, value: yieldTotal });
-      seedingByWeek.push({ label, value: seedingTotal });
-      badTrayByWeek.push({ label, value: badTrayTotal });
-    }
+    const [yieldByDay, seedingByDay, badTrayByDay, yieldByWeek, seedingByWeek, badTrayByWeek] =
+      await Promise.all([
+        bucketSeries("day", 7, "c.harvested_qty", "cycles c", "c.closed_at", "AND c.status = 'completed'"),
+        bucketSeries("day", 7, seedWtExpr, "cycles c", "c.created_at"),
+        bucketSeries("day", 7, badSeedWtExpr, badJoin, "mc.created_at", "AND mc.is_bad_trays"),
+        bucketSeries("week", 4, "c.harvested_qty", "cycles c", "c.closed_at", "AND c.status = 'completed'"),
+        bucketSeries("week", 4, seedWtExpr, "cycles c", "c.created_at"),
+        bucketSeries("week", 4, badSeedWtExpr, badJoin, "mc.created_at", "AND mc.is_bad_trays"),
+      ]);
 
     // Active seed lots (currently being grown)
     const activeSeedLotsRows = await db

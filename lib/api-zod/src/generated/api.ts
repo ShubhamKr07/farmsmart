@@ -970,3 +970,26 @@ export const UpdateTaskResponse = zod.object({
 })
 
 
+/**
+ * @summary List crops (catalog)
+ */
+export const ListCropsResponseItem = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "scientificName": zod.string().nullish(),
+  "category": zod.enum(['leafy', 'herb', 'brassica', 'legume', 'cereal', 'other']).nullish(),
+  "createdAt": zod.coerce.date()
+})
+export const ListCropsResponse = zod.array(ListCropsResponseItem)
+
+
+/**
+ * @summary Create a crop catalog entry
+ */
+export const CreateCropBody = zod.object({
+  "name": zod.string(),
+  "scientificName": zod.string().optional(),
+  "category": zod.enum(['leafy', 'herb', 'brassica', 'legume', 'cereal', 'other']).optional()
+})
+
+
