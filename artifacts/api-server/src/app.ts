@@ -46,7 +46,8 @@ app.use(
     },
   }),
 );
-app.use(cors());
+// CORS: in production set CORS_ORIGIN to the dashboard URL; unset = allow all (dev).
+app.use(cors({ origin: process.env.CORS_ORIGIN ?? true }));
 app.use("/uploads", express.static(path.resolve(UPLOADS_DIR)));
 app.use(express.json({ limit: "20mb" }));
 app.use(express.urlencoded({ extended: true }));

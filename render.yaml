@@ -1,0 +1,60 @@
+# FarmSmart — Render infrastructure-as-code
+# Docs: https://render.com/docs/blueprint-spec
+#
+# Two services:
+#   1. farmsmart-api        — Express API (Web Service, $7/mo starter)
+#   2. farmsmart-dashboard  — admin SPA (Static Site, free, CDN)
+# Postgres is external (Neon) — set NEON_DATABASE_URL. Auth is Clerk.
+#
+# FIRST-DEPLOY ORDER:
+#   1. Deploy the API service; note its URL (https://farmsmart-api.onrender.com).
+#   2. Set the dashboard's VITE_API_BASE_URL env var to that API URL.
+#   3. Set the API's CORS_ORIGIN env var to the dashboard URL.
+#   4. Add both URLs to Clerk's allowed origins.
+#   5. Deploy the dashboard service.
+
+services:
+  # ── API server ────────────────────────────────────────────────────────────
+  - type: web
+    name: farmsmart-api
+    runtime: node
+    plan: starter
+    region: oregon
+    nodeVersion: "22.0.0"
+    buildCommand: npm i -g pnpm && pnpm install --frozen-lockfile && pnpm --filter @workspace/api-server run build
+    startCommand: node --enable-source-maps artifacts/api-server/dist/index.mjs
+    healthCheckPath: /api/healthz
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEON_DATABASE_URL
+        sync: false # Neon connection string (postgresql://...?sslmode=require)
+      - key: DATABASE_URL
+        sync: false # same Neon URL (fallback)
+      - key: CLERK_SECRET_KEY
+        sync: false # sk_test_... (dev) or sk_live_... (prod)
+      - key: CLERK_PUBLISHABLE_KEY
+        sync: false
+      - key: CORS_ORIGIN
+        sync: false # dashboard URL, e.g. https://farmsmart-dashboard.onrender.com
+
+  # ── Admin dashboard SPA (static, CDN) ─────────────────────────────────────
+  - type: static
+    name: farmsmart-dashboard
+    buildCommand: npm i -g pnpm && pnpm install --frozen-lockfile && pnpm --filter @workspace/admin-dashboard run build
+    staticPublishPath: artifacts/admin-dashboard/dist/public
+    autoDeploy: true
+    # SPA client-side routing: non-asset paths fall back to index.html
+    routes:
+      - src: /*
+        dest: /index.html
+    envVars:
+      - key: PORT
+        value: "8080" # vite.config requires PORT at build time
+      - key: BASE_PATH
+        value: / # SPA served at root
+      - key: VITE_API_BASE_URL
+        sync: false # API URL, e.g. https://farmsmart-api.onrender.com
+      - key: VITE_PUBLIC_CLERK_PUBLISHABLE_KEY
+        sync: false # pk_test_... (dev) or pk_live_... (prod)
