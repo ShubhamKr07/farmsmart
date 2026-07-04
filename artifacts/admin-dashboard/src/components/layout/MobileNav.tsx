@@ -58,7 +58,7 @@ export function MobileNav({
       <SheetContent side="left" className="w-[280px] max-w-[85vw] p-0 overflow-y-auto">
         <SheetHeader className="h-16 flex items-center px-6 border-b">
           <SheetTitle asChild>
-            <img src="/logo-lockup.svg" alt="FarmSmart" className="h-7 w-auto" />
+            <img src="/logo-lockup.svg" alt="FarmSmart" className="h-[37px] w-auto" />
           </SheetTitle>
         </SheetHeader>
         <NavList onNavigate={() => onOpenChange(false)} />

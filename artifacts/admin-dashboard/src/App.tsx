@@ -59,7 +59,7 @@ function AuthGate() {
   if (!isLoaded) {
     return (
       <div className="h-[100dvh] flex flex-col items-center justify-center gap-4 text-muted-foreground">
-        <img src="/logo-lockup.svg" alt="FarmSmart" className="h-8 w-auto opacity-80" />
+        <img src="/logo-lockup.svg" alt="FarmSmart" className="h-[43px] w-auto opacity-80" />
         <span>Loading…</span>
       </div>
     );
@@ -67,7 +67,7 @@ function AuthGate() {
   if (!isSignedIn) {
     return (
       <div className="h-[100dvh] flex flex-col items-center justify-center gap-8 bg-background">
-        <img src="/logo-lockup.svg" alt="FarmSmart" className="h-10 w-auto" />
+        <img src="/logo-lockup.svg" alt="FarmSmart" className="h-[53px] w-auto" />
         <SignIn />
       </div>
     );
