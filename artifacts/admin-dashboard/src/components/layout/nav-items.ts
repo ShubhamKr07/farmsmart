@@ -6,6 +6,7 @@ import {
   Grid3X3,
   User,
   Settings,
+  DollarSign,
   type LucideIcon,
 } from "lucide-react";
 
@@ -21,6 +22,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/cycles", label: "Cycles", icon: Factory },
   { href: "/inventory", label: "Inventory", icon: Package },
   { href: "/shipments", label: "Shipments", icon: Truck },
+  { href: "/accounting", label: "Accounting", icon: DollarSign },
   { href: "/layout", label: "Layout", icon: Grid3X3 },
 ];
 

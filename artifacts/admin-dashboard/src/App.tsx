@@ -12,6 +12,7 @@ import { Overview } from "@/pages/overview/Overview";
 import { Cycles } from "@/pages/cycles/Cycles";
 import { Inventory } from "@/pages/inventory/Inventory";
 import { Shipments } from "@/pages/shipments/Shipments";
+import { Accounting } from "@/pages/accounting/Accounting";
 import { Layout } from "@/pages/layout/Layout";
 import { Profile } from "@/pages/profile/Profile";
 import { Settings } from "@/pages/settings/Settings";
@@ -29,6 +30,7 @@ function Router() {
         <Route path="/cycles" component={Cycles} />
         <Route path="/inventory" component={Inventory} />
         <Route path="/shipments" component={Shipments} />
+        <Route path="/accounting" component={Accounting} />
         <Route path="/layout" component={Layout} />
         <Route path="/profile" component={Profile} />
         <Route path="/settings" component={Settings} />

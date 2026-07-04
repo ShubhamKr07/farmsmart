@@ -13,4 +13,5 @@ export const ListMetricsTab = {
   overview: 'overview',
   shipments: 'shipments',
   inventory: 'inventory',
+  accounting: 'accounting',
 } as const;

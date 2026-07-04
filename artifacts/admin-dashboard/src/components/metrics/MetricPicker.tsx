@@ -20,6 +20,7 @@ const REQUIRES_LABEL: Record<string, string> = {
   sensor_readings: "needs sensor readings",
   cost: "needs inventory cost data (not yet tracked)",
   crop_id: "needs crop-linked growth profiles",
+  accounting_connected: "connect QuickBooks in the Accounting tab first",
 };
 
 function unmetRequirement(def: MetricDef, availability: MetricsAvailability | undefined): string | null {

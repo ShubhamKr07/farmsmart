@@ -219,6 +219,8 @@ export interface MetricsAvailability {
   sensor_readings: boolean;
   cost: boolean;
   crop_id: boolean;
+  /** Whether the signed-in user has an active QuickBooks connection. */
+  accounting_connected: boolean;
 }
 
 /**
@@ -844,6 +846,7 @@ export const ListMetricsTab = {
   overview: 'overview',
   shipments: 'shipments',
   inventory: 'inventory',
+  accounting: 'accounting',
 } as const;
 
 export type ListMetricsRange = typeof ListMetricsRange[keyof typeof ListMetricsRange];

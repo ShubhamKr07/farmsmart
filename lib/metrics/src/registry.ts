@@ -2,12 +2,14 @@ import type { MetricDef, MetricTab } from "./types";
 import { OVERVIEW_METRICS } from "./registry-overview";
 import { SHIPMENTS_METRICS } from "./registry-shipments";
 import { INVENTORY_METRICS } from "./registry-inventory";
+import { ACCOUNTING_METRICS } from "./registry-accounting";
 
 /** Flat catalog — every metric across all tabs. */
 export const METRICS: MetricDef[] = [
   ...OVERVIEW_METRICS,
   ...SHIPMENTS_METRICS,
   ...INVENTORY_METRICS,
+  ...ACCOUNTING_METRICS,
 ];
 
 export const METRICS_BY_ID: ReadonlyMap<string, MetricDef> = new Map(
@@ -18,6 +20,7 @@ export const METRICS_BY_TAB: Record<MetricTab, MetricDef[]> = {
   overview: OVERVIEW_METRICS,
   shipments: SHIPMENTS_METRICS,
   inventory: INVENTORY_METRICS,
+  accounting: ACCOUNTING_METRICS,
 };
 
 export function getMetricDef(id: string): MetricDef | undefined {

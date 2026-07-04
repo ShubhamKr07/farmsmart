@@ -997,7 +997,7 @@ export const CreateCropBody = zod.object({
  * @summary Compute the requested Tier-B metrics server-side
  */
 export const ListMetricsQueryParams = zod.object({
-  "tab": zod.enum(['overview', 'shipments', 'inventory']).optional(),
+  "tab": zod.enum(['overview', 'shipments', 'inventory', 'accounting']).optional(),
   "keys": zod.coerce.string().optional().describe('Comma-separated metric ids (validated against the registry allowlist).'),
   "range": zod.enum(['7d', '30d', '90d', 'custom', 'all']).optional()
 })
@@ -1012,7 +1012,8 @@ export const GetMetricsAvailabilityResponse = zod.object({
   "revenue": zod.boolean(),
   "sensor_readings": zod.boolean(),
   "cost": zod.boolean(),
-  "crop_id": zod.boolean()
+  "crop_id": zod.boolean(),
+  "accounting_connected": zod.boolean().describe('Whether the signed-in user has an active QuickBooks connection.')
 })
 
 

@@ -6,7 +6,7 @@
  * the metric catalog; see docs/metrics-data-dictionary.md.
  */
 
-export type MetricTab = "overview" | "shipments" | "inventory";
+export type MetricTab = "overview" | "shipments" | "inventory" | "accounting";
 
 export type MetricRender =
   | "kpi"
@@ -28,7 +28,9 @@ export type MetricRender =
  * Where the card's data comes from.
  * - `dashboard` / `alerts` / `shipments` / `inventory`: Tier A — derived
  *   client-side from the existing list/dashboard payloads (M1).
- * - `metrics`: Tier B — served by `GET /api/metrics` (M2+).
+ * - `metrics`: Tier B — served by `GET /api/metrics` (M2+). Every accounting
+ *   metric is Tier B (`template: "quickbooks"`) — there's no local Postgres
+ *   data source for QuickBooks figures.
  */
 export type MetricSource =
   | "dashboard"
@@ -45,7 +47,8 @@ export type MetricTemplate =
   | "timeBucket"
   | "ratio"
   | "table"
-  | "custom";
+  | "custom"
+  | "quickbooks";
 
 export type MetricUnit =
   | "kg"

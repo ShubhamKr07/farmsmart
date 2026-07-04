@@ -1,8 +1,10 @@
 import { Router, type Request, type Response } from "express";
 import { sql } from "drizzle-orm";
+import { getAuth } from "@clerk/express";
 import { db } from "@workspace/db";
 import { METRICS_BY_ID, metricsForTab, type MetricTab, type TemplateName } from "@workspace/metrics";
 import { TEMPLATES } from "../lib/metrics/templates";
+import { isConnected as isQuickbooksConnected } from "../lib/accounting/quickbooks";
 
 const router = Router();
 
@@ -18,6 +20,7 @@ router.get("/metrics", async (req: Request, res: Response) => {
   const keysParam = (req.query.keys as string | undefined) ?? "";
   const range = (req.query.range as string | undefined) ?? "all";
   const keys = keysParam.split(",").map((k) => k.trim()).filter(Boolean);
+  const { userId } = getAuth(req);
 
   if (keys.length === 0) {
     return res.json({});
@@ -40,7 +43,7 @@ router.get("/metrics", async (req: Request, res: Response) => {
     const entries = await Promise.all(
       valid.map(async (v) => {
         try {
-          const data = await TEMPLATES[v.template](v.params, range);
+          const data = await TEMPLATES[v.template](v.params, range, userId ?? undefined);
           return [v.id, data] as const;
         } catch (err) {
           // One failing metric shouldn't 500 the whole batch; report per-key.
@@ -61,12 +64,18 @@ interface Availability {
   sensor_readings: boolean;
   cost: boolean;
   crop_id: boolean;
+  accounting_connected: boolean;
 }
 
-let cache: { data: Availability; expiresAt: number } | null = null;
-const AVAILABILITY_TTL_MS = 5 * 60 * 1000;
+// Global flags (same for every user) cached once; accounting_connected is
+// per-user (each user has their own QuickBooks connection) so it's cached
+// separately, keyed by clerk user id, with a shorter TTL.
+let globalCache: { data: Omit<Availability, "accounting_connected">; expiresAt: number } | null = null;
+const GLOBAL_TTL_MS = 5 * 60 * 1000;
+const acctCache = new Map<string, { connected: boolean; expiresAt: number }>();
+const ACCT_TTL_MS = 60 * 1000;
 
-async function computeAvailability(): Promise<Availability> {
+async function computeGlobalAvailability(): Promise<Omit<Availability, "accounting_connected">> {
   const [rev, sensor, crop] = await Promise.all([
     db.execute(sql.raw(`SELECT EXISTS (SELECT 1 FROM shipments WHERE revenue_usd IS NOT NULL AND deleted_at IS NULL) AS v`)),
     db.execute(sql.raw(`SELECT EXISTS (SELECT 1 FROM sensor_readings) AS v`)),
@@ -81,14 +90,25 @@ async function computeAvailability(): Promise<Availability> {
   };
 }
 
-router.get("/metrics/availability", async (_req: Request, res: Response) => {
-  if (cache && cache.expiresAt > Date.now()) {
-    return res.json(cache.data);
-  }
+router.get("/metrics/availability", async (req: Request, res: Response) => {
   try {
-    const data = await computeAvailability();
-    cache = { data, expiresAt: Date.now() + AVAILABILITY_TTL_MS };
-    return res.json(data);
+    if (!globalCache || globalCache.expiresAt <= Date.now()) {
+      globalCache = { data: await computeGlobalAvailability(), expiresAt: Date.now() + GLOBAL_TTL_MS };
+    }
+
+    const { userId } = getAuth(req);
+    let accountingConnected = false;
+    if (userId) {
+      const cached = acctCache.get(userId);
+      if (cached && cached.expiresAt > Date.now()) {
+        accountingConnected = cached.connected;
+      } else {
+        accountingConnected = await isQuickbooksConnected(userId);
+        acctCache.set(userId, { connected: accountingConnected, expiresAt: Date.now() + ACCT_TTL_MS });
+      }
+    }
+
+    return res.json({ ...globalCache.data, accounting_connected: accountingConnected });
   } catch (err) {
     return res.status(500).json({ error: "availability query failed", detail: (err as Error).message });
   }
@@ -96,7 +116,8 @@ router.get("/metrics/availability", async (_req: Request, res: Response) => {
 
 /** Exposed for tests / migration tooling. */
 export function resetAvailabilityCache() {
-  cache = null;
+  globalCache = null;
+  acctCache.clear();
 }
 
 export function listTierBKeysForTab(tab: MetricTab): string[] {

@@ -11,4 +11,6 @@ export interface MetricsAvailability {
   sensor_readings: boolean;
   cost: boolean;
   crop_id: boolean;
+  /** Whether the signed-in user has an active QuickBooks connection. */
+  accounting_connected: boolean;
 }

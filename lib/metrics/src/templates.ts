@@ -75,7 +75,24 @@ export interface CustomParams {
   key: string;
 }
 
-export type TemplateName = "scalarAgg" | "groupBy" | "timeBucket" | "ratio" | "table" | "custom";
+/**
+ * QuickBooks Online Reports/Query API dispatch. `key` selects a hand-written
+ * fetcher in api-server/src/lib/metrics/quickbooks-reports.ts, keyed by
+ * metric id — mirrors CustomParams but calls the QBO API instead of Postgres.
+ * Every accounting-tab metric uses this template.
+ */
+export interface QuickbooksParams {
+  key: string;
+}
+
+export type TemplateName =
+  | "scalarAgg"
+  | "groupBy"
+  | "timeBucket"
+  | "ratio"
+  | "table"
+  | "custom"
+  | "quickbooks";
 
 export interface TemplateParamsMap {
   scalarAgg: ScalarAggParams;
@@ -84,4 +101,5 @@ export interface TemplateParamsMap {
   ratio: RatioParams;
   table: TableParams;
   custom: CustomParams;
+  quickbooks: QuickbooksParams;
 }

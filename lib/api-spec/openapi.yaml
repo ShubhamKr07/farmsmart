@@ -1061,7 +1061,7 @@ paths:
       parameters:
         - name: tab
           in: query
-          schema: { type: string, enum: [overview, shipments, inventory] }
+          schema: { type: string, enum: [overview, shipments, inventory, accounting] }
         - name: keys
           in: query
           description: Comma-separated metric ids (validated against the registry allowlist).
@@ -1546,7 +1546,10 @@ components:
           type: boolean
         crop_id:
           type: boolean
-      required: [revenue, sensor_readings, cost, crop_id]
+        accounting_connected:
+          type: boolean
+          description: Whether the signed-in user has an active QuickBooks connection.
+      required: [revenue, sensor_readings, cost, crop_id, accounting_connected]
 
     UserSettingsResponse:
       type: object

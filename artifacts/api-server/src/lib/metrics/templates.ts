@@ -7,9 +7,11 @@ import type {
   RatioParams,
   TableParams,
   CustomParams,
+  QuickbooksParams,
   TemplateName,
 } from "@workspace/metrics";
 import { CUSTOM_QUERIES } from "./custom";
+import { runQuickbooksQuery } from "../accounting/quickbooks-reports";
 import {
   dateTrunc,
   facilityNow,
@@ -135,6 +137,15 @@ export async function customTemplate(p: CustomParams, range?: string): Promise<u
   return fn();
 }
 
+export async function quickbooksTemplate(
+  p: QuickbooksParams,
+  _range?: string,
+  clerkUserId?: string,
+): Promise<unknown> {
+  if (!clerkUserId) throw new Error("quickbooks template requires an authenticated user");
+  return runQuickbooksQuery(p.key, clerkUserId);
+}
+
 // ── helpers ───────────────────────────────────────────────────────────────
 
 function rangeWindowFor(table: string, p: { where?: string }, range?: string): string {
@@ -162,11 +173,12 @@ function labelFmt(unit: string): string {
   return "HH24:MI";
 }
 
-export const TEMPLATES: Record<TemplateName, (p: any, range?: string) => Promise<unknown>> = {
+export const TEMPLATES: Record<TemplateName, (p: any, range?: string, clerkUserId?: string) => Promise<unknown>> = {
   scalarAgg,
   groupBy,
   timeBucket,
   ratio,
   table: tableTemplate,
   custom: customTemplate,
+  quickbooks: quickbooksTemplate,
 };
