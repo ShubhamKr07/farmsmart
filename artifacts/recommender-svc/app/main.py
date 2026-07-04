@@ -5,6 +5,7 @@ from fastapi import Depends, FastAPI
 
 from app.auth import require_internal_key
 from app.cache_repo import search_cache
+from app.config import settings
 from app.db import close_pool, get_pool
 from app.embed_upsert import upsert_cache_docs
 from app.embeddings import embed
@@ -40,18 +41,19 @@ async def recommend(req: RecommendRequest) -> RecommendResponse:
     hits = await search_cache(question_embedding, limit=5)
     used_live_search = False
 
-    if not hits:
+    if not hits and settings.tavily_api_key:
         docs = await asyncio.to_thread(run_tavily_ingest, req.question)
         await upsert_cache_docs(docs)
         hits = await search_cache(question_embedding, limit=5)
         used_live_search = True
 
     if not hits:
-        return RecommendResponse(
-            answer="No relevant results found, even after a live search.",
-            sources=[],
-            cache_hit=False,
+        message = (
+            "No relevant results found, even after a live search."
+            if used_live_search
+            else "No cached knowledge matches this question yet, and live search isn't configured."
         )
+        return RecommendResponse(answer=message, sources=[], cache_hit=False)
 
     top = hits[0]
     prefix = "Found via live search: " if used_live_search else "Closest cached match: "
