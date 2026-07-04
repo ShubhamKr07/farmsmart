@@ -18,11 +18,13 @@ interface MetricCardProps {
  * TierBMetricCard, which fetches /api/metrics. ⓘ tooltips + CSV export arrive in M3.
  */
 export function MetricCard({ def, data, range }: MetricCardProps) {
-  if (def.source === "metrics" && def.template && def.templateParams) {
+  const isTierB = def.source === "metrics" && !!def.template && !!def.templateParams;
+  const Renderer = useMemo(() => resolveRenderer(def), [def]);
+
+  if (isTierB) {
     return <div className={spanClass(def)}><TierBMetricCard def={def} range={range} /></div>;
   }
 
-  const Renderer = useMemo(() => resolveRenderer(def), [def]);
   const props: RendererProps = { def, data };
   return <div className={spanClass(def)}><Renderer {...props} /></div>;
 }
