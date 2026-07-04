@@ -44,7 +44,8 @@ export type MetricTemplate =
   | "groupBy"
   | "timeBucket"
   | "ratio"
-  | "table";
+  | "table"
+  | "custom";
 
 export type MetricUnit =
   | "kg"

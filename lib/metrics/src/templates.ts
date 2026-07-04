@@ -65,7 +65,17 @@ export interface TableParams {
   limit?: number;
 }
 
-export type TemplateName = "scalarAgg" | "groupBy" | "timeBucket" | "ratio" | "table";
+/**
+ * Escape hatch for metrics whose SQL doesn't fit the 5 generic shapes
+ * (multi-CTE queries, window functions, correlated subqueries). `key` selects
+ * a hand-written query function in api-server/src/lib/metrics/custom.ts,
+ * keyed by metric id — not free-form SQL from the registry.
+ */
+export interface CustomParams {
+  key: string;
+}
+
+export type TemplateName = "scalarAgg" | "groupBy" | "timeBucket" | "ratio" | "table" | "custom";
 
 export interface TemplateParamsMap {
   scalarAgg: ScalarAggParams;
@@ -73,4 +83,5 @@ export interface TemplateParamsMap {
   timeBucket: TimeBucketParams;
   ratio: RatioParams;
   table: TableParams;
+  custom: CustomParams;
 }

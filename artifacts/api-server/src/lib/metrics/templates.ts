@@ -6,8 +6,10 @@ import type {
   TimeBucketParams,
   RatioParams,
   TableParams,
+  CustomParams,
   TemplateName,
 } from "@workspace/metrics";
+import { CUSTOM_QUERIES } from "./custom";
 import {
   dateTrunc,
   facilityNow,
@@ -126,6 +128,13 @@ export async function tableTemplate(p: TableParams, range?: string): Promise<Row
   return res.rows as Row[];
 }
 
+export async function customTemplate(p: CustomParams, range?: string): Promise<unknown> {
+  void range;
+  const fn = CUSTOM_QUERIES[p.key];
+  if (!fn) throw new Error(`no custom query registered for key: ${p.key}`);
+  return fn();
+}
+
 // ── helpers ───────────────────────────────────────────────────────────────
 
 function rangeWindowFor(table: string, p: { where?: string }, range?: string): string {
@@ -159,4 +168,5 @@ export const TEMPLATES: Record<TemplateName, (p: any, range?: string) => Promise
   timeBucket,
   ratio,
   table: tableTemplate,
+  custom: customTemplate,
 };

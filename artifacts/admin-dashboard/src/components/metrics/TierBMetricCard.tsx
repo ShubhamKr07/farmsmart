@@ -3,10 +3,17 @@ import { useListMetrics } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Empty } from "@/components/ui/empty";
+import { Button } from "@/components/ui/button";
+import {
+  Tooltip as UiTooltip,
+  TooltipContent as UiTooltipContent,
+  TooltipTrigger as UiTooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Info, Download } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   AreaChart, Area, CartesianGrid, LineChart, Line,
-  PieChart, Pie, Cell, Legend,
+  PieChart, Pie, Cell, Legend, ScatterChart, Scatter, ZAxis,
 } from "recharts";
 import { formatNumber } from "@/lib/format";
 import type { MetricDef } from "@workspace/metrics";
@@ -26,9 +33,33 @@ interface TierBMetricCardProps {
   range: MetricRange;
 }
 
+function toCsv(def: MetricDef, payload: unknown): string {
+  if (payload && typeof payload === "object" && "value" in (payload as object)) {
+    return `metric,value\n${def.id},${(payload as { value: number }).value}`;
+  }
+  const rows = payload as Record<string, unknown>[] | undefined;
+  if (!Array.isArray(rows) || rows.length === 0) return "no data\n";
+  const cols = Object.keys(rows[0]);
+  const header = cols.map((c) => (c === "value" && def.unit ? `value (${def.unit})` : c)).join(",");
+  const body = rows.map((r) => cols.map((c) => JSON.stringify(r[c] ?? "")).join(",")).join("\n");
+  return `${header}\n${body}`;
+}
+
+function downloadCsv(def: MetricDef, payload: unknown) {
+  const csv = toCsv(def, payload);
+  const blob = new Blob([csv], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${def.id}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 /**
  * Tier-B metric card: fetches its value from /api/metrics (one React Query per
  * card, scoped by id+range) and renders per the metric's `render` type.
+ * Header carries an (i) definition tooltip and a CSV export of the fetched data.
  */
 export function TierBMetricCard({ def, range }: TierBMetricCardProps) {
   const { data, isLoading, isError } = useListMetrics({
@@ -38,13 +69,35 @@ export function TierBMetricCard({ def, range }: TierBMetricCardProps) {
   });
 
   const payload = data?.[def.id];
+  const hasData = !isLoading && !isError && !(payload && typeof payload === "object" && "error" in payload);
 
   return (
     <Card className="shadow-sm h-full">
-      <CardHeader className="pb-2 space-y-0">
-        <CardTitle className="text-sm font-medium text-muted-foreground">
-          {def.label}{def.unit && def.unit !== "count" ? ` (${def.unit})` : ""}
-        </CardTitle>
+      <CardHeader className="pb-2 space-y-0 flex flex-row items-center justify-between">
+        <div className="flex items-center gap-1.5">
+          <CardTitle className="text-sm font-medium text-muted-foreground">
+            {def.label}{def.unit && def.unit !== "count" ? ` (${def.unit})` : ""}
+          </CardTitle>
+          <UiTooltip>
+            <UiTooltipTrigger asChild>
+              <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+            </UiTooltipTrigger>
+            <UiTooltipContent side="top" className="max-w-xs">
+              {def.description}
+            </UiTooltipContent>
+          </UiTooltip>
+        </div>
+        {hasData && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 -mr-1"
+            aria-label={`Export ${def.label} as CSV`}
+            onClick={() => downloadCsv(def, payload)}
+          >
+            <Download className="h-3.5 w-3.5" />
+          </Button>
+        )}
       </CardHeader>
       <CardContent>
         {isLoading ? (
@@ -89,6 +142,16 @@ function Body({ def, payload }: { def: MetricDef; payload: unknown }) {
       const rows = (payload as Record<string, unknown>[] | undefined) ?? [];
       if (rows.length === 0) return <Empty className="h-[180px]">No rows</Empty>;
       return <Table rows={rows} />;
+    }
+    case "scatter": {
+      const rows = (payload as Record<string, unknown>[] | undefined) ?? [];
+      if (rows.length === 0) return <Empty className="h-[180px]">No data</Empty>;
+      return <ScatterPlot rows={rows} />;
+    }
+    case "heatmap": {
+      const rows = (payload as SeriesPoint[] | undefined) ?? [];
+      if (rows.length === 0) return <Empty className="h-[180px]">No data</Empty>;
+      return <Heatmap rows={rows} />;
     }
     default:
       return <Empty className="h-[120px]">Unsupported render type</Empty>;
@@ -157,6 +220,52 @@ function HBar({ rows }: { rows: SeriesPoint[] }) {
           <Bar dataKey="value" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
         </BarChart>
       </ResponsiveContainer>
+    </div>
+  );
+}
+
+function ScatterPlot({ rows }: { rows: Record<string, unknown>[] }) {
+  const cols = rows.length > 0 ? Object.keys(rows[0]) : [];
+  const [xKey, yKey] = cols;
+  const data = rows
+    .map((r) => ({ x: Number(r[xKey]), y: Number(r[yKey]) }))
+    .filter((p) => Number.isFinite(p.x) && Number.isFinite(p.y));
+  return (
+    <div className="h-[200px]">
+      <ResponsiveContainer width="100%" height="100%">
+        <ScatterChart>
+          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+          <XAxis type="number" dataKey="x" name={xKey} axisLine={false} tickLine={false} tick={{ fontSize: 11 }} />
+          <YAxis type="number" dataKey="y" name={yKey} axisLine={false} tickLine={false} tick={{ fontSize: 11 }} />
+          <ZAxis range={[40, 40]} />
+          <Tooltip contentStyle={tooltipStyle} cursor={{ strokeDasharray: "3 3" }} />
+          <Scatter data={data} fill="hsl(var(--primary))" />
+        </ScatterChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+function Heatmap({ rows }: { rows: SeriesPoint[] }) {
+  const cellColor = (v: number) => {
+    if (v >= 80) return "hsl(var(--destructive))";
+    if (v >= 50) return "hsl(var(--chart-2))";
+    if (v > 0) return "hsl(var(--primary))";
+    return "hsl(var(--muted))";
+  };
+  return (
+    <div className="grid grid-cols-4 gap-2 max-h-[200px] overflow-y-auto">
+      {rows.map((r) => (
+        <div
+          key={r.label}
+          className="rounded-md p-2 text-center text-xs text-white"
+          style={{ backgroundColor: cellColor(r.value) }}
+          title={`${r.label}: ${r.value}%`}
+        >
+          <div className="font-medium truncate">{r.label}</div>
+          <div className="opacity-90">{r.value}%</div>
+        </div>
+      ))}
     </div>
   );
 }

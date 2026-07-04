@@ -10,8 +10,28 @@ import {
 } from "@/components/ui/command";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { SlidersHorizontal, RotateCcw } from "lucide-react";
+import { useGetMetricsAvailability, type MetricsAvailability } from "@workspace/api-client-react";
 import type { MetricDef, MetricTab } from "@workspace/metrics";
+
+const REQUIRES_LABEL: Record<string, string> = {
+  revenue: "needs shipment revenue data",
+  sensor_readings: "needs sensor readings",
+  cost: "needs inventory cost data (not yet tracked)",
+  crop_id: "needs crop-linked growth profiles",
+};
+
+function unmetRequirement(def: MetricDef, availability: MetricsAvailability | undefined): string | null {
+  if (!def.requires || def.requires.length === 0) return null;
+  if (!availability) return null; // fail open while loading
+  for (const req of def.requires) {
+    if (availability[req as keyof MetricsAvailability] === false) {
+      return REQUIRES_LABEL[req] ?? `needs ${req}`;
+    }
+  }
+  return null;
+}
 
 interface MetricPickerProps {
   tab: MetricTab;
@@ -27,6 +47,7 @@ export function MetricPicker({
   onToggle,
   onReset,
 }: MetricPickerProps) {
+  const { data: availability } = useGetMetricsAvailability();
   const selectedSet = useMemo(() => new Set(selected), [selected]);
 
   // Group by category, preserving registry order.
@@ -60,14 +81,16 @@ export function MetricPicker({
               <CommandGroup key={category} heading={category}>
                 {metrics.map((m) => {
                   const checked = selectedSet.has(m.id);
-                  return (
+                  const reason = unmetRequirement(m, availability);
+                  const item = (
                     <CommandItem
                       key={m.id}
                       value={`${m.label} ${m.category} ${m.id}`}
-                      onSelect={() => onToggle(m.id)}
+                      onSelect={() => !reason && onToggle(m.id)}
+                      disabled={!!reason}
                       className="gap-2"
                     >
-                      <Checkbox checked={checked} className="pointer-events-none" />
+                      <Checkbox checked={checked} disabled={!!reason} className="pointer-events-none" />
                       <div className="flex flex-1 flex-col">
                         <span className="text-sm">{m.label}</span>
                         {m.unit && (
@@ -77,6 +100,13 @@ export function MetricPicker({
                         )}
                       </div>
                     </CommandItem>
+                  );
+                  if (!reason) return item;
+                  return (
+                    <Tooltip key={m.id}>
+                      <TooltipTrigger asChild>{item}</TooltipTrigger>
+                      <TooltipContent side="left">{reason}</TooltipContent>
+                    </Tooltip>
                   );
                 })}
               </CommandGroup>
