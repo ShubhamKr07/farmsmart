@@ -17,12 +17,12 @@ import { UserMenu } from "@/components/user-menu";
 import { FRESHNESS_MS } from "@/lib/format";
 
 /**
- * On xl+ screens, RightSidebar carries the alert bell, DB status, refresh,
- * theme toggle, and user menu — TopBar is Ask-Me-first (brand mark + the
- * persistent question bar + a corner search icon), nothing else competing
- * for attention. Below xl, RightSidebar doesn't render at all, so this same
- * icon group stays in TopBar for mobile/tablet — losing alert access on
- * mobile isn't an option (P0-4).
+ * On xl+ screens, RightSidebar carries the alert bell, DB status, search,
+ * refresh, theme toggle, and user menu — TopBar is Ask-Me-first (brand mark
+ * + the persistent question bar), nothing else competing for attention.
+ * Below xl, RightSidebar doesn't render at all, so this same icon group
+ * stays in TopBar for mobile/tablet — losing alert access on mobile isn't an
+ * option (P0-4).
  */
 export function TopBar() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -111,20 +111,20 @@ export function TopBar() {
             <RefreshCw className="h-4 w-4" />
           </Button>
 
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-10 w-10 text-muted-foreground"
+            onClick={() => window.dispatchEvent(new CustomEvent("open-command-palette"))}
+            aria-label="Open command palette (⌘K)"
+            data-testid="button-command-palette"
+          >
+            <Search className="h-4 w-4" />
+          </Button>
+
           <ThemeToggle />
           <UserMenu />
         </div>
-
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-10 w-10 shrink-0 text-muted-foreground"
-          onClick={() => window.dispatchEvent(new CustomEvent("open-command-palette"))}
-          aria-label="Open command palette (⌘K)"
-          data-testid="button-command-palette"
-        >
-          <Search className="h-4 w-4" />
-        </Button>
       </header>
 
       <MobileNav open={mobileNavOpen} onOpenChange={setMobileNavOpen} />

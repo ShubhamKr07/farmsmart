@@ -19,6 +19,7 @@ import {
   Wifi,
   WifiOff,
   RefreshCw,
+  Search,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
@@ -106,6 +107,14 @@ export function RightSidebar() {
               {alertCount > 9 ? "9+" : alertCount}
             </span>
           )}
+        </button>
+        <button
+          type="button"
+          aria-label="Open command palette (⌘K)"
+          onClick={() => window.dispatchEvent(new CustomEvent("open-command-palette"))}
+          data-testid="button-command-palette-panel"
+        >
+          <Search className="h-4 w-4 text-muted-foreground" />
         </button>
       </div>
 
