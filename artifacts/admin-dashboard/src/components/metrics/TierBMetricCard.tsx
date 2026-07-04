@@ -82,12 +82,27 @@ export function TierBMetricCard({ def, range }: TierBMetricCardProps) {
         {isLoading ? (
           <Skeleton className="h-[120px] w-full" />
         ) : isError || (payload && typeof payload === "object" && "error" in payload) ? (
-          <Empty className="h-[120px]">Unable to load metric</Empty>
+          <ErrorDetail payload={payload} />
         ) : (
           <Body def={def} payload={payload} />
         )}
       </CardContent>
     </Card>
+  );
+}
+
+function ErrorDetail({ payload }: { payload: unknown }) {
+  const message: string =
+    payload && typeof payload === "object" && "error" in payload
+      ? String((payload as { error: unknown }).error)
+      : "";
+  return (
+    <Empty className="h-[120px] text-xs">
+      <span>Unable to load metric</span>
+      {message && (
+        <span className="mt-1 block text-muted-foreground/70 break-words">{message}</span>
+      )}
+    </Empty>
   );
 }
 

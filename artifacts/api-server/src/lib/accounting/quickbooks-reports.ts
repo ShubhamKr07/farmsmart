@@ -100,6 +100,21 @@ function flattenLeafRows(rows: QboReportRow[] | undefined, group: string): { lab
   return out;
 }
 
+/**
+ * Explicit start/end date params for "last 30 days" — QBO's Reports API
+ * `date_macro` only accepts specific enum values (Today, This Month, Last
+ * Month, This Fiscal Year, etc.), not an arbitrary "last N days"; explicit
+ * start_date/end_date works for any window.
+ */
+function last30DaysParams(): Record<string, string> {
+  const end = new Date();
+  const start = new Date(end.getTime() - 30 * 86_400_000);
+  return {
+    start_date: start.toISOString().slice(0, 10),
+    end_date: end.toISOString().slice(0, 10),
+  };
+}
+
 /** Monthly P&L summarized-by-month report -> {label:"YYYY-MM", value}[] for a given group. */
 async function monthlyGroupSeries(clerkUserId: string, group: string): Promise<{ label: string; value: number }[]> {
   const now = new Date();
@@ -125,24 +140,24 @@ async function monthlyGroupSeries(clerkUserId: string, group: string): Promise<{
 }
 
 async function acctRevenueTotal(clerkUserId: string) {
-  const report = await fetchReport(clerkUserId, "ProfitAndLoss", { date_macro: "Last 30 days" });
+  const report = await fetchReport(clerkUserId, "ProfitAndLoss", last30DaysParams());
   return { value: findGroupTotal(report.Rows?.Row, "Income") };
 }
 
 async function acctExpensesTotal(clerkUserId: string) {
-  const report = await fetchReport(clerkUserId, "ProfitAndLoss", { date_macro: "Last 30 days" });
+  const report = await fetchReport(clerkUserId, "ProfitAndLoss", last30DaysParams());
   return { value: findGroupTotal(report.Rows?.Row, "Expenses") };
 }
 
 async function acctNetIncome(clerkUserId: string) {
-  const report = await fetchReport(clerkUserId, "ProfitAndLoss", { date_macro: "Last 30 days" });
+  const report = await fetchReport(clerkUserId, "ProfitAndLoss", last30DaysParams());
   const income = findGroupTotal(report.Rows?.Row, "Income");
   const expenses = findGroupTotal(report.Rows?.Row, "Expenses");
   return { value: income - expenses };
 }
 
 async function acctGrossProfitMargin(clerkUserId: string) {
-  const report = await fetchReport(clerkUserId, "ProfitAndLoss", { date_macro: "Last 30 days" });
+  const report = await fetchReport(clerkUserId, "ProfitAndLoss", last30DaysParams());
   const income = findGroupTotal(report.Rows?.Row, "Income");
   const cogs = findGroupTotal(report.Rows?.Row, "COGS");
   return { value: income > 0 ? (income - cogs) / income : 0 };
@@ -157,7 +172,7 @@ async function acctExpensesByMonth(clerkUserId: string) {
 }
 
 async function acctExpensesByCategory(clerkUserId: string) {
-  const report = await fetchReport(clerkUserId, "ProfitAndLoss", { date_macro: "Last 30 days" });
+  const report = await fetchReport(clerkUserId, "ProfitAndLoss", last30DaysParams());
   return flattenLeafRows(report.Rows?.Row, "Expenses");
 }
 
