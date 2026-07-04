@@ -5,6 +5,17 @@ from app.config import settings
 DATASET_NAME = "recommender_staging"
 
 
+def _unpooled_database_url() -> str:
+    """
+    dlt's postgres destination (psycopg2) sets search_path via a connection
+    startup parameter, which Neon's pooled endpoint (PgBouncer, host
+    contains "-pooler") rejects outright ("unsupported startup parameter in
+    options: search_path"). asyncpg (cache_repo.py, embed_upsert.py) doesn't
+    hit this, so only dlt's connection needs the direct/unpooled host.
+    """
+    return settings.database_url.replace("-pooler.", ".")
+
+
 def _fetch_tavily_rows(query: str, max_results: int) -> list[dict]:
     """
     dlt's declarative REST API source handles the Tavily HTTP call (bearer
@@ -68,7 +79,7 @@ def run_tavily_ingest(query: str, max_results: int = 5) -> list[dict]:
 
     pipeline = dlt.pipeline(
         pipeline_name="recommender_ingest",
-        destination=dlt.destinations.postgres(credentials=settings.database_url),
+        destination=dlt.destinations.postgres(credentials=_unpooled_database_url()),
         dataset_name=DATASET_NAME,
     )
     pipeline.run(rows, table_name="raw_docs", write_disposition="merge", primary_key="source_url")
