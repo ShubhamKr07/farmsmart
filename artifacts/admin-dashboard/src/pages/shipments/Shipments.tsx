@@ -41,6 +41,12 @@ import { Truck, Plus, DollarSign, PackageCheck, CalendarDays, Pencil, Trash2 } f
 import { toast } from "sonner";
 import { QueryError } from "@/components/ui/query-error";
 import { DataTable, type Column } from "@/components/data-table";
+import { getMetricDef } from "@workspace/metrics";
+import { useMetricSelection } from "@/hooks/use-metric-selection";
+import { MetricPicker } from "@/components/metrics/MetricPicker";
+import { MetricGrid } from "@/components/metrics/MetricGrid";
+import { MetricCard } from "@/components/metrics/MetricCard";
+import type { MetricDataMap } from "@/components/metrics/renderers";
 
 const shipmentSchema = z.object({
   client: z.string().min(1, "Client is required"),
@@ -164,6 +170,9 @@ export function Shipments() {
   const pendingCount = items.filter((s) => s.status === "pending").length;
   const uniqueClients = Array.from(new Set(items.map((s) => s.client))).filter(Boolean);
 
+  const { selected, selectable, toggle, reset } = useMetricSelection("shipments");
+  const metricData: MetricDataMap = { shipments: items };
+
   if (isLoading) return <div className="p-6 space-y-6"><Skeleton className="h-[400px] w-full" /></div>;
 
   if (isError) {
@@ -262,7 +271,15 @@ export function Shipments() {
     <div className="p-6 space-y-6 max-w-[1400px] mx-auto">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">Shipments</h1>
-        <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+        <div className="flex items-center gap-2">
+          <MetricPicker
+            tab="shipments"
+            selectable={selectable}
+            selected={selected}
+            onToggle={toggle}
+            onReset={reset}
+          />
+          <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
           <DialogTrigger asChild>
             <Button data-testid="button-add-shipment">
               <Plus className="h-4 w-4 mr-2" />
@@ -276,51 +293,17 @@ export function Shipments() {
             <ShipmentForm form={form} onSubmit={onCreateSubmit} submitLabel={createShipment.isPending ? "Creating..." : "Create Shipment"} />
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardHeaderTitle>Total Yield Sold</CardHeaderTitle>
-            <PackageCheck className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatNumber(totalYield)} kg</div>
-            <p className="text-xs text-muted-foreground mt-1">{items.length} shipments total</p>
-          </CardContent>
-        </Card>
-        <Card className="shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardHeaderTitle>Total Revenue</CardHeaderTitle>
-            <DollarSign className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(totalRevenue)}</div>
-            <p className="text-xs text-muted-foreground mt-1">{uniqueClients.length} clients</p>
-          </CardContent>
-        </Card>
-        <Card className="shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardHeaderTitle>Completed</CardHeaderTitle>
-            <Truck className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{completedCount}</div>
-            <p className="text-xs text-muted-foreground mt-1">Delivered shipments</p>
-          </CardContent>
-        </Card>
-        <Card className="shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardHeaderTitle>Pending</CardHeaderTitle>
-            <PackageCheck className="h-4 w-4 text-status-warn" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-status-warn">{pendingCount}</div>
-            <p className="text-xs text-muted-foreground mt-1">Awaiting dispatch</p>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Metric cards (selectable) */}
+      <MetricGrid>
+        {selected.map((id) => {
+          const def = getMetricDef(id);
+          if (!def) return null;
+          return <MetricCard key={id} def={def} data={metricData} />;
+        })}
+      </MetricGrid>
 
       {/* Filter + table */}
       <Card className="shadow-sm">

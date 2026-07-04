@@ -43,6 +43,12 @@ import { toast } from "sonner";
 import { QueryError } from "@/components/ui/query-error";
 import { DataTable, type Column } from "@/components/data-table";
 import QRCodeSVG from "react-qr-code";
+import { getMetricDef } from "@workspace/metrics";
+import { useMetricSelection } from "@/hooks/use-metric-selection";
+import { MetricPicker } from "@/components/metrics/MetricPicker";
+import { MetricGrid } from "@/components/metrics/MetricGrid";
+import { MetricCard } from "@/components/metrics/MetricCard";
+import type { MetricDataMap } from "@/components/metrics/renderers";
 
 type SeedLot = { id: number; seedName: string; qrCode: string };
 
@@ -199,6 +205,9 @@ export function Inventory() {
 
   const seedLots = (dashboard as { activeSeedLotDetails?: { id: number; seedName: string; qrCode: string }[] })?.activeSeedLotDetails || [];
 
+  const { selected, selectable, toggle, reset } = useMetricSelection("inventory");
+  const metricData: MetricDataMap = { inventory: items, dashboard };
+
   const itemForm = (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(editing ? onEditSubmit : onCreateSubmit)} className="space-y-4">
@@ -274,7 +283,15 @@ export function Inventory() {
     <div className="p-6 space-y-6 max-w-[1400px] mx-auto">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">Inventory Management</h1>
-        <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+        <div className="flex items-center gap-2">
+          <MetricPicker
+            tab="inventory"
+            selectable={selectable}
+            selected={selected}
+            onToggle={toggle}
+            onReset={reset}
+          />
+          <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
           <DialogTrigger asChild>
             <Button data-testid="button-add-item">
               <Plus className="h-4 w-4 mr-2" />
@@ -286,51 +303,17 @@ export function Inventory() {
             {itemForm}
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
-      {/* Stat Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <span className="text-sm font-medium text-muted-foreground">Total Supply Items</span>
-            <Package className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{items.length}</div>
-            <p className="text-xs text-muted-foreground mt-1">{chartData.length} categories</p>
-          </CardContent>
-        </Card>
-        <Card className="shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <span className="text-sm font-medium text-muted-foreground">Low Stock Alerts</span>
-            <AlertCircle className="h-4 w-4 text-destructive" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-destructive">{lowStockItems.length}</div>
-            <p className="text-xs text-muted-foreground mt-1">Items below 20%</p>
-          </CardContent>
-        </Card>
-        <Card className="shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <span className="text-sm font-medium text-muted-foreground">Active Seed Lots</span>
-            <Sprout className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{dashboard?.activeSeedLots || 0}</div>
-            <p className="text-xs text-muted-foreground mt-1">Currently in rotation</p>
-          </CardContent>
-        </Card>
-        <Card className="shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <span className="text-sm font-medium text-muted-foreground">Active Crop Types</span>
-            <Sprout className="h-4 w-4 text-chart-2" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{dashboard?.activeCropTypes || 0}</div>
-            <p className="text-xs text-muted-foreground mt-1">Distinct varieties growing</p>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Metric cards (selectable) */}
+      <MetricGrid>
+        {selected.map((id) => {
+          const def = getMetricDef(id);
+          if (!def) return null;
+          return <MetricCard key={id} def={def} data={metricData} />;
+        })}
+      </MetricGrid>
 
       {/* Active Seed Lots */}
       {seedLots.length > 0 && (
