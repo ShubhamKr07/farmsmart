@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "Add your description here"
 requires-python = ">=3.12"
 dependencies = [
+    "anthropic>=0.116.0",
     "asyncpg>=0.31.0",
     "dlt[postgres]>=1.28.1",
     "fastapi>=0.139.0",
