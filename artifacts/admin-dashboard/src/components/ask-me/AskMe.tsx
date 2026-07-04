@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Sparkles, Loader2, ExternalLink } from "lucide-react";
 import { usePostRecommend } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
@@ -12,18 +12,37 @@ import {
 } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 
+const EXAMPLE_QUESTIONS = [
+  "why are my basil trays failing?",
+  "what's my yield this week?",
+  "best EC and pH for lettuce?",
+  "why is my yield declining?",
+  "recommend a nutrient supplier",
+];
+
 /**
- * Global "Ask Me" entry point — a free-text question box (distinct from the
- * existing ⌘K command palette, which navigates/acts rather than answers
- * questions). Available from any page via the TopBar. Submits to
- * POST /api/recommend, which grounds the answer in cached/live-searched
- * vertical-farming knowledge plus the farm's own operational data.
+ * Global "Ask Me" entry point — a persistent, always-visible question bar in
+ * the TopBar (distinct from the ⌘K command palette, which navigates/acts
+ * rather than answers questions). Submits to POST /api/recommend, which
+ * grounds the answer in cached/live-searched vertical-farming knowledge plus
+ * the farm's own operational data. The answer renders in a side sheet.
  */
 export function AskMe() {
   const [open, setOpen] = useState(false);
   const [question, setQuestion] = useState("");
   const [submittedQuestion, setSubmittedQuestion] = useState<string | null>(null);
+  const [placeholderIndex, setPlaceholderIndex] = useState(0);
+  const inputRef = useRef<HTMLInputElement>(null);
   const recommend = usePostRecommend();
+
+  // Rotate the example placeholder while idle — pauses once the user has typed anything.
+  useEffect(() => {
+    if (question) return;
+    const id = setInterval(() => {
+      setPlaceholderIndex((i) => (i + 1) % EXAMPLE_QUESTIONS.length);
+    }, 3200);
+    return () => clearInterval(id);
+  }, [question]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,12 +50,12 @@ export function AskMe() {
     if (!trimmed) return;
     setSubmittedQuestion(trimmed);
     recommend.mutate({ data: { question: trimmed } });
+    setOpen(true);
   };
 
   const handleOpenChange = (next: boolean) => {
     setOpen(next);
     if (!next) {
-      setQuestion("");
       setSubmittedQuestion(null);
       recommend.reset();
     }
@@ -44,17 +63,19 @@ export function AskMe() {
 
   return (
     <>
-      <Button
-        variant="outline"
-        size="sm"
-        className="hidden lg:inline-flex gap-2 h-9 px-2 text-muted-foreground"
-        onClick={() => setOpen(true)}
-        aria-label="Ask a vertical-farming question"
-        data-testid="button-ask-me"
-      >
-        <Sparkles className="h-4 w-4" />
-        <span className="text-xs">Ask Me</span>
-      </Button>
+      <form onSubmit={handleSubmit} className="relative flex-1 max-w-2xl">
+        <Sparkles className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-primary" />
+        <Input
+          ref={inputRef}
+          value={question}
+          onChange={(e) => setQuestion(e.target.value)}
+          onFocus={() => submittedQuestion && open === false && setOpen(true)}
+          placeholder={`Ask me — e.g. ${EXAMPLE_QUESTIONS[placeholderIndex]}`}
+          className="h-10 pl-9 pr-4 bg-muted/40 border-transparent focus-visible:bg-background transition-colors"
+          aria-label="Ask a vertical-farming question"
+          data-testid="input-ask-me"
+        />
+      </form>
 
       <Sheet open={open} onOpenChange={handleOpenChange}>
         <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
@@ -74,8 +95,8 @@ export function AskMe() {
               autoFocus
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
-              placeholder="e.g. why are my basil trays failing?"
-              data-testid="input-ask-me"
+              placeholder="Ask a follow-up…"
+              data-testid="input-ask-me-sheet"
             />
             <Button type="submit" disabled={recommend.isPending || !question.trim()} data-testid="button-ask-me-submit">
               {recommend.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Ask"}
