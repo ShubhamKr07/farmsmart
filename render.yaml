@@ -100,8 +100,8 @@ services:
     envVars:
       - key: DATABASE_URL
         sync: false # same Neon connection string as farmsmart-api
-      - key: OPENAI_API_KEY
-        sync: false # platform.openai.com — used for text-embedding-3-small
+      - key: GEMINI_API_KEY
+        sync: false # aistudio.google.com — used for gemini-embedding-001
       - key: INTERNAL_API_KEY
         sync: false # shared secret with farmsmart-api's RECOMMENDER_INTERNAL_KEY —
                      # same value as that key, generated once via: openssl rand -base64 32

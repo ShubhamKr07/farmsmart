@@ -48,4 +48,4 @@ Render → service → Settings → Custom Domain. Point `farmsmart.app` (or `da
 | `PORT` | Dashboard | `10000` (preset; Render injects at runtime) |
 | `BASE_PATH` | Dashboard | `/` (preset) |
 | `DATABASE_URL` | Recommender | same Neon connection string as the API |
-| `OPENAI_API_KEY` | Recommender | `platform.openai.com` key, used for `text-embedding-3-small` |
+| `GEMINI_API_KEY` | Recommender | `aistudio.google.com` key, used for `gemini-embedding-001` |

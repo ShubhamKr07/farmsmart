@@ -490,8 +490,8 @@ export const accountingConnectionsTable = pgTable(
 
 // ── Recommender: cached external knowledge + question history ──────────────
 // Requires the pgvector extension (CREATE EXTENSION IF NOT EXISTS vector;),
-// enabled once via migration. Embeddings are OpenAI text-embedding-3-small
-// (1536 dims) — see artifacts/recommender-svc.
+// enabled once via migration. Embeddings are Gemini gemini-embedding-001
+// (output_dimensionality=1536) — see artifacts/recommender-svc.
 
 export const recommenderCacheTable = pgTable(
   "recommender_cache",
