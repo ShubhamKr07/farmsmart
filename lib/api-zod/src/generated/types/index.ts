@@ -6,6 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './accountingConnectResponse';
+export * from './accountingDisconnectResponse';
+export * from './accountingStatusResponse';
 export * from './actionRequiredItem';
 export * from './actionRequiredItemType';
 export * from './alert';

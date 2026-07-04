@@ -236,6 +236,21 @@ export interface UserSettingInput {
   value: unknown;
 }
 
+export interface AccountingConnectResponse {
+  authorizeUri: string;
+}
+
+export interface AccountingStatusResponse {
+  connected: boolean;
+  realmId?: string;
+  companyName?: string | null;
+  environment?: string;
+}
+
+export interface AccountingDisconnectResponse {
+  disconnected: boolean;
+}
+
 export type AlertSeverity = typeof AlertSeverity[keyof typeof AlertSeverity];
 
 

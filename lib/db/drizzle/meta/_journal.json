@@ -50,6 +50,13 @@
       "when": 1783137250688,
       "tag": "0006_p4_user_settings",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1783143422852,
+      "tag": "0007_p5_accounting_connections",
+      "breakpoints": true
     }
   ]
 }

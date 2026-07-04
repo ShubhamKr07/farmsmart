@@ -18,6 +18,7 @@ import tasksRouter from "./routes/tasks";
 import cropsRouter from "./routes/crops";
 import metricsRouter from "./routes/metrics";
 import userSettingsRouter from "./routes/userSettings";
+import { accountingRouter, accountingPublicRouter } from "./routes/accounting";
 import { logger } from "./lib/logger";
 import {
   CLERK_PROXY_PATH,
@@ -64,8 +65,10 @@ function requireSignedIn(req: Request, res: Response, next: NextFunction) {
   next();
 }
 
-// Public: health check only.
+// Public: health check + QuickBooks OAuth callback (Intuit redirects the
+// browser here directly; can't carry our Bearer-token auth — see accounting.ts).
 app.use("/api", healthRouter);
+app.use("/api", accountingPublicRouter);
 
 // Everything else requires a signed-in Clerk session (S1/S2). Per-route
 // `enforceAuth` handlers in cycles/media remain as defense-in-depth.
@@ -82,6 +85,7 @@ app.use("/api", requireSignedIn, tasksRouter);
 app.use("/api", requireSignedIn, cropsRouter);
 app.use("/api", requireSignedIn, metricsRouter);
 app.use("/api", requireSignedIn, userSettingsRouter);
+app.use("/api", requireSignedIn, accountingRouter);
 app.use("/api", requireSignedIn, router);
 
 export default app;

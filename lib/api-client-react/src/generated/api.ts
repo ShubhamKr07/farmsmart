@@ -20,6 +20,9 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AccountingConnectResponse,
+  AccountingDisconnectResponse,
+  AccountingStatusResponse,
   Alert,
   AlertActionInput,
   AlertInput,
@@ -3900,5 +3903,229 @@ export const usePutUserSetting = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getPutUserSettingMutationOptions(options));
+    }
+
+export const getGetAccountingConnectUriUrl = () => {
+
+
+
+
+  return `/api/accounting/connect`
+}
+
+/**
+ * @summary Get the QuickBooks OAuth authorize URL to redirect the user to
+ */
+export const getAccountingConnectUri = async ( options?: RequestInit): Promise<AccountingConnectResponse> => {
+
+  return customFetch<AccountingConnectResponse>(getGetAccountingConnectUriUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAccountingConnectUriQueryKey = () => {
+    return [
+    `/api/accounting/connect`
+    ] as const;
+    }
+
+
+export const getGetAccountingConnectUriQueryOptions = <TData = Awaited<ReturnType<typeof getAccountingConnectUri>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAccountingConnectUri>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAccountingConnectUriQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAccountingConnectUri>>> = ({ signal }) => getAccountingConnectUri({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAccountingConnectUri>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAccountingConnectUriQueryResult = NonNullable<Awaited<ReturnType<typeof getAccountingConnectUri>>>
+export type GetAccountingConnectUriQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get the QuickBooks OAuth authorize URL to redirect the user to
+ */
+
+export function useGetAccountingConnectUri<TData = Awaited<ReturnType<typeof getAccountingConnectUri>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAccountingConnectUri>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAccountingConnectUriQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetAccountingStatusUrl = () => {
+
+
+
+
+  return `/api/accounting/status`
+}
+
+/**
+ * @summary QuickBooks connection status for the signed-in user
+ */
+export const getAccountingStatus = async ( options?: RequestInit): Promise<AccountingStatusResponse> => {
+
+  return customFetch<AccountingStatusResponse>(getGetAccountingStatusUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAccountingStatusQueryKey = () => {
+    return [
+    `/api/accounting/status`
+    ] as const;
+    }
+
+
+export const getGetAccountingStatusQueryOptions = <TData = Awaited<ReturnType<typeof getAccountingStatus>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAccountingStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAccountingStatusQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAccountingStatus>>> = ({ signal }) => getAccountingStatus({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAccountingStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAccountingStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getAccountingStatus>>>
+export type GetAccountingStatusQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary QuickBooks connection status for the signed-in user
+ */
+
+export function useGetAccountingStatus<TData = Awaited<ReturnType<typeof getAccountingStatus>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAccountingStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAccountingStatusQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getPostAccountingDisconnectUrl = () => {
+
+
+
+
+  return `/api/accounting/disconnect`
+}
+
+/**
+ * @summary Disconnect QuickBooks for the signed-in user
+ */
+export const postAccountingDisconnect = async ( options?: RequestInit): Promise<AccountingDisconnectResponse> => {
+
+  return customFetch<AccountingDisconnectResponse>(getPostAccountingDisconnectUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getPostAccountingDisconnectMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAccountingDisconnect>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof postAccountingDisconnect>>, TError,void, TContext> => {
+
+const mutationKey = ['postAccountingDisconnect'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postAccountingDisconnect>>, void> = () => {
+
+
+          return  postAccountingDisconnect(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostAccountingDisconnectMutationResult = NonNullable<Awaited<ReturnType<typeof postAccountingDisconnect>>>
+
+    export type PostAccountingDisconnectMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Disconnect QuickBooks for the signed-in user
+ */
+export const usePostAccountingDisconnect = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAccountingDisconnect>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof postAccountingDisconnect>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getPostAccountingDisconnectMutationOptions(options));
     }
 

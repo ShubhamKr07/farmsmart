@@ -1040,3 +1040,30 @@ export const PutUserSettingResponse = zod.object({
 })
 
 
+/**
+ * @summary Get the QuickBooks OAuth authorize URL to redirect the user to
+ */
+export const GetAccountingConnectUriResponse = zod.object({
+  "authorizeUri": zod.string()
+})
+
+
+/**
+ * @summary QuickBooks connection status for the signed-in user
+ */
+export const GetAccountingStatusResponse = zod.object({
+  "connected": zod.boolean(),
+  "realmId": zod.string().optional(),
+  "companyName": zod.string().nullish(),
+  "environment": zod.string().optional()
+})
+
+
+/**
+ * @summary Disconnect QuickBooks for the signed-in user
+ */
+export const PostAccountingDisconnectResponse = zod.object({
+  "disconnected": zod.boolean()
+})
+
+

@@ -1129,6 +1129,45 @@ paths:
               schema:
                 $ref: "#/components/schemas/UserSettingInput"
 
+  /accounting/connect:
+    get:
+      operationId: getAccountingConnectUri
+      tags: [accounting]
+      summary: Get the QuickBooks OAuth authorize URL to redirect the user to
+      responses:
+        "200":
+          description: Authorize URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountingConnectResponse"
+
+  /accounting/status:
+    get:
+      operationId: getAccountingStatus
+      tags: [accounting]
+      summary: QuickBooks connection status for the signed-in user
+      responses:
+        "200":
+          description: Connection status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountingStatusResponse"
+
+  /accounting/disconnect:
+    post:
+      operationId: postAccountingDisconnect
+      tags: [accounting]
+      summary: Disconnect QuickBooks for the signed-in user
+      responses:
+        "200":
+          description: Disconnect result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountingDisconnectResponse"
+
 components:
   schemas:
     HealthStatus:
@@ -1524,6 +1563,34 @@ components:
         value:
           description: Arbitrary JSON value to store for this key.
       required: [value]
+
+    AccountingConnectResponse:
+      type: object
+      properties:
+        authorizeUri:
+          type: string
+      required: [authorizeUri]
+
+    AccountingStatusResponse:
+      type: object
+      properties:
+        connected:
+          type: boolean
+        realmId:
+          type: string
+        companyName:
+          type: string
+          nullable: true
+        environment:
+          type: string
+      required: [connected]
+
+    AccountingDisconnectResponse:
+      type: object
+      properties:
+        disconnected:
+          type: boolean
+      required: [disconnected]
 
     ActionRequiredItem:
       type: object

@@ -456,3 +456,33 @@ export const userSettingsTable = pgTable(
     uniqueIndex("user_settings_user_key_uniq").on(table.clerkUserId, table.key),
   ],
 );
+
+// ── Accounting tab: external provider OAuth connections ─────────────────────
+
+export const accountingProviderEnum = pgEnum("accounting_provider", [
+  "quickbooks",
+]);
+
+export const accountingConnectionsTable = pgTable(
+  "accounting_connections",
+  {
+    id: serial("id").primaryKey(),
+    clerkUserId: text("clerk_user_id").notNull(),
+    provider: accountingProviderEnum("provider").notNull().default("quickbooks"),
+    realmId: text("realm_id").notNull(),
+    companyName: text("company_name"),
+    // Tokens stored AES-256-GCM encrypted (iv + authTag + ciphertext, base64),
+    // never plaintext at rest. Decrypted only in-process when calling the API.
+    accessTokenEnc: text("access_token_enc").notNull(),
+    refreshTokenEnc: text("refresh_token_enc").notNull(),
+    expiresAt: timestamp("expires_at").notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("accounting_connections_user_provider_uniq").on(
+      table.clerkUserId,
+      table.provider,
+    ),
+  ],
+);
