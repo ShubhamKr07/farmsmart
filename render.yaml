@@ -7,7 +7,8 @@
 # Postgres is external (Neon) — set NEON_DATABASE_URL. Auth is Clerk.
 #
 # FIRST-DEPLOY ORDER:
-#   1. Deploy the API service; note its URL (https://farmsmart-api.onrender.com).
+#   1. Deploy the API service; note its URL (Render assigns <name>.onrender.com,
+#      suffixed if the bare name is taken, e.g. https://farmsmart-api-j3qt.onrender.com).
 #   2. Set the dashboard's VITE_API_BASE_URL env var to that API URL.
 #   3. Set the API's CORS_ORIGIN env var to the dashboard URL.
 #   4. Add both URLs to Clerk's allowed origins.
@@ -58,6 +59,6 @@ services:
       - key: BASE_PATH
         value: / # SPA served at root
       - key: VITE_API_BASE_URL
-        sync: false # API URL, e.g. https://farmsmart-api.onrender.com
+        sync: false # API URL, e.g. https://farmsmart-api-j3qt.onrender.com
       - key: VITE_PUBLIC_CLERK_PUBLISHABLE_KEY
         sync: false # pk_test_... (dev) or pk_live_... (prod)

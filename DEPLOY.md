@@ -13,7 +13,7 @@ Production hosting on Render. Codebase on GitHub; Render is the only runtime (Re
 1. **New → Blueprint**, connect this GitHub repo. Render reads `render.yaml` and creates both services.
 2. **Set env vars** (Render → each service → Environment):
    - **farmsmart-api**: `NEON_DATABASE_URL` = Neon connection string; `CLERK_SECRET_KEY` = `sk_…`; `CLERK_PUBLISHABLE_KEY` = `pk_…`; `CORS_ORIGIN` = the dashboard URL (set after step 4).
-   - **farmsmart-dashboard**: `VITE_API_BASE_URL` = the API URL (`https://farmsmart-api.onrender.com`); `VITE_PUBLIC_CLERK_PUBLISHABLE_KEY` = `pk_…`. (`PORT` + `BASE_PATH` are preset in `render.yaml`.)
+   - **farmsmart-dashboard**: `VITE_API_BASE_URL` = the API URL (Render-assigned, e.g. `https://farmsmart-api-j3qt.onrender.com`); `VITE_PUBLIC_CLERK_PUBLISHABLE_KEY` = `pk_…`. (`PORT` + `BASE_PATH` are preset in `render.yaml`.)
 3. **Deploy the API first.** Wait for it to go live; note its URL. Run migrations against Neon once (locally is fine — they may already be applied): `DATABASE_URL=<neon> node lib/db/scripts/migrate.mjs`.
 4. **Set the dashboard's `VITE_API_BASE_URL`** to the API URL, then **deploy the dashboard.** Note its URL.
 5. **Set the API's `CORS_ORIGIN`** to the dashboard URL (redeploy the API).
