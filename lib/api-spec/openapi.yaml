@@ -1053,6 +1053,45 @@ paths:
               schema:
                 $ref: "#/components/schemas/Crop"
 
+  /metrics:
+    get:
+      operationId: listMetrics
+      tags: [metrics]
+      summary: Compute the requested Tier-B metrics server-side
+      parameters:
+        - name: tab
+          in: query
+          schema: { type: string, enum: [overview, shipments, inventory] }
+        - name: keys
+          in: query
+          description: Comma-separated metric ids (validated against the registry allowlist).
+          schema: { type: string }
+        - name: range
+          in: query
+          schema: { type: string, enum: [7d, 30d, 90d, custom, all] }
+      responses:
+        "200":
+          description: Map of metric id → data ({value} | {label,value}[] | rows[])
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MetricsResponse"
+        "400":
+          description: Invalid keys
+
+  /metrics/availability:
+    get:
+      operationId: getMetricsAvailability
+      tags: [metrics]
+      summary: Which optional data sources have rows (gates `requires` in the picker)
+      responses:
+        "200":
+          description: Availability flags
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MetricsAvailability"
+
 components:
   schemas:
     HealthStatus:
@@ -1404,6 +1443,35 @@ components:
         value:
           type: number
       required: [label, value]
+
+    MetricSeriesPoint:
+      type: object
+      properties:
+        label:
+          type: string
+        value:
+          type: number
+      required: [label, value]
+
+    MetricsResponse:
+      type: object
+      description: Map of metric id → its computed data. Values are either a
+        scalar {value:number}, a series MetricSeriesPoint[], or a row object[]
+        (for table templates). The dashboard casts per metric id.
+      additionalProperties: true
+
+    MetricsAvailability:
+      type: object
+      properties:
+        revenue:
+          type: boolean
+        sensor_readings:
+          type: boolean
+        cost:
+          type: boolean
+        crop_id:
+          type: boolean
+      required: [revenue, sensor_readings, cost, crop_id]
 
     ActionRequiredItem:
       type: object

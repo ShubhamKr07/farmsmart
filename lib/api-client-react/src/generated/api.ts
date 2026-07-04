@@ -49,11 +49,14 @@ import type {
   InventoryItemUpdate,
   ListAlertsParams,
   ListCyclesParams,
+  ListMetricsParams,
   ListSensorReadingsParams,
   ListShipmentsParams,
   ListTasksParams,
   LookupSeedLotParams,
   ManualCheck,
+  MetricsAvailability,
+  MetricsResponse,
   MonitoringApiInput,
   MoveFertigationRequest,
   RackItem,
@@ -3586,4 +3589,165 @@ export const useCreateCrop = <TError = ErrorType<unknown>,
       > => {
       return useMutation(getCreateCropMutationOptions(options));
     }
+
+export const getListMetricsUrl = (params?: ListMetricsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/metrics?${stringifiedParams}` : `/api/metrics`
+}
+
+/**
+ * @summary Compute the requested Tier-B metrics server-side
+ */
+export const listMetrics = async (params?: ListMetricsParams, options?: RequestInit): Promise<MetricsResponse> => {
+
+  return customFetch<MetricsResponse>(getListMetricsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListMetricsQueryKey = (params?: ListMetricsParams,) => {
+    return [
+    `/api/metrics`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListMetricsQueryOptions = <TData = Awaited<ReturnType<typeof listMetrics>>, TError = ErrorType<void>>(params?: ListMetricsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMetrics>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListMetricsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listMetrics>>> = ({ signal }) => listMetrics(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listMetrics>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListMetricsQueryResult = NonNullable<Awaited<ReturnType<typeof listMetrics>>>
+export type ListMetricsQueryError = ErrorType<void>
+
+
+/**
+ * @summary Compute the requested Tier-B metrics server-side
+ */
+
+export function useListMetrics<TData = Awaited<ReturnType<typeof listMetrics>>, TError = ErrorType<void>>(
+ params?: ListMetricsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMetrics>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListMetricsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetMetricsAvailabilityUrl = () => {
+
+
+
+
+  return `/api/metrics/availability`
+}
+
+/**
+ * @summary Which optional data sources have rows (gates `requires` in the picker)
+ */
+export const getMetricsAvailability = async ( options?: RequestInit): Promise<MetricsAvailability> => {
+
+  return customFetch<MetricsAvailability>(getGetMetricsAvailabilityUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMetricsAvailabilityQueryKey = () => {
+    return [
+    `/api/metrics/availability`
+    ] as const;
+    }
+
+
+export const getGetMetricsAvailabilityQueryOptions = <TData = Awaited<ReturnType<typeof getMetricsAvailability>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMetricsAvailability>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMetricsAvailabilityQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMetricsAvailability>>> = ({ signal }) => getMetricsAvailability({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMetricsAvailability>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMetricsAvailabilityQueryResult = NonNullable<Awaited<ReturnType<typeof getMetricsAvailability>>>
+export type GetMetricsAvailabilityQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Which optional data sources have rows (gates `requires` in the picker)
+ */
+
+export function useGetMetricsAvailability<TData = Awaited<ReturnType<typeof getMetricsAvailability>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMetricsAvailability>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMetricsAvailabilityQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 

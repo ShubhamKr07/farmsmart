@@ -203,6 +203,23 @@ export interface DashboardStats {
   sensorStatus?: SensorStatus;
 }
 
+export interface MetricSeriesPoint {
+  label: string;
+  value: number;
+}
+
+/**
+ * Map of metric id → its computed data. Values are either a scalar {value:number}, a series MetricSeriesPoint[], or a row object[] (for table templates). The dashboard casts per metric id.
+ */
+export interface MetricsResponse { [key: string]: unknown }
+
+export interface MetricsAvailability {
+  revenue: boolean;
+  sensor_readings: boolean;
+  cost: boolean;
+  crop_id: boolean;
+}
+
 export type AlertSeverity = typeof AlertSeverity[keyof typeof AlertSeverity];
 
 
@@ -778,5 +795,34 @@ export const ListTasksStatus = {
   pending: 'pending',
   in_progress: 'in_progress',
   done: 'done',
+} as const;
+
+export type ListMetricsParams = {
+tab?: ListMetricsTab;
+/**
+ * Comma-separated metric ids (validated against the registry allowlist).
+ */
+keys?: string;
+range?: ListMetricsRange;
+};
+
+export type ListMetricsTab = typeof ListMetricsTab[keyof typeof ListMetricsTab];
+
+
+export const ListMetricsTab = {
+  overview: 'overview',
+  shipments: 'shipments',
+  inventory: 'inventory',
+} as const;
+
+export type ListMetricsRange = typeof ListMetricsRange[keyof typeof ListMetricsRange];
+
+
+export const ListMetricsRange = {
+  '7d': '7d',
+  '30d': '30d',
+  '90d': '90d',
+  custom: 'custom',
+  all: 'all',
 } as const;
 

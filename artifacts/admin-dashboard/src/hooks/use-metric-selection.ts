@@ -18,9 +18,15 @@ export function useMetricSelection(tab: MetricTab) {
   const uid = user?.id ?? "anon";
   const storageKey = `farmsmart.metrics.${tab}.${uid}`;
 
-  /** Metrics visible in this tab's picker (Tier A only in M1). */
+  /**
+   * Metrics visible in this tab's picker.
+   * - Tier A (dashboard/alerts/shipments/inventory): always selectable.
+   * - Tier B (metrics): selectable once it has a query template (`template` +
+   *   `templateParams`). Tier-B entries without a template are deferred to a
+   *   later phase (custom query) and hidden.
+   */
   const selectable: MetricDef[] = metricsForTab(tab).filter(
-    (m) => m.source !== "metrics",
+    (m) => m.source !== "metrics" || (m.template && m.templateParams),
   );
 
   const [selected, setSelected] = useState<string[]>(() =>

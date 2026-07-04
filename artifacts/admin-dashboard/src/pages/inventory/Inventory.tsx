@@ -48,6 +48,7 @@ import { useMetricSelection } from "@/hooks/use-metric-selection";
 import { MetricPicker } from "@/components/metrics/MetricPicker";
 import { MetricGrid } from "@/components/metrics/MetricGrid";
 import { MetricCard } from "@/components/metrics/MetricCard";
+import { TimeRangeSelector, type MetricRange } from "@/components/metrics/TimeRangeSelector";
 import type { MetricDataMap } from "@/components/metrics/renderers";
 
 type SeedLot = { id: number; seedName: string; qrCode: string };
@@ -207,6 +208,7 @@ export function Inventory() {
 
   const { selected, selectable, toggle, reset } = useMetricSelection("inventory");
   const metricData: MetricDataMap = { inventory: items, dashboard };
+  const [range, setRange] = useState<MetricRange>("30d");
 
   const itemForm = (
     <Form {...form}>
@@ -284,6 +286,7 @@ export function Inventory() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">Inventory Management</h1>
         <div className="flex items-center gap-2">
+          <TimeRangeSelector range={range} onChange={setRange} />
           <MetricPicker
             tab="inventory"
             selectable={selectable}
@@ -311,7 +314,7 @@ export function Inventory() {
         {selected.map((id) => {
           const def = getMetricDef(id);
           if (!def) return null;
-          return <MetricCard key={id} def={def} data={metricData} />;
+          return <MetricCard key={id} def={def} data={metricData} range={range} />;
         })}
       </MetricGrid>
 

@@ -16,6 +16,7 @@ import sensorsRouter from "./routes/sensors";
 import sensorReadingsRouter from "./routes/sensor-readings";
 import tasksRouter from "./routes/tasks";
 import cropsRouter from "./routes/crops";
+import metricsRouter from "./routes/metrics";
 import { logger } from "./lib/logger";
 import {
   CLERK_PROXY_PATH,
@@ -78,6 +79,7 @@ app.use("/api", requireSignedIn, sensorsRouter);
 app.use("/api", requireSignedIn, sensorReadingsRouter);
 app.use("/api", requireSignedIn, tasksRouter);
 app.use("/api", requireSignedIn, cropsRouter);
+app.use("/api", requireSignedIn, metricsRouter);
 app.use("/api", requireSignedIn, router);
 
 export default app;

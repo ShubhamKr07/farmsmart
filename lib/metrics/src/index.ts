@@ -1,4 +1,5 @@
 export * from "./types";
+export * from "./templates";
 export { OVERVIEW_METRICS } from "./registry-overview";
 export { SHIPMENTS_METRICS } from "./registry-shipments";
 export { INVENTORY_METRICS } from "./registry-inventory";

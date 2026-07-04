@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { useGetDashboard, useListAlerts } from "@workspace/api-client-react";
 import { getMetricDef } from "@workspace/metrics";
 import { useMetricSelection } from "@/hooks/use-metric-selection";
 import { MetricPicker } from "@/components/metrics/MetricPicker";
 import { MetricGrid } from "@/components/metrics/MetricGrid";
 import { MetricCard } from "@/components/metrics/MetricCard";
+import { TimeRangeSelector, type MetricRange } from "@/components/metrics/TimeRangeSelector";
 import type { MetricDataMap } from "@/components/metrics/renderers";
 import { Skeleton } from "@/components/ui/skeleton";
 import { QueryError } from "@/components/ui/query-error";
@@ -12,6 +14,7 @@ export function Overview() {
   const { data: dashboard, isLoading, isError, refetch } = useGetDashboard();
   const { data: alerts } = useListAlerts({ status: "current", limit: 3 });
   const { selected, selectable, toggle, reset } = useMetricSelection("overview");
+  const [range, setRange] = useState<MetricRange>("30d");
 
   if (isLoading) {
     return (
@@ -38,20 +41,23 @@ export function Overview() {
     <div className="p-6 space-y-6 max-w-[1400px] mx-auto">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight text-foreground">Overview</h1>
-        <MetricPicker
-          tab="overview"
-          selectable={selectable}
-          selected={selected}
-          onToggle={toggle}
-          onReset={reset}
-        />
+        <div className="flex items-center gap-2">
+          <TimeRangeSelector range={range} onChange={setRange} />
+          <MetricPicker
+            tab="overview"
+            selectable={selectable}
+            selected={selected}
+            onToggle={toggle}
+            onReset={reset}
+          />
+        </div>
       </div>
 
       <MetricGrid>
         {selected.map((id) => {
           const def = getMetricDef(id);
           if (!def) return null;
-          return <MetricCard key={id} def={def} data={data} />;
+          return <MetricCard key={id} def={def} data={data} range={range} />;
         })}
       </MetricGrid>
     </div>

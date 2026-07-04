@@ -993,3 +993,26 @@ export const CreateCropBody = zod.object({
 })
 
 
+/**
+ * @summary Compute the requested Tier-B metrics server-side
+ */
+export const ListMetricsQueryParams = zod.object({
+  "tab": zod.enum(['overview', 'shipments', 'inventory']).optional(),
+  "keys": zod.coerce.string().optional().describe('Comma-separated metric ids (validated against the registry allowlist).'),
+  "range": zod.enum(['7d', '30d', '90d', 'custom', 'all']).optional()
+})
+
+export const ListMetricsResponse = zod.record(zod.string(), zod.unknown()).describe('Map of metric id → its computed data. Values are either a scalar {value:number}, a series MetricSeriesPoint[], or a row object[] (for table templates). The dashboard casts per metric id.')
+
+
+/**
+ * @summary Which optional data sources have rows (gates `requires` in the picker)
+ */
+export const GetMetricsAvailabilityResponse = zod.object({
+  "revenue": zod.boolean(),
+  "sensor_readings": zod.boolean(),
+  "cost": zod.boolean(),
+  "crop_id": zod.boolean()
+})
+
+
