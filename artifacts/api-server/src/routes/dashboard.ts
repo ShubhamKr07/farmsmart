@@ -26,9 +26,14 @@ function enforceAuth(req: Request, res: Response, next: NextFunction) {
   next();
 }
 
-router.get("/dashboard", async (req: Request, res: Response) => {
-  try {
-    const runningRows = await db
+/**
+ * The full GET /dashboard computation, extracted so other callers (the
+ * recommender's ops-question grounding in routes/recommend.ts) can reuse
+ * the exact same numbers instead of re-deriving them — one compute path
+ * per number, enforced across features, not just within this route.
+ */
+export async function computeDashboardSnapshot() {
+  const runningRows = await db
       .select({ cycle: cyclesTable, profile: growthProfilesTable })
       .from(cyclesTable)
       .leftJoin(
@@ -224,7 +229,7 @@ router.get("/dashboard", async (req: Request, res: Response) => {
     const channelCountRows = await db.select({ c: count() }).from(channelsTable);
     const totalChannels = Number(channelCountRows[0]?.c ?? 0);
 
-    return res.json({
+    return {
       channelUtilization: totalChannels > 0 ? runningRows.length / totalChannels : 0,
       totalRunningCycles: runningRows.length,
       totalChannels,
@@ -249,7 +254,13 @@ router.get("/dashboard", async (req: Request, res: Response) => {
       currentAlertsCount: currentAlerts.length,
       criticalAlertsCount: currentAlerts.filter((a) => a.severity === "critical").length,
       actionRequired: actionRequired.sort((a, b) => b.daysOverdue - a.daysOverdue),
-    });
+    };
+}
+
+router.get("/dashboard", async (req: Request, res: Response) => {
+  try {
+    const snapshot = await computeDashboardSnapshot();
+    return res.json(snapshot);
   } catch (err) {
     req.log.error(err);
     return res.status(500).json({ error: "Failed to fetch dashboard" });

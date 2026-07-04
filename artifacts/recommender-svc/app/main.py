@@ -38,10 +38,15 @@ async def recommend(req: RecommendRequest) -> RecommendResponse:
     a live Tavily search (via dlt), embeds + upserts the new docs into
     recommender_cache, and re-searches. Matches crop/seed names mentioned in
     the question against the farm's own growth_profiles/bad_tray_entries for
-    grounding context. Synthesizes a cited answer via Claude, combining the
-    external docs and farm context — falls back to the raw top-match answer
-    (R2 behavior) if ANTHROPIC_API_KEY isn't configured. Every Q&A is logged
-    to recommender_queries for audit / a future "recent questions" UI.
+    grounding context, and combines that with api-server's ops_context (a
+    dashboard snapshot, attached when the question is about the farm's own
+    live numbers rather than crop agronomy — this service's crop/seed
+    matching alone can't answer "what's my yield this week"). Synthesizes a
+    cited answer via Gemini, combining the external docs and grounding
+    context — falls back to the raw top-match answer (R2 behavior) if
+    synthesis fails or there's nothing to synthesize from. Every Q&A is
+    logged to recommender_queries for audit / a future "recent questions"
+    UI.
     """
     question_embedding = await embed(req.question)
     hits = await search_cache(question_embedding, limit=5)
@@ -54,8 +59,10 @@ async def recommend(req: RecommendRequest) -> RecommendResponse:
         used_live_search = True
 
     farm_context = await get_farm_context(req.question)
+    farm_context_text = format_farm_context(farm_context) if farm_context else None
+    grounding_text = "\n\n".join(t for t in (farm_context_text, req.ops_context) if t) or None
 
-    if not hits and not farm_context:
+    if not hits and not grounding_text:
         message = (
             "No relevant results found, even after a live search."
             if used_live_search
@@ -69,8 +76,7 @@ async def recommend(req: RecommendRequest) -> RecommendResponse:
         for h in hits
     ]
 
-    farm_context_text = format_farm_context(farm_context) if farm_context else None
-    synthesized = await synthesize_answer(req.question, hits, farm_context_text) if hits or farm_context else None
+    synthesized = await synthesize_answer(req.question, hits, grounding_text) if hits or grounding_text else None
 
     if synthesized is not None:
         answer = synthesized
@@ -79,7 +85,11 @@ async def recommend(req: RecommendRequest) -> RecommendResponse:
         prefix = "Found via live search: " if used_live_search else "Closest cached match: "
         answer = f"{prefix}{top['title'] or top['source_url']}\n\n{top['content'][:500]}"
     else:
-        answer = f"Farm data: {farm_context_text}"
+        answer = f"Farm data: {grounding_text}"
 
-    await log_query(req.clerk_user_id, req.question, answer, [s.model_dump() for s in sources], farm_context)
+    logged_context: dict | None = dict(farm_context) if farm_context else None
+    if req.ops_context:
+        logged_context = {**(logged_context or {}), "ops_context": req.ops_context}
+
+    await log_query(req.clerk_user_id, req.question, answer, [s.model_dump() for s in sources], logged_context)
     return RecommendResponse(answer=answer, sources=sources, cache_hit=not used_live_search)
