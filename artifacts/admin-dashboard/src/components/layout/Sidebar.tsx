@@ -28,7 +28,7 @@ export function Sidebar() {
   return (
     <aside className="w-64 border-r bg-sidebar flex-shrink-0 flex flex-col hidden md:flex min-h-[100dvh]">
       <div className="h-16 flex items-center px-6 border-b">
-        <span className="font-bold text-lg text-primary tracking-tight">FarmSmart</span>
+        <img src="/logo-lockup.svg" alt="FarmSmart" className="h-7 w-auto" />
       </div>
 
       <div className="flex-1 py-4 flex flex-col gap-6 px-3">

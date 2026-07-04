@@ -58,14 +58,16 @@ function AuthGate() {
   const { isLoaded, isSignedIn } = useAuth();
   if (!isLoaded) {
     return (
-      <div className="h-[100dvh] flex items-center justify-center text-muted-foreground">
-        Loading…
+      <div className="h-[100dvh] flex flex-col items-center justify-center gap-4 text-muted-foreground">
+        <img src="/logo-lockup.svg" alt="FarmSmart" className="h-8 w-auto opacity-80" />
+        <span>Loading…</span>
       </div>
     );
   }
   if (!isSignedIn) {
     return (
-      <div className="h-[100dvh] flex items-center justify-center bg-background">
+      <div className="h-[100dvh] flex flex-col items-center justify-center gap-8 bg-background">
+        <img src="/logo-lockup.svg" alt="FarmSmart" className="h-10 w-auto" />
         <SignIn />
       </div>
     );

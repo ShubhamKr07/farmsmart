@@ -59,9 +59,7 @@ export function TopBar() {
           <Menu className="h-5 w-5" />
         </Button>
 
-        <span className="text-sm font-semibold tracking-tight text-foreground shrink-0 hidden sm:inline">
-          FarmSmart
-        </span>
+        <img src="/logo-mark.svg" alt="FarmSmart" className="h-6 w-6 shrink-0 md:hidden" />
 
         <AskMe />
 
