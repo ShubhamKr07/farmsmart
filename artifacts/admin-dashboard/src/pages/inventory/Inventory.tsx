@@ -179,6 +179,11 @@ export function Inventory() {
     URL.revokeObjectURL(url);
   };
 
+  // Hooks must run unconditionally on every render (Rules of Hooks) — keep
+  // these above the loading/error early returns below.
+  const { selected, selectable, toggle, reset } = useMetricSelection("inventory");
+  const [range, setRange] = useState<MetricRange>("30d");
+
   // Only gate on inventory: dashboard is supplementary (seed-lot/crop counts,
   // seed-lot table) and its own errors/slowness must not blank the whole tab.
   if (inventoryLoading) {
@@ -209,9 +214,7 @@ export function Inventory() {
 
   const seedLots = (dashboard as { activeSeedLotDetails?: { id: number; seedName: string; qrCode: string }[] })?.activeSeedLotDetails || [];
 
-  const { selected, selectable, toggle, reset } = useMetricSelection("inventory");
   const metricData: MetricDataMap = { inventory: items, dashboard };
-  const [range, setRange] = useState<MetricRange>("30d");
 
   const itemForm = (
     <Form {...form}>
