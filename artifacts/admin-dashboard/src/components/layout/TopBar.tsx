@@ -12,6 +12,7 @@ import { Bell, Menu, RefreshCw, Wifi, WifiOff, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePanel } from "@/context/PanelContext";
+import { AskMe } from "@/components/ask-me/AskMe";
 import { MobileNav } from "./MobileNav";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { UserMenu } from "@/components/user-menu";
@@ -169,6 +170,8 @@ export function TopBar() {
             <span className="text-xs">Search</span>
             <kbd className="text-[10px] font-sans">⌘K</kbd>
           </Button>
+
+          <AskMe />
 
           <ThemeToggle />
           <UserMenu />
