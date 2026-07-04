@@ -134,12 +134,12 @@ router.get("/dashboard", async (req: Request, res: Response) => {
       const res = await db.execute(sql`
         SELECT ${sql.raw(labelExpr)} AS label, COALESCE(SUM(${sql.raw(valueExpr)}), 0) AS value
         FROM generate_series(
-          date_trunc(${sql.raw(bucket)}, now() - interval ${sql.raw(`'${back}'`)}),
-          date_trunc(${sql.raw(bucket)}, now()),
+          date_trunc(${sql.raw(`'${bucket}'`)}, now() - interval ${sql.raw(`'${back}'`)}),
+          date_trunc(${sql.raw(`'${bucket}'`)}, now()),
           interval ${sql.raw(`'${interval}'`)}
         ) AS gs(d)
         LEFT JOIN ${sql.raw(joinExpr)}
-          ON date_trunc(${sql.raw(bucket)}, ${sql.raw(dateColExpr)}) = gs.d ${sql.raw(onExtra)}
+          ON date_trunc(${sql.raw(`'${bucket}'`)}, ${sql.raw(dateColExpr)}) = gs.d ${sql.raw(onExtra)}
         GROUP BY gs.d
         ORDER BY gs.d
       `);
