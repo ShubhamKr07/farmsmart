@@ -101,11 +101,10 @@ services:
       - key: DATABASE_URL
         sync: false # same Neon connection string as farmsmart-api
       - key: GEMINI_API_KEY
-        sync: false # aistudio.google.com — used for gemini-embedding-001
+        sync: false # aistudio.google.com — used for gemini-embedding-001 (embeddings)
+                     # and gemini-2.5-flash (answer synthesis) — one provider, one key
       - key: TAVILY_API_KEY
         sync: false # tavily.com — live search on a cache miss (free tier: 1,000 credits/mo)
-      - key: ANTHROPIC_API_KEY
-        sync: false # console.anthropic.com — Claude synthesis (claude-haiku-4-5)
       - key: INTERNAL_API_KEY
         sync: false # shared secret with farmsmart-api's RECOMMENDER_INTERNAL_KEY —
                      # same value as that key, generated once via: openssl rand -base64 32

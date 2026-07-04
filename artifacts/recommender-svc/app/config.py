@@ -4,10 +4,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     """
     Env vars (Render): DATABASE_URL (same Neon connection string as
-    api-server), GEMINI_API_KEY (embeddings), TAVILY_API_KEY (live search on
-    cache miss — optional), ANTHROPIC_API_KEY (Claude synthesis — optional;
-    unset falls back to R2's raw-top-match answer instead of a synthesized
-    one), INTERNAL_API_KEY (shared secret validating requests came from
+    api-server), GEMINI_API_KEY (embeddings + synthesis — one provider, one
+    key), TAVILY_API_KEY (live search on cache miss — optional),
+    INTERNAL_API_KEY (shared secret validating requests came from
     api-server, not the public internet).
     """
 
@@ -16,11 +15,10 @@ class Settings(BaseSettings):
     database_url: str
     gemini_api_key: str
     tavily_api_key: str | None = None
-    anthropic_api_key: str | None = None
     internal_api_key: str
     embedding_model: str = "gemini-embedding-001"
     embedding_dimensions: int = 1536
-    claude_model: str = "claude-haiku-4-5-20251001"
+    gemini_chat_model: str = "gemini-2.5-flash"
 
 
 settings = Settings()  # type: ignore[call-arg]
