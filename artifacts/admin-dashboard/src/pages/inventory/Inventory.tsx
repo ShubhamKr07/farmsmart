@@ -179,9 +179,12 @@ export function Inventory() {
     URL.revokeObjectURL(url);
   };
 
-  if (inventoryLoading || dashboardLoading) {
+  // Only gate on inventory: dashboard is supplementary (seed-lot/crop counts,
+  // seed-lot table) and its own errors/slowness must not blank the whole tab.
+  if (inventoryLoading) {
     return <div className="p-6 space-y-6"><Skeleton className="h-[400px] w-full" /></div>;
   }
+  void dashboardLoading;
 
   if (inventoryError) {
     return (

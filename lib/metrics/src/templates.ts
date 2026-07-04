@@ -15,6 +15,8 @@ export interface ScalarAggParams {
   agg?: "sum" | "count" | "avg" | "min" | "max";
   /** Optional WHERE fragment (trusted SQL). */
   where?: string;
+  /** Optional join fragment (trusted SQL), e.g. "cycles c ON c.id = shipments.cycle_id". */
+  join?: string;
 }
 
 export interface GroupByParams {
@@ -26,6 +28,8 @@ export interface GroupByParams {
   where?: string;
   order?: "asc" | "desc";
   limit?: number;
+  /** Optional join fragment (trusted SQL). */
+  join?: string;
 }
 
 export interface TimeBucketParams {

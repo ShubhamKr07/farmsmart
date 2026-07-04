@@ -65,3 +65,22 @@ export function andWhere(...fragments: (string | undefined)[]): string {
 export function execRaw(query: string) {
   return sql.raw(query);
 }
+
+/**
+ * Replace registry placeholder tokens with concrete SQL. Lets `where` fragments
+ * reference named boundaries without the template re-deriving them.
+ *   :cutover    -> 'YYYY-MM-DD' (BAD_TRAYS_CUTOVER_DATE)
+ *   :weekStart  -> facility now - 7 days
+ *   :monthStart -> facility now - 30 days
+ */
+export function substitutePlaceholders(q: string): string {
+  return q
+    .replace(/:cutover/g, `'${BAD_TRAYS_CUTOVER_DATE}'`)
+    .replace(/:weekStart/g, `(${facilityNow()} - interval '7 days')`)
+    .replace(/:monthStart/g, `(${facilityNow()} - interval '30 days')`);
+}
+
+/** COUNT(*) for "*", else SUM(<measure>). Ratio/timeBucket row counts vs sums. */
+export function sumOrCount(measure: string): string {
+  return measure === "*" ? "COUNT(*)" : `SUM(${measure})`;
+}
