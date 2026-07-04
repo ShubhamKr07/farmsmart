@@ -4,7 +4,7 @@ Production hosting on Render. Codebase on GitHub; Render is the only runtime (Re
 
 ## Architecture
 - **farmsmart-api** (Web Service, ~$7/mo): Express API at `artifacts/api-server`.
-- **farmsmart-dashboard** (Static Site, free + CDN): Vite SPA at `artifacts/admin-dashboard`.
+- **farmsmart-dashboard** (Web Service, free, `vite preview`): Vite SPA at `artifacts/admin-dashboard`. Free plan spins down after inactivity (~30s cold start).
 - **Postgres**: external Neon (keep `NEON_DATABASE_URL`).
 - **Auth**: Clerk (`CLERK_SECRET_KEY` + `CLERK_PUBLISHABLE_KEY`).
 
@@ -38,5 +38,5 @@ Render → service → Settings → Custom Domain. Point `farmsmart.app` (or `da
 | `CORS_ORIGIN` | API | dashboard URL |
 | `VITE_API_BASE_URL` | Dashboard | API URL |
 | `VITE_PUBLIC_CLERK_PUBLISHABLE_KEY` | Dashboard | `pk_…` |
-| `PORT` | Dashboard | `8080` (preset) |
+| `PORT` | Dashboard | `10000` (preset; Render injects at runtime) |
 | `BASE_PATH` | Dashboard | `/` (preset) |

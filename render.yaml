@@ -3,7 +3,7 @@
 #
 # Two services:
 #   1. farmsmart-api        — Express API (Web Service, $7/mo starter)
-#   2. farmsmart-dashboard  — admin SPA (Static Site, free, CDN)
+#   2. farmsmart-dashboard  — admin SPA (Web Service, vite preview)
 # Postgres is external (Neon) — set NEON_DATABASE_URL. Auth is Clerk.
 #
 # FIRST-DEPLOY ORDER:
@@ -20,7 +20,6 @@ services:
     runtime: node
     plan: starter
     region: oregon
-    nodeVersion: "22.0.0"
     buildCommand: npm i -g pnpm && pnpm install --frozen-lockfile && pnpm --filter @workspace/api-server run build
     startCommand: node --enable-source-maps artifacts/api-server/dist/index.mjs
     healthCheckPath: /api/healthz
@@ -39,19 +38,23 @@ services:
       - key: CORS_ORIGIN
         sync: false # dashboard URL, e.g. https://farmsmart-dashboard.onrender.com
 
-  # ── Admin dashboard SPA (static, CDN) ─────────────────────────────────────
-  - type: static
+  # ── Admin dashboard SPA (Web Service, vite preview) ───────────────────────
+  # Served via `vite preview` (SPA fallback handled by vite's default appType=spa).
+  # Free web service spins down after inactivity; first hit re-awakens (~30s).
+  - type: web
     name: farmsmart-dashboard
+    runtime: node
+    plan: free
+    region: oregon
     buildCommand: npm i -g pnpm && pnpm install --frozen-lockfile && pnpm --filter @workspace/admin-dashboard run build
-    staticPublishPath: artifacts/admin-dashboard/dist/public
+    startCommand: pnpm --filter @workspace/admin-dashboard serve
+    healthCheckPath: /
     autoDeploy: true
-    # SPA client-side routing: non-asset paths fall back to index.html
-    routes:
-      - src: /*
-        dest: /index.html
     envVars:
+      - key: NODE_ENV
+        value: production
       - key: PORT
-        value: "8080" # vite.config requires PORT at build time
+        value: "10000" # vite.config requires PORT at build time; Render injects runtime PORT
       - key: BASE_PATH
         value: / # SPA served at root
       - key: VITE_API_BASE_URL
