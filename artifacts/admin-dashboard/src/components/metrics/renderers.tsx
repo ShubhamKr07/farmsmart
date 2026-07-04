@@ -11,8 +11,10 @@ import {
 import { formatNumber } from "@/lib/format";
 import { a11yClick } from "@/lib/utils";
 import { usePanel } from "@/context/PanelContext";
+import { downloadCsv } from "@/lib/csv";
+import { Button } from "@/components/ui/button";
 import {
-  Sprout, Layers, Factory, AlertTriangle, Leaf, TrendingUp, Package,
+  Sprout, Layers, Factory, AlertTriangle, Leaf, TrendingUp, Package, Download,
 } from "lucide-react";
 import type { MetricDef } from "@workspace/metrics";
 import type {
@@ -320,7 +322,25 @@ function ActionRequiredListCard({ data }: RendererProps) {
   const items = data.dashboard?.actionRequired || [];
   return (
     <Card className="shadow-sm lg:col-span-2">
-      <CardHeader><CardTitle>Action Required</CardTitle></CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle>Action Required</CardTitle>
+        {items.length > 0 && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6"
+            aria-label="Export Action Required as CSV"
+            onClick={() => downloadCsv(
+              "ov.cycles.actionRequiredList",
+              "Action Required",
+              undefined,
+              items.map((i) => ({ seedName: i.seedName, cycleShortId: i.cycleShortId, type: i.type, daysOverdue: i.daysOverdue })),
+            )}
+          >
+            <Download className="h-3.5 w-3.5" />
+          </Button>
+        )}
+      </CardHeader>
       <CardContent>
         {items.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-[200px] text-muted-foreground">
@@ -524,7 +544,25 @@ function LowStockListCard({ def, data }: RendererProps) {
   const items = (data.inventory || []).filter((i) => i.maxQty > 0 && i.currentQty / i.maxQty < 0.2);
   return (
     <Card className="shadow-sm">
-      <CardHeader><CardTitle>{def.label}</CardTitle></CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle>{def.label}</CardTitle>
+        {items.length > 0 && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6"
+            aria-label={`Export ${def.label} as CSV`}
+            onClick={() => downloadCsv(
+              def.id,
+              def.label,
+              undefined,
+              items.map((i) => ({ name: i.name, currentQty: i.currentQty, maxQty: i.maxQty, unit: i.unit })),
+            )}
+          >
+            <Download className="h-3.5 w-3.5" />
+          </Button>
+        )}
+      </CardHeader>
       <CardContent>
         {items.length === 0 ? (
           <Empty className="h-[180px]">All items above low-stock threshold</Empty>
@@ -576,7 +614,25 @@ function ActiveSeedLotsTableCard({ def, data }: RendererProps) {
   const rows = (data.dashboard as { activeSeedLotDetails?: { id: number; seedName: string; qrCode: string }[] })?.activeSeedLotDetails || [];
   return (
     <Card className="shadow-sm">
-      <CardHeader><CardTitle>{def.label}</CardTitle></CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle>{def.label}</CardTitle>
+        {rows.length > 0 && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6"
+            aria-label={`Export ${def.label} as CSV`}
+            onClick={() => downloadCsv(
+              def.id,
+              def.label,
+              undefined,
+              rows.map((r) => ({ qrCode: r.qrCode, seedName: r.seedName, status: "Growing" })),
+            )}
+          >
+            <Download className="h-3.5 w-3.5" />
+          </Button>
+        )}
+      </CardHeader>
       <CardContent>
         {rows.length === 0 ? (
           <Empty className="h-[180px]">No active seed lots</Empty>

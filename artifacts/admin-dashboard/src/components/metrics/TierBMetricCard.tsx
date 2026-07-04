@@ -16,6 +16,7 @@ import {
   PieChart, Pie, Cell, Legend, ScatterChart, Scatter, ZAxis,
 } from "recharts";
 import { formatNumber } from "@/lib/format";
+import { isExportableRender, downloadCsv } from "@/lib/csv";
 import type { MetricDef } from "@workspace/metrics";
 import type { MetricRange } from "./TimeRangeSelector";
 
@@ -33,29 +34,6 @@ interface TierBMetricCardProps {
   range: MetricRange;
 }
 
-function toCsv(def: MetricDef, payload: unknown): string {
-  if (payload && typeof payload === "object" && "value" in (payload as object)) {
-    return `metric,value\n${def.id},${(payload as { value: number }).value}`;
-  }
-  const rows = payload as Record<string, unknown>[] | undefined;
-  if (!Array.isArray(rows) || rows.length === 0) return "no data\n";
-  const cols = Object.keys(rows[0]);
-  const header = cols.map((c) => (c === "value" && def.unit ? `value (${def.unit})` : c)).join(",");
-  const body = rows.map((r) => cols.map((c) => JSON.stringify(r[c] ?? "")).join(",")).join("\n");
-  return `${header}\n${body}`;
-}
-
-function downloadCsv(def: MetricDef, payload: unknown) {
-  const csv = toCsv(def, payload);
-  const blob = new Blob([csv], { type: "text/csv" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `${def.id}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
 /**
  * Tier-B metric card: fetches its value from /api/metrics (one React Query per
  * card, scoped by id+range) and renders per the metric's `render` type.
@@ -70,6 +48,7 @@ export function TierBMetricCard({ def, range }: TierBMetricCardProps) {
 
   const payload = data?.[def.id];
   const hasData = !isLoading && !isError && !(payload && typeof payload === "object" && "error" in payload);
+  const canExport = hasData && isExportableRender(def.render) && Array.isArray(payload) && payload.length > 0;
 
   return (
     <Card className="shadow-sm h-full">
@@ -87,13 +66,13 @@ export function TierBMetricCard({ def, range }: TierBMetricCardProps) {
             </UiTooltipContent>
           </UiTooltip>
         </div>
-        {hasData && (
+        {canExport && (
           <Button
             variant="ghost"
             size="icon"
             className="h-6 w-6 -mr-1"
             aria-label={`Export ${def.label} as CSV`}
-            onClick={() => downloadCsv(def, payload)}
+            onClick={() => downloadCsv(def.id, def.label, def.unit, payload as Record<string, unknown>[])}
           >
             <Download className="h-3.5 w-3.5" />
           </Button>
