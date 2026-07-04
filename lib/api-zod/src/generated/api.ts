@@ -27,7 +27,7 @@ export const GetDashboardResponse = zod.object({
   "totalYieldThisMonth": zod.number(),
   "activeSeedLots": zod.number(),
   "badTraysCount": zod.number(),
-  "activeCropTypes": zod.array(zod.string()),
+  "activeCropTypes": zod.number().describe('Count of distinct crop\/seed names in running cycles.'),
   "totalBadTrays": zod.number(),
   "yieldByDay": zod.array(zod.object({
   "label": zod.string(),

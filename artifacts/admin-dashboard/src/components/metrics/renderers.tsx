@@ -101,7 +101,7 @@ function ActiveCyclesCard({ data }: RendererProps) {
           {formatNumber(d?.totalRunningCycles || 0)}
         </div>
         <p className="text-xs text-muted-foreground mt-1">
-          {(d?.activeCropTypes || []).length} crop types · <span className="text-primary">View →</span>
+          {d?.activeCropTypes || 0} crop types · <span className="text-primary">View →</span>
         </p>
       </CardContent>
     </Card>
@@ -366,7 +366,7 @@ function GenericKpiCard({ def, data }: RendererProps) {
     } else if (def.dataKey === "criticalAlertsCount") {
       value = formatNumber((d as { criticalAlertsCount?: number })?.criticalAlertsCount || 0);
     } else if (def.dataKey === "activeCropTypes") {
-      value = formatNumber((d?.activeCropTypes || []).length);
+      value = formatNumber(d?.activeCropTypes || 0);
     } else {
       value = formatNumber(((d as unknown as Record<string, unknown>)?.[def.dataKey] as number) || 0);
     }
@@ -504,7 +504,7 @@ function InventoryKpiCard({ def, data }: RendererProps) {
       break;
     }
     case "inv.seedlots.active": value = d?.activeSeedLots || 0; break;
-    case "inv.crops.activeTypes": value = (d?.activeCropTypes || []).length; break;
+    case "inv.crops.activeTypes": value = d?.activeCropTypes || 0; break;
     default: value = 0;
   }
   const display = def.unit === "%" ? `${value}%` : formatNumber(value as number);

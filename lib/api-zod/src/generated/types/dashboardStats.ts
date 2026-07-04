@@ -17,7 +17,8 @@ export interface DashboardStats {
   totalYieldThisMonth: number;
   activeSeedLots: number;
   badTraysCount: number;
-  activeCropTypes: string[];
+  /** Count of distinct crop/seed names in running cycles. */
+  activeCropTypes: number;
   totalBadTrays: number;
   yieldByDay?: ChartDataPoint[];
   yieldByWeek?: ChartDataPoint[];

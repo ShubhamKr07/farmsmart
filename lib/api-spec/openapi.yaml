@@ -1388,9 +1388,8 @@ components:
         badTraysCount:
           type: integer
         activeCropTypes:
-          type: array
-          items:
-            type: string
+          type: integer
+          description: Count of distinct crop/seed names in running cycles.
         totalBadTrays:
           type: integer
         yieldByDay:
