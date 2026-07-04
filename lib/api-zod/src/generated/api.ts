@@ -1068,3 +1068,21 @@ export const PostAccountingDisconnectResponse = zod.object({
 })
 
 
+/**
+ * @summary Ask the vertical-farming recommender a question
+ */
+export const PostRecommendBody = zod.object({
+  "question": zod.string()
+})
+
+export const PostRecommendResponse = zod.object({
+  "answer": zod.string(),
+  "sources": zod.array(zod.object({
+  "title": zod.string().nullish(),
+  "url": zod.string(),
+  "similarity": zod.number()
+})),
+  "cache_hit": zod.boolean()
+})
+
+

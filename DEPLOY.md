@@ -41,7 +41,11 @@ Render → service → Settings → Custom Domain. Point `farmsmart.app` (or `da
 | `QBO_REDIRECT_URI` | API | must match a Redirect URI in the Intuit app's Keys & OAuth settings, e.g. `https://farmsmart-api-j3qt.onrender.com/api/accounting/callback` |
 | `QBO_ENVIRONMENT` | API | `sandbox` or `production` |
 | `ACCOUNTING_ENCRYPTION_KEY` | API | random 32+ char secret (`openssl rand -base64 32`), encrypts QuickBooks tokens at rest |
+| `RECOMMENDER_URL` | API | `farmsmart-recommender`'s Render URL, e.g. `https://farmsmart-recommender.onrender.com` |
+| `RECOMMENDER_INTERNAL_KEY` | API + Recommender | shared secret (`openssl rand -base64 32`), same value on both services — set as `RECOMMENDER_INTERNAL_KEY` on the API and `INTERNAL_API_KEY` on the recommender |
 | `VITE_API_BASE_URL` | Dashboard | API URL |
 | `VITE_PUBLIC_CLERK_PUBLISHABLE_KEY` | Dashboard | `pk_…` |
 | `PORT` | Dashboard | `10000` (preset; Render injects at runtime) |
 | `BASE_PATH` | Dashboard | `/` (preset) |
+| `DATABASE_URL` | Recommender | same Neon connection string as the API |
+| `OPENAI_API_KEY` | Recommender | `platform.openai.com` key, used for `text-embedding-3-small` |

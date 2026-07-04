@@ -253,6 +253,22 @@ export interface AccountingDisconnectResponse {
   disconnected: boolean;
 }
 
+export interface RecommendRequest {
+  question: string;
+}
+
+export interface RecommendSource {
+  title?: string | null;
+  url: string;
+  similarity: number;
+}
+
+export interface RecommendResponse {
+  answer: string;
+  sources: RecommendSource[];
+  cache_hit: boolean;
+}
+
 export type AlertSeverity = typeof AlertSeverity[keyof typeof AlertSeverity];
 
 

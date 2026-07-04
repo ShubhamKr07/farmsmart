@@ -19,6 +19,7 @@ import cropsRouter from "./routes/crops";
 import metricsRouter from "./routes/metrics";
 import userSettingsRouter from "./routes/userSettings";
 import { accountingRouter, accountingPublicRouter } from "./routes/accounting";
+import recommendRouter from "./routes/recommend";
 import { logger } from "./lib/logger";
 import {
   CLERK_PROXY_PATH,
@@ -86,6 +87,7 @@ app.use("/api", requireSignedIn, cropsRouter);
 app.use("/api", requireSignedIn, metricsRouter);
 app.use("/api", requireSignedIn, userSettingsRouter);
 app.use("/api", requireSignedIn, accountingRouter);
+app.use("/api", requireSignedIn, recommendRouter);
 app.use("/api", requireSignedIn, router);
 
 export default app;

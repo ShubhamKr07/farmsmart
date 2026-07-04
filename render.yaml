@@ -1,9 +1,10 @@
 # FarmSmart — Render infrastructure-as-code
 # Docs: https://render.com/docs/blueprint-spec
 #
-# Two services:
-#   1. farmsmart-api        — Express API (Web Service, $7/mo starter)
-#   2. farmsmart-dashboard  — admin SPA (Web Service, vite preview)
+# Three services:
+#   1. farmsmart-api          — Express API (Web Service, $7/mo starter)
+#   2. farmsmart-dashboard    — admin SPA (Web Service, vite preview)
+#   3. farmsmart-recommender  — Python/FastAPI recommender (Web Service, $7/mo starter)
 # Postgres is external (Neon) — set NEON_DATABASE_URL. Auth is Clerk.
 #
 # FIRST-DEPLOY ORDER:
@@ -52,6 +53,12 @@ services:
       - key: ACCOUNTING_ENCRYPTION_KEY
         sync: false # random 32+ char secret for AES-256-GCM token-at-rest encryption
                      # generate once with: openssl rand -base64 32
+      - key: RECOMMENDER_URL
+        sync: false # farmsmart-recommender's internal Render URL, e.g.
+                     # https://farmsmart-recommender.onrender.com
+      - key: RECOMMENDER_INTERNAL_KEY
+        sync: false # shared secret with farmsmart-recommender's INTERNAL_API_KEY —
+                     # generate once with: openssl rand -base64 32 (same value on both services)
 
   # ── Admin dashboard SPA (Web Service, vite preview) ───────────────────────
   # Served via `vite preview` (SPA fallback handled by vite's default appType=spa).
@@ -76,3 +83,25 @@ services:
         sync: false # API URL, e.g. https://farmsmart-api-j3qt.onrender.com
       - key: VITE_PUBLIC_CLERK_PUBLISHABLE_KEY
         sync: false # pk_test_... (dev) or pk_live_... (prod)
+
+  # ── Recommender (Python/FastAPI, dlt ingestion + pgvector search) ─────────
+  # Talks to the same Neon Postgres as farmsmart-api (DATABASE_URL). Only
+  # farmsmart-api calls this service directly (INTERNAL_API_KEY-gated) — it
+  # is not exposed to the dashboard or the public internet.
+  - type: web
+    name: farmsmart-recommender
+    runtime: python
+    plan: starter
+    region: oregon
+    buildCommand: cd artifacts/recommender-svc && pip install uv && uv sync --frozen
+    startCommand: cd artifacts/recommender-svc && uv run uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: DATABASE_URL
+        sync: false # same Neon connection string as farmsmart-api
+      - key: OPENAI_API_KEY
+        sync: false # platform.openai.com — used for text-embedding-3-small
+      - key: INTERNAL_API_KEY
+        sync: false # shared secret with farmsmart-api's RECOMMENDER_INTERNAL_KEY —
+                     # same value as that key, generated once via: openssl rand -base64 32

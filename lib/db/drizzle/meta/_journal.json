@@ -57,6 +57,13 @@
       "when": 1783143422852,
       "tag": "0007_p5_accounting_connections",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1783151783601,
+      "tag": "0008_p6_recommender",
+      "breakpoints": true
     }
   ]
 }

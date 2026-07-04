@@ -14,6 +14,7 @@ import {
   check,
   primaryKey,
   jsonb,
+  vector,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
@@ -484,5 +485,48 @@ export const accountingConnectionsTable = pgTable(
       table.clerkUserId,
       table.provider,
     ),
+  ],
+);
+
+// ── Recommender: cached external knowledge + question history ──────────────
+// Requires the pgvector extension (CREATE EXTENSION IF NOT EXISTS vector;),
+// enabled once via migration. Embeddings are OpenAI text-embedding-3-small
+// (1536 dims) — see artifacts/recommender-svc.
+
+export const recommenderCacheTable = pgTable(
+  "recommender_cache",
+  {
+    id: serial("id").primaryKey(),
+    sourceUrl: text("source_url").notNull(),
+    title: text("title"),
+    content: text("content").notNull(),
+    embedding: vector("embedding", { dimensions: 1536 }).notNull(),
+    fetchedAt: timestamp("fetched_at").notNull().defaultNow(),
+    searchProvider: text("search_provider").notNull(), // 'tavily' | 'brave'
+    queryText: text("query_text").notNull(),
+  },
+  (table) => [
+    index("recommender_cache_source_url_idx").on(table.sourceUrl),
+    index("recommender_cache_embedding_hnsw").using(
+      "hnsw",
+      table.embedding.op("vector_cosine_ops"),
+    ),
+  ],
+);
+
+export const recommenderQueriesTable = pgTable(
+  "recommender_queries",
+  {
+    id: serial("id").primaryKey(),
+    clerkUserId: text("clerk_user_id").notNull(),
+    question: text("question").notNull(),
+    answer: text("answer").notNull(),
+    sources: jsonb("sources"), // [{title, url}]
+    farmContextUsed: jsonb("farm_context_used"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => [
+    index("recommender_queries_user_idx").on(table.clerkUserId),
+    index("recommender_queries_created_at_idx").on(table.createdAt),
   ],
 );

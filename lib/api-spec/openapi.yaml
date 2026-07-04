@@ -1168,6 +1168,25 @@ paths:
               schema:
                 $ref: "#/components/schemas/AccountingDisconnectResponse"
 
+  /recommend:
+    post:
+      operationId: postRecommend
+      tags: [recommend]
+      summary: Ask the vertical-farming recommender a question
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecommendRequest"
+      responses:
+        "200":
+          description: Recommender answer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecommendResponse"
+
 components:
   schemas:
     HealthStatus:
@@ -1594,6 +1613,38 @@ components:
         disconnected:
           type: boolean
       required: [disconnected]
+
+    RecommendRequest:
+      type: object
+      properties:
+        question:
+          type: string
+      required: [question]
+
+    RecommendSource:
+      type: object
+      properties:
+        title:
+          type: string
+          nullable: true
+        url:
+          type: string
+        similarity:
+          type: number
+      required: [url, similarity]
+
+    RecommendResponse:
+      type: object
+      properties:
+        answer:
+          type: string
+        sources:
+          type: array
+          items:
+            $ref: "#/components/schemas/RecommendSource"
+        cache_hit:
+          type: boolean
+      required: [answer, sources, cache_hit]
 
     ActionRequiredItem:
       type: object

@@ -63,6 +63,8 @@ import type {
   MonitoringApiInput,
   MoveFertigationRequest,
   RackItem,
+  RecommendRequest,
+  RecommendResponse,
   ResolveLayoutQrParams,
   RoomItem,
   SeedLot,
@@ -4127,5 +4129,76 @@ export const usePostAccountingDisconnect = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getPostAccountingDisconnectMutationOptions(options));
+    }
+
+export const getPostRecommendUrl = () => {
+
+
+
+
+  return `/api/recommend`
+}
+
+/**
+ * @summary Ask the vertical-farming recommender a question
+ */
+export const postRecommend = async (recommendRequest: RecommendRequest, options?: RequestInit): Promise<RecommendResponse> => {
+
+  return customFetch<RecommendResponse>(getPostRecommendUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      recommendRequest,)
+  }
+);}
+
+
+
+
+export const getPostRecommendMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postRecommend>>, TError,{data: BodyType<RecommendRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof postRecommend>>, TError,{data: BodyType<RecommendRequest>}, TContext> => {
+
+const mutationKey = ['postRecommend'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postRecommend>>, {data: BodyType<RecommendRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  postRecommend(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostRecommendMutationResult = NonNullable<Awaited<ReturnType<typeof postRecommend>>>
+    export type PostRecommendMutationBody = BodyType<RecommendRequest>
+    export type PostRecommendMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Ask the vertical-farming recommender a question
+ */
+export const usePostRecommend = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postRecommend>>, TError,{data: BodyType<RecommendRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof postRecommend>>,
+        TError,
+        {data: BodyType<RecommendRequest>},
+        TContext
+      > => {
+      return useMutation(getPostRecommendMutationOptions(options));
     }
 
