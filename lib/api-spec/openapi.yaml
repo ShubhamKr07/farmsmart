@@ -1092,6 +1092,43 @@ paths:
               schema:
                 $ref: "#/components/schemas/MetricsAvailability"
 
+  /users/me/settings:
+    get:
+      operationId: getUserSettings
+      tags: [userSettings]
+      summary: Get all settings for the signed-in user
+      responses:
+        "200":
+          description: User settings map
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserSettingsResponse"
+
+  /users/me/settings/{key}:
+    put:
+      operationId: putUserSetting
+      tags: [userSettings]
+      summary: Upsert one setting for the signed-in user
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserSettingInput"
+      responses:
+        "200":
+          description: Setting saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserSettingInput"
+
 components:
   schemas:
     HealthStatus:
@@ -1471,6 +1508,22 @@ components:
         crop_id:
           type: boolean
       required: [revenue, sensor_readings, cost, crop_id]
+
+    UserSettingsResponse:
+      type: object
+      properties:
+        settings:
+          type: object
+          description: Map of setting key -> arbitrary JSON value.
+          additionalProperties: true
+      required: [settings]
+
+    UserSettingInput:
+      type: object
+      properties:
+        value:
+          description: Arbitrary JSON value to store for this key.
+      required: [value]
 
     ActionRequiredItem:
       type: object

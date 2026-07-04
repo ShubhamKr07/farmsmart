@@ -44,7 +44,7 @@ import { DataTable, type Column } from "@/components/data-table";
 import { getMetricDef } from "@workspace/metrics";
 import { useMetricSelection } from "@/hooks/use-metric-selection";
 import { MetricPicker } from "@/components/metrics/MetricPicker";
-import { MetricGrid } from "@/components/metrics/MetricGrid";
+import { DraggableMetricGrid } from "@/components/metrics/DraggableMetricGrid";
 import { MetricCard } from "@/components/metrics/MetricCard";
 import { TimeRangeSelector, type MetricRange } from "@/components/metrics/TimeRangeSelector";
 import type { MetricDataMap } from "@/components/metrics/renderers";
@@ -171,7 +171,7 @@ export function Shipments() {
   const pendingCount = items.filter((s) => s.status === "pending").length;
   const uniqueClients = Array.from(new Set(items.map((s) => s.client))).filter(Boolean);
 
-  const { selected, selectable, toggle, reset } = useMetricSelection("shipments");
+  const { selected, selectable, toggle, reorder, reset } = useMetricSelection("shipments");
   const metricData: MetricDataMap = { shipments: items };
   const [range, setRange] = useState<MetricRange>("30d");
 
@@ -300,13 +300,15 @@ export function Shipments() {
       </div>
 
       {/* Metric cards (selectable) */}
-      <MetricGrid>
-        {selected.map((id) => {
+      <DraggableMetricGrid
+        ids={selected}
+        onReorder={reorder}
+        renderItem={(id) => {
           const def = getMetricDef(id);
           if (!def) return null;
-          return <MetricCard key={id} def={def} data={metricData} range={range} />;
-        })}
-      </MetricGrid>
+          return <MetricCard def={def} data={metricData} range={range} />;
+        }}
+      />
 
       {/* Filter + table */}
       <Card className="shadow-sm">

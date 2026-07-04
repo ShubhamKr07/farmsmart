@@ -1,9 +1,12 @@
 import { Router, type Request, type Response } from "express";
-import { eq } from "drizzle-orm";
+import { eq, gt, and, asc } from "drizzle-orm";
 import { db } from "@workspace/db";
 import { inventoryItemsTable } from "@workspace/db";
 
 const router = Router();
+
+const DEFAULT_LIMIT = 50;
+const MAX_LIMIT = 200;
 
 function formatItem(item: typeof inventoryItemsTable.$inferSelect) {
   return {
@@ -22,8 +25,31 @@ function formatItem(item: typeof inventoryItemsTable.$inferSelect) {
 
 router.get("/inventory", async (req: Request, res: Response) => {
   try {
-    const rows = await db.select().from(inventoryItemsTable).orderBy(inventoryItemsTable.createdAt);
-    return res.json(rows.map(formatItem));
+    const cursor = req.query.cursor ? parseInt(req.query.cursor as string, 10) : undefined;
+    const limit = Math.min(
+      MAX_LIMIT,
+      req.query.limit ? parseInt(req.query.limit as string, 10) || DEFAULT_LIMIT : DEFAULT_LIMIT,
+    );
+
+    // Keyset pagination on id. No `cursor`/`limit` param = first page, same
+    // flat-array shape as before pagination existed.
+    const conditions = cursor !== undefined ? [gt(inventoryItemsTable.id, cursor)] : [];
+
+    const rows = await db
+      .select()
+      .from(inventoryItemsTable)
+      .where(conditions.length ? and(...conditions) : undefined)
+      .orderBy(asc(inventoryItemsTable.id))
+      .limit(limit + 1);
+
+    const hasMore = rows.length > limit;
+    const page = hasMore ? rows.slice(0, limit) : rows;
+    const nextCursor = hasMore ? page[page.length - 1]!.id : null;
+
+    if (req.query.cursor === undefined && req.query.limit === undefined) {
+      return res.json(page.map(formatItem));
+    }
+    return res.json({ items: page.map(formatItem), nextCursor });
   } catch (err) {
     req.log.error(err);
     return res.status(500).json({ error: "Failed to fetch inventory" });

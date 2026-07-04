@@ -1016,3 +1016,27 @@ export const GetMetricsAvailabilityResponse = zod.object({
 })
 
 
+/**
+ * @summary Get all settings for the signed-in user
+ */
+export const GetUserSettingsResponse = zod.object({
+  "settings": zod.record(zod.string(), zod.unknown()).describe('Map of setting key -> arbitrary JSON value.')
+})
+
+
+/**
+ * @summary Upsert one setting for the signed-in user
+ */
+export const PutUserSettingParams = zod.object({
+  "key": zod.coerce.string()
+})
+
+export const PutUserSettingBody = zod.object({
+  "value": zod.unknown().describe('Arbitrary JSON value to store for this key.')
+})
+
+export const PutUserSettingResponse = zod.object({
+  "value": zod.unknown().describe('Arbitrary JSON value to store for this key.')
+})
+
+

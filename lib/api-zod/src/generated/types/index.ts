@@ -97,3 +97,6 @@ export * from './trayCountResult';
 export * from './trayItem';
 export * from './updateChannelInput';
 export * from './updateRackInput';
+export * from './userSettingInput';
+export * from './userSettingsResponse';
+export * from './userSettingsResponseSettings';

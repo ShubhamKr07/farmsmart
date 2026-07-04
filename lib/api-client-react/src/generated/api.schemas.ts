@@ -221,6 +221,21 @@ export interface MetricsAvailability {
   crop_id: boolean;
 }
 
+/**
+ * Map of setting key -> arbitrary JSON value.
+ */
+export type UserSettingsResponseSettings = { [key: string]: unknown };
+
+export interface UserSettingsResponse {
+  /** Map of setting key -> arbitrary JSON value. */
+  settings: UserSettingsResponseSettings;
+}
+
+export interface UserSettingInput {
+  /** Arbitrary JSON value to store for this key. */
+  value: unknown;
+}
+
 export type AlertSeverity = typeof AlertSeverity[keyof typeof AlertSeverity];
 
 

@@ -46,7 +46,7 @@ import QRCodeSVG from "react-qr-code";
 import { getMetricDef } from "@workspace/metrics";
 import { useMetricSelection } from "@/hooks/use-metric-selection";
 import { MetricPicker } from "@/components/metrics/MetricPicker";
-import { MetricGrid } from "@/components/metrics/MetricGrid";
+import { DraggableMetricGrid } from "@/components/metrics/DraggableMetricGrid";
 import { MetricCard } from "@/components/metrics/MetricCard";
 import { TimeRangeSelector, type MetricRange } from "@/components/metrics/TimeRangeSelector";
 import type { MetricDataMap } from "@/components/metrics/renderers";
@@ -181,7 +181,7 @@ export function Inventory() {
 
   // Hooks must run unconditionally on every render (Rules of Hooks) — keep
   // these above the loading/error early returns below.
-  const { selected, selectable, toggle, reset } = useMetricSelection("inventory");
+  const { selected, selectable, toggle, reorder, reset } = useMetricSelection("inventory");
   const [range, setRange] = useState<MetricRange>("30d");
 
   // Only gate on inventory: dashboard is supplementary (seed-lot/crop counts,
@@ -316,13 +316,15 @@ export function Inventory() {
       </div>
 
       {/* Metric cards (selectable) */}
-      <MetricGrid>
-        {selected.map((id) => {
+      <DraggableMetricGrid
+        ids={selected}
+        onReorder={reorder}
+        renderItem={(id) => {
           const def = getMetricDef(id);
           if (!def) return null;
-          return <MetricCard key={id} def={def} data={metricData} range={range} />;
-        })}
-      </MetricGrid>
+          return <MetricCard def={def} data={metricData} range={range} />;
+        }}
+      />
 
       {/* Active Seed Lots */}
       {seedLots.length > 0 && (

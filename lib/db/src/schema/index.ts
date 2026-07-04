@@ -13,6 +13,7 @@ import {
   real,
   check,
   primaryKey,
+  jsonb,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
@@ -437,5 +438,21 @@ export const stockMovementsTable = pgTable(
   (table) => [
     index("stock_movements_inventory_item_id_idx").on(table.inventoryItemId),
     index("stock_movements_created_at_idx").on(table.createdAt),
+  ],
+);
+
+// ── Phase 4: per-user settings (metric selection, layout order, etc.) ───────
+
+export const userSettingsTable = pgTable(
+  "user_settings",
+  {
+    id: serial("id").primaryKey(),
+    clerkUserId: text("clerk_user_id").notNull(),
+    key: text("key").notNull(),
+    value: jsonb("value").notNull(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("user_settings_user_key_uniq").on(table.clerkUserId, table.key),
   ],
 );

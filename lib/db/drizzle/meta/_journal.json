@@ -43,6 +43,13 @@
       "when": 1783114602795,
       "tag": "0005_p3_crop_catalog_growth_profiles",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1783137250688,
+      "tag": "0006_p4_user_settings",
+      "breakpoints": true
     }
   ]
 }

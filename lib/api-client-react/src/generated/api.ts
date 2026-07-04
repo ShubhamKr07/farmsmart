@@ -79,7 +79,9 @@ import type {
   TrayCountResult,
   TrayItem,
   UpdateChannelInput,
-  UpdateRackInput
+  UpdateRackInput,
+  UserSettingInput,
+  UserSettingsResponse
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -3750,4 +3752,153 @@ export function useGetMetricsAvailability<TData = Awaited<ReturnType<typeof getM
 
 
 
+
+export const getGetUserSettingsUrl = () => {
+
+
+
+
+  return `/api/users/me/settings`
+}
+
+/**
+ * @summary Get all settings for the signed-in user
+ */
+export const getUserSettings = async ( options?: RequestInit): Promise<UserSettingsResponse> => {
+
+  return customFetch<UserSettingsResponse>(getGetUserSettingsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetUserSettingsQueryKey = () => {
+    return [
+    `/api/users/me/settings`
+    ] as const;
+    }
+
+
+export const getGetUserSettingsQueryOptions = <TData = Awaited<ReturnType<typeof getUserSettings>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getUserSettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetUserSettingsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getUserSettings>>> = ({ signal }) => getUserSettings({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getUserSettings>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetUserSettingsQueryResult = NonNullable<Awaited<ReturnType<typeof getUserSettings>>>
+export type GetUserSettingsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get all settings for the signed-in user
+ */
+
+export function useGetUserSettings<TData = Awaited<ReturnType<typeof getUserSettings>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getUserSettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetUserSettingsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getPutUserSettingUrl = (key: string,) => {
+
+
+
+
+  return `/api/users/me/settings/${key}`
+}
+
+/**
+ * @summary Upsert one setting for the signed-in user
+ */
+export const putUserSetting = async (key: string,
+    userSettingInput: UserSettingInput, options?: RequestInit): Promise<UserSettingInput> => {
+
+  return customFetch<UserSettingInput>(getPutUserSettingUrl(key),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      userSettingInput,)
+  }
+);}
+
+
+
+
+export const getPutUserSettingMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putUserSetting>>, TError,{key: string;data: BodyType<UserSettingInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof putUserSetting>>, TError,{key: string;data: BodyType<UserSettingInput>}, TContext> => {
+
+const mutationKey = ['putUserSetting'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof putUserSetting>>, {key: string;data: BodyType<UserSettingInput>}> = (props) => {
+          const {key,data} = props ?? {};
+
+          return  putUserSetting(key,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PutUserSettingMutationResult = NonNullable<Awaited<ReturnType<typeof putUserSetting>>>
+    export type PutUserSettingMutationBody = BodyType<UserSettingInput>
+    export type PutUserSettingMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Upsert one setting for the signed-in user
+ */
+export const usePutUserSetting = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putUserSetting>>, TError,{key: string;data: BodyType<UserSettingInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof putUserSetting>>,
+        TError,
+        {key: string;data: BodyType<UserSettingInput>},
+        TContext
+      > => {
+      return useMutation(getPutUserSettingMutationOptions(options));
+    }
 

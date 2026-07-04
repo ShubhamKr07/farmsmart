@@ -3,7 +3,7 @@ import { useGetDashboard, useListAlerts } from "@workspace/api-client-react";
 import { getMetricDef } from "@workspace/metrics";
 import { useMetricSelection } from "@/hooks/use-metric-selection";
 import { MetricPicker } from "@/components/metrics/MetricPicker";
-import { MetricGrid } from "@/components/metrics/MetricGrid";
+import { DraggableMetricGrid } from "@/components/metrics/DraggableMetricGrid";
 import { MetricCard } from "@/components/metrics/MetricCard";
 import { TimeRangeSelector, type MetricRange } from "@/components/metrics/TimeRangeSelector";
 import type { MetricDataMap } from "@/components/metrics/renderers";
@@ -13,7 +13,7 @@ import { QueryError } from "@/components/ui/query-error";
 export function Overview() {
   const { data: dashboard, isLoading, isError, refetch } = useGetDashboard();
   const { data: alerts } = useListAlerts({ status: "current", limit: 3 });
-  const { selected, selectable, toggle, reset } = useMetricSelection("overview");
+  const { selected, selectable, toggle, reorder, reset } = useMetricSelection("overview");
   const [range, setRange] = useState<MetricRange>("30d");
 
   if (isLoading) {
@@ -53,13 +53,15 @@ export function Overview() {
         </div>
       </div>
 
-      <MetricGrid>
-        {selected.map((id) => {
+      <DraggableMetricGrid
+        ids={selected}
+        onReorder={reorder}
+        renderItem={(id) => {
           const def = getMetricDef(id);
           if (!def) return null;
-          return <MetricCard key={id} def={def} data={data} range={range} />;
-        })}
-      </MetricGrid>
+          return <MetricCard def={def} data={data} range={range} />;
+        }}
+      />
     </div>
   );
 }

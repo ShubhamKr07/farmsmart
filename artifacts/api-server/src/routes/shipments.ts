@@ -1,7 +1,10 @@
 import { Router, type Request, type Response } from "express";
-import { eq, and } from "drizzle-orm";
+import { eq, and, gt, desc, asc } from "drizzle-orm";
 import { db } from "@workspace/db";
 import { shipmentsTable } from "@workspace/db";
+
+const DEFAULT_LIMIT = 50;
+const MAX_LIMIT = 200;
 
 const router = Router();
 
@@ -27,8 +30,23 @@ router.get("/shipments", async (req: Request, res: Response) => {
   try {
     const statusFilter = req.query.status as string | undefined;
     const clientFilter = req.query.client as string | undefined;
+    const cursor = req.query.cursor ? parseInt(req.query.cursor as string, 10) : undefined;
+    const limit = Math.min(
+      MAX_LIMIT,
+      req.query.limit ? parseInt(req.query.limit as string, 10) || DEFAULT_LIMIT : DEFAULT_LIMIT,
+    );
 
-    let rows = await db.select().from(shipmentsTable).orderBy(shipmentsTable.createdAt);
+    // Keyset pagination on id (createdAt-ordered = insertion order here, id
+    // is a monotonic proxy). No `cursor` param = first page, same shape as
+    // before pagination existed — callers that don't opt in see no change.
+    const conditions = cursor !== undefined ? [gt(shipmentsTable.id, cursor)] : [];
+
+    let rows = await db
+      .select()
+      .from(shipmentsTable)
+      .where(conditions.length ? and(...conditions) : undefined)
+      .orderBy(asc(shipmentsTable.id))
+      .limit(limit + 1);
 
     if (statusFilter && ["in_progress", "complete", "pending"].includes(statusFilter)) {
       rows = rows.filter((r) => r.status === statusFilter);
@@ -37,7 +55,16 @@ router.get("/shipments", async (req: Request, res: Response) => {
       rows = rows.filter((r) => r.client.toLowerCase().includes(clientFilter.toLowerCase()));
     }
 
-    return res.json(rows.map(formatShipment));
+    const hasMore = rows.length > limit;
+    const page = hasMore ? rows.slice(0, limit) : rows;
+    const nextCursor = hasMore ? page[page.length - 1]!.id : null;
+
+    // Unpaginated callers (no cursor/limit query params) keep the original
+    // flat-array response shape; opt-in pagination wraps with {items,nextCursor}.
+    if (req.query.cursor === undefined && req.query.limit === undefined) {
+      return res.json(page.map(formatShipment));
+    }
+    return res.json({ items: page.map(formatShipment), nextCursor });
   } catch (err) {
     req.log.error(err);
     return res.status(500).json({ error: "Failed to fetch shipments" });

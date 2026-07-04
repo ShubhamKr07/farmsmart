@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useUser } from "@clerk/clerk-react";
+import { useGetUserSettings, usePutUserSetting, getGetUserSettingsQueryKey } from "@workspace/api-client-react";
 import {
   type MetricDef,
   type MetricTab,
@@ -8,15 +9,17 @@ import {
 } from "@workspace/metrics";
 
 /**
- * Per-tab metric selection, persisted to localStorage keyed by Clerk user id.
- * Seeded from the registry defaults so the first render reproduces today's
- * widgets. M1: only Tier-A metrics (`source !== "metrics"`) are selectable —
- * Tier-B entries appear once `/api/metrics` ships (M2).
+ * Per-tab metric selection (and card order — array order = display order),
+ * persisted via GET/PUT /api/users/me/settings (M4). localStorage is kept as
+ * an instant-write cache so toggles/reorders feel immediate while the API
+ * call is in flight, and as a fallback if the user is signed out or the API
+ * request fails.
  */
 export function useMetricSelection(tab: MetricTab) {
   const { user, isLoaded } = useUser();
   const uid = user?.id ?? "anon";
   const storageKey = `farmsmart.metrics.${tab}.${uid}`;
+  const settingsKey = `farmsmart.metrics.${tab}`;
 
   /**
    * Metrics visible in this tab's picker.
@@ -32,26 +35,51 @@ export function useMetricSelection(tab: MetricTab) {
   const [selected, setSelected] = useState<string[]>(() =>
     defaultKeysForTab(tab),
   );
+  const hydratedRef = useRef(false);
 
-  // Hydrate from localStorage once the Clerk user id is known.
+  const { data: remote, isSuccess: remoteLoaded } = useGetUserSettings({
+    query: { enabled: isLoaded && !!user, queryKey: getGetUserSettingsQueryKey() },
+  });
+  const putSetting = usePutUserSetting();
+
+  const validIds = useCallback(
+    (ids: unknown): string[] => {
+      if (!Array.isArray(ids)) return defaultKeysForTab(tab);
+      const valid = new Set(selectable.map((m) => m.id));
+      return (ids as string[]).filter((id) => valid.has(id));
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [tab, selectable.length],
+  );
+
+  // Hydrate: prefer the server value once loaded; fall back to localStorage
+  // (covers signed-out/offline and the brief window before the server responds).
   useEffect(() => {
     if (!isLoaded) return;
+    if (hydratedRef.current) return;
+
+    if (user && remoteLoaded) {
+      const serverValue = remote?.settings?.[settingsKey];
+      if (serverValue !== undefined) {
+        setSelected(validIds(serverValue));
+        hydratedRef.current = true;
+        return;
+      }
+    }
+
     try {
       const raw = localStorage.getItem(storageKey);
       if (raw) {
-        const parsed = JSON.parse(raw) as string[];
-        if (Array.isArray(parsed)) {
-          const valid = new Set(selectable.map((m) => m.id));
-          setSelected(parsed.filter((id) => valid.has(id)));
-        }
+        setSelected(validIds(JSON.parse(raw)));
       } else {
         setSelected(defaultKeysForTab(tab));
       }
     } catch {
       setSelected(defaultKeysForTab(tab));
     }
+    if (!user || remoteLoaded) hydratedRef.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoaded, storageKey, tab]);
+  }, [isLoaded, user, remoteLoaded, remote, storageKey, settingsKey, tab, validIds]);
 
   const persist = useCallback(
     (next: string[]) => {
@@ -61,8 +89,11 @@ export function useMetricSelection(tab: MetricTab) {
       } catch {
         /* ignore quota / private-mode errors */
       }
+      if (user) {
+        putSetting.mutate({ key: settingsKey, data: { value: next } });
+      }
     },
-    [storageKey],
+    [storageKey, settingsKey, user, putSetting],
   );
 
   const toggle = useCallback(
@@ -76,15 +107,25 @@ export function useMetricSelection(tab: MetricTab) {
         } catch {
           /* ignore */
         }
+        if (user) {
+          putSetting.mutate({ key: settingsKey, data: { value: next } });
+        }
         return next;
       });
     },
-    [storageKey],
+    [storageKey, settingsKey, user, putSetting],
+  );
+
+  const reorder = useCallback(
+    (next: string[]) => {
+      persist(next);
+    },
+    [persist],
   );
 
   const reset = useCallback(() => {
     persist(defaultKeysForTab(tab));
   }, [persist, tab]);
 
-  return { selected, selectable, toggle, reset };
+  return { selected, selectable, toggle, reorder, reset };
 }
