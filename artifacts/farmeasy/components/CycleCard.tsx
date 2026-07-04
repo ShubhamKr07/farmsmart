@@ -1,8 +1,8 @@
 import { Feather } from "@expo/vector-icons";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { type Cycle } from "@workspace/api-client-react";
-import colors from "@/constants/colors";
+import { useColors } from "@/hooks/useColors";
 import StageTracker, { type CycleStatus } from "./StageTracker";
 
 interface Props {
@@ -18,12 +18,15 @@ const STATUS_LABEL: Record<string, string> = {
   completed: "Completed",
 };
 
-const STATUS_COLOR: Record<string, string> = {
-  germination: "#10B981",
-  fertigation: "#3B82F6",
-  harvest: "#F59E0B",
-  completed: colors.light.mutedForeground,
-};
+function statusColor(status: string, colors: ReturnType<typeof useColors>): string {
+  const map: Record<string, string> = {
+    germination: "#10B981",
+    fertigation: "#3B82F6",
+    harvest: "#F59E0B",
+    completed: colors.mutedForeground,
+  };
+  return map[status] ?? colors.mutedForeground;
+}
 
 interface CountdownResult {
   daysOverdue: number | null;
@@ -71,10 +74,10 @@ function getCountdown(cycle: Cycle, now: number): CountdownResult | null {
   return null;
 }
 
-function countdownColor(result: CountdownResult): string {
-  if (result.daysOverdue !== null) return colors.light.destructive;
-  if (result.daysUntil !== null && result.daysUntil <= 2) return colors.light.warning;
-  return colors.light.success;
+function countdownColor(result: CountdownResult, colors: ReturnType<typeof useColors>): string {
+  if (result.daysOverdue !== null) return colors.destructive;
+  if (result.daysUntil !== null && result.daysUntil <= 2) return colors.warning;
+  return colors.success;
 }
 
 function countdownLabel(result: CountdownResult): string {
@@ -86,6 +89,8 @@ function countdownLabel(result: CountdownResult): string {
 }
 
 export default function CycleCard({ cycle, onPress, onAction }: Props) {
+  const colors = useColors();
+  const s = useMemo(() => createStyles(colors), [colors]);
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -118,15 +123,15 @@ export default function CycleCard({ cycle, onPress, onAction }: Props) {
         <View style={s.idChip}>
           <Text style={s.idText}>#{cycle.shortId}</Text>
         </View>
-        <View style={[s.statusChip, { backgroundColor: STATUS_COLOR[cycle.status] + (isLocked ? "10" : "20") }]}>
-          <View style={[s.statusDot, { backgroundColor: STATUS_COLOR[cycle.status] + (isLocked ? "60" : "ff") }]} />
-          <Text style={[s.statusText, { color: STATUS_COLOR[cycle.status] + (isLocked ? "80" : "ff") }]}>
+        <View style={[s.statusChip, { backgroundColor: statusColor(cycle.status, colors) + (isLocked ? "10" : "20") }]}>
+          <View style={[s.statusDot, { backgroundColor: statusColor(cycle.status, colors) + (isLocked ? "60" : "ff") }]} />
+          <Text style={[s.statusText, { color: statusColor(cycle.status, colors) + (isLocked ? "80" : "ff") }]}>
             {STATUS_LABEL[cycle.status] ?? cycle.status}
           </Text>
         </View>
         {isLocked && (
           <View style={s.lockBadge}>
-            <Feather name="lock" size={11} color={colors.light.mutedForeground} />
+            <Feather name="lock" size={11} color={colors.mutedForeground} />
             <Text style={s.lockBadgeText}>Locked</Text>
           </View>
         )}
@@ -141,7 +146,7 @@ export default function CycleCard({ cycle, onPress, onAction }: Props) {
 
       {isLocked && countdown !== null ? (
         <View style={s.lockedRow}>
-          <Feather name="clock" size={12} color={colors.light.mutedForeground} />
+          <Feather name="clock" size={12} color={colors.mutedForeground} />
           <Text style={s.lockedRowText}>
             {countdown.daysRemaining}d until {countdown.actionLabel}
           </Text>
@@ -150,11 +155,11 @@ export default function CycleCard({ cycle, onPress, onAction }: Props) {
         <View
           style={[
             s.countdownRow,
-            { backgroundColor: countdownColor(countdown) + "18" },
+            { backgroundColor: countdownColor(countdown, colors) + "18" },
           ]}
         >
-          <Feather name="clock" size={12} color={countdownColor(countdown)} />
-          <Text style={[s.countdownText, { color: countdownColor(countdown) }]}>
+          <Feather name="clock" size={12} color={countdownColor(countdown, colors)} />
+          <Text style={[s.countdownText, { color: countdownColor(countdown, colors) }]}>
             {countdownLabel(countdown)}
           </Text>
         </View>
@@ -162,12 +167,12 @@ export default function CycleCard({ cycle, onPress, onAction }: Props) {
 
       <View style={s.metaRow}>
         <View style={s.metaItem}>
-          <Feather name="grid" size={12} color={colors.light.mutedForeground} />
+          <Feather name="grid" size={12} color={colors.mutedForeground} />
           <Text style={s.metaText}>{cycle.fullTrays}F + {cycle.halfTrays}H trays</Text>
         </View>
         {cycle.trayPosition && (
           <View style={s.metaItem}>
-            <Feather name="map-pin" size={12} color={colors.light.mutedForeground} />
+            <Feather name="map-pin" size={12} color={colors.mutedForeground} />
             <Text style={s.metaText}>{cycle.trayPosition}</Text>
           </View>
         )}
@@ -188,7 +193,7 @@ export default function CycleCard({ cycle, onPress, onAction }: Props) {
 
       {isLocked && (
         <View style={s.actionBtnLocked}>
-          <Feather name="lock" size={14} color={colors.light.mutedForeground} />
+          <Feather name="lock" size={14} color={colors.mutedForeground} />
           <Text style={s.actionBtnLockedText}>
             Locked — {countdown?.daysRemaining ?? 0}d remaining
           </Text>
@@ -198,27 +203,27 @@ export default function CycleCard({ cycle, onPress, onAction }: Props) {
   );
 }
 
-const s = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create({
   card: {
-    backgroundColor: colors.light.card,
+    backgroundColor: colors.card,
     borderRadius: colors.radius,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: colors.border,
   },
   cardLocked: {
     opacity: 0.55,
-    backgroundColor: colors.light.muted,
-    borderColor: colors.light.border,
+    backgroundColor: colors.muted,
+    borderColor: colors.border,
   },
   lockBadge: {
     flexDirection: "row",
     alignItems: "center",
     gap: 3,
-    backgroundColor: colors.light.muted,
+    backgroundColor: colors.muted,
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: colors.border,
     paddingHorizontal: 7,
     paddingVertical: 3,
     borderRadius: 6,
@@ -226,10 +231,10 @@ const s = StyleSheet.create({
   lockBadgeText: {
     fontSize: 11,
     fontFamily: "Inter_500Medium",
-    color: colors.light.mutedForeground,
+    color: colors.mutedForeground,
   },
   textMuted: {
-    color: colors.light.mutedForeground,
+    color: colors.mutedForeground,
   },
   lockedRow: {
     flexDirection: "row",
@@ -240,26 +245,26 @@ const s = StyleSheet.create({
     borderRadius: 6,
     marginBottom: 10,
     alignSelf: "flex-start",
-    backgroundColor: colors.light.border,
+    backgroundColor: colors.border,
   },
   lockedRowText: {
     fontSize: 12,
     fontFamily: "Inter_500Medium",
-    color: colors.light.mutedForeground,
+    color: colors.mutedForeground,
   },
   actionBtnLocked: {
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: colors.border,
     borderRadius: colors.radius - 2,
     paddingVertical: 10,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
-    backgroundColor: colors.light.muted,
+    backgroundColor: colors.muted,
   },
   actionBtnLockedText: {
-    color: colors.light.mutedForeground,
+    color: colors.mutedForeground,
     fontSize: 14,
     fontFamily: "Inter_500Medium",
   },
@@ -271,7 +276,7 @@ const s = StyleSheet.create({
     flexWrap: "wrap",
   },
   idChip: {
-    backgroundColor: colors.light.muted,
+    backgroundColor: colors.muted,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
@@ -279,7 +284,7 @@ const s = StyleSheet.create({
   idText: {
     fontSize: 12,
     fontFamily: "Inter_600SemiBold",
-    color: colors.light.mutedForeground,
+    color: colors.mutedForeground,
   },
   statusChip: {
     flexDirection: "row",
@@ -301,13 +306,13 @@ const s = StyleSheet.create({
   seedName: {
     fontSize: 17,
     fontFamily: "Inter_700Bold",
-    color: colors.light.foreground,
+    color: colors.foreground,
     marginBottom: 2,
   },
   profileName: {
     fontSize: 13,
     fontFamily: "Inter_400Regular",
-    color: colors.light.mutedForeground,
+    color: colors.mutedForeground,
     marginBottom: 12,
   },
   trackerWrap: { marginBottom: 10 },
@@ -338,10 +343,10 @@ const s = StyleSheet.create({
   metaText: {
     fontSize: 12,
     fontFamily: "Inter_400Regular",
-    color: colors.light.mutedForeground,
+    color: colors.mutedForeground,
   },
   actionBtn: {
-    backgroundColor: colors.light.primary,
+    backgroundColor: colors.primary,
     borderRadius: colors.radius - 2,
     paddingVertical: 10,
     flexDirection: "row",
@@ -350,7 +355,7 @@ const s = StyleSheet.create({
     gap: 6,
   },
   actionBtnOverdue: {
-    backgroundColor: colors.light.destructive,
+    backgroundColor: colors.destructive,
   },
   actionBtnText: {
     color: "#fff",

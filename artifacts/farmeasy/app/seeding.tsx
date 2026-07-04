@@ -1,7 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -25,7 +25,7 @@ import {
   getGetDashboardQueryKey,
 } from "@workspace/api-client-react";
 import { useQueries, useQuery } from "@tanstack/react-query";
-import colors from "@/constants/colors";
+import { useColors } from "@/hooks/useColors";
 import QRScanner from "@/components/QRScanner";
 import RackReadingsCard from "@/components/RackReadingsCard";
 import { parseQR, type RackPositionQR, type SeedLotQR, type LayoutQR } from "@/utils/parseQR";
@@ -55,6 +55,8 @@ interface ScannedLotMeta {
 const today = new Date().toISOString().split("T")[0];
 
 export default function SeedingWizard() {
+  const colors = useColors();
+  const s = useMemo(() => createStyles(colors), [colors]);
   const router = useRouter();
   const queryClient = useQueryClient();
   const [step, setStep] = useState<Step>(1);
@@ -188,7 +190,7 @@ export default function SeedingWizard() {
           <Feather
             name={step === 1 ? "x" : "arrow-left"}
             size={24}
-            color={colors.light.foreground}
+            color={colors.foreground}
           />
         </Pressable>
         <Text style={s.topTitle}>New Seeding</Text>
@@ -211,7 +213,7 @@ export default function SeedingWizard() {
             Point the camera at a seed lot QR code. Scanned codes appear below.
           </Text>
           <View style={s.qrTypeHint}>
-            <Feather name="info" size={13} color={colors.light.primary} />
+            <Feather name="info" size={13} color={colors.primary} />
             <Text style={s.qrTypeHintText}>
               Seed lot QR codes contain the seed name, lot ID, variety and batch weight.
             </Text>
@@ -236,7 +238,7 @@ export default function SeedingWizard() {
                       <Feather
                         name={dbResult?.isLoading ? "loader" : "check-circle"}
                         size={14}
-                        color={colors.light.primary}
+                        color={colors.primary}
                       />
                       <Text style={s.lotCardName} numberOfLines={1}>
                         {displayName}
@@ -247,7 +249,7 @@ export default function SeedingWizard() {
                           setScannedLots((prev) => prev.filter((l) => l.qr !== qr));
                         }}
                       >
-                        <Feather name="x" size={15} color={colors.light.mutedForeground} />
+                        <Feather name="x" size={15} color={colors.mutedForeground} />
                       </Pressable>
                     </View>
                     <View style={s.lotCardMeta}>
@@ -299,10 +301,10 @@ export default function SeedingWizard() {
             <Text style={s.label}>Seed Name</Text>
             {autoFillChip && (
               <View style={s.autoFillChip}>
-                <Feather name="check-circle" size={13} color={colors.light.primary} />
+                <Feather name="check-circle" size={13} color={colors.primary} />
                 <Text style={s.autoFillChipText}>Auto-filled: {autoFillChip} — change?</Text>
                 <Pressable onPress={() => setAutoFillChip(null)}>
-                  <Feather name="x" size={14} color={colors.light.mutedForeground} />
+                  <Feather name="x" size={14} color={colors.mutedForeground} />
                 </Pressable>
               </View>
             )}
@@ -314,7 +316,7 @@ export default function SeedingWizard() {
                 setAutoFillChip(null);
               }}
               placeholder="e.g. Arugula"
-              placeholderTextColor={colors.light.mutedForeground}
+              placeholderTextColor={colors.mutedForeground}
             />
 
             <View style={s.row}>
@@ -330,7 +332,7 @@ export default function SeedingWizard() {
                       }))
                     }
                   >
-                    <Feather name="minus" size={18} color={colors.light.foreground} />
+                    <Feather name="minus" size={18} color={colors.foreground} />
                   </Pressable>
                   <Text style={s.ctrVal}>{form.fullTrays}</Text>
                   <Pressable
@@ -342,7 +344,7 @@ export default function SeedingWizard() {
                       }))
                     }
                   >
-                    <Feather name="plus" size={18} color={colors.light.foreground} />
+                    <Feather name="plus" size={18} color={colors.foreground} />
                   </Pressable>
                 </View>
               </View>
@@ -358,7 +360,7 @@ export default function SeedingWizard() {
                       }))
                     }
                   >
-                    <Feather name="minus" size={18} color={colors.light.foreground} />
+                    <Feather name="minus" size={18} color={colors.foreground} />
                   </Pressable>
                   <Text style={s.ctrVal}>{form.halfTrays}</Text>
                   <Pressable
@@ -370,7 +372,7 @@ export default function SeedingWizard() {
                       }))
                     }
                   >
-                    <Feather name="plus" size={18} color={colors.light.foreground} />
+                    <Feather name="plus" size={18} color={colors.foreground} />
                   </Pressable>
                 </View>
               </View>
@@ -383,7 +385,7 @@ export default function SeedingWizard() {
               onChangeText={(v) => setForm((f) => ({ ...f, seedWeightTray: v }))}
               keyboardType="numeric"
               placeholder="0"
-              placeholderTextColor={colors.light.mutedForeground}
+              placeholderTextColor={colors.mutedForeground}
             />
 
             <Text style={s.label}>Growth Profile</Text>
@@ -424,7 +426,7 @@ export default function SeedingWizard() {
               value={form.seedingDate}
               onChangeText={(v) => setForm((f) => ({ ...f, seedingDate: v }))}
               placeholder="YYYY-MM-DD"
-              placeholderTextColor={colors.light.mutedForeground}
+              placeholderTextColor={colors.mutedForeground}
             />
 
             <Pressable
@@ -449,7 +451,7 @@ export default function SeedingWizard() {
             Scan the QR code on the channel where the trays will be placed.
           </Text>
           <View style={s.qrTypeHint}>
-            <Feather name="info" size={13} color={colors.light.primary} />
+            <Feather name="info" size={13} color={colors.primary} />
             <Text style={s.qrTypeHintText}>
               Channel QR codes are generated from the Layout tab in the admin dashboard.
             </Text>
@@ -465,7 +467,7 @@ export default function SeedingWizard() {
             <>
               {channelLoading && (
                 <View style={s.rackRawChip}>
-                  <ActivityIndicator size="small" color={colors.light.primary} />
+                  <ActivityIndicator size="small" color={colors.primary} />
                   <Text style={s.rackRawText}>Resolving channel…</Text>
                 </View>
               )}
@@ -473,7 +475,7 @@ export default function SeedingWizard() {
               {scannedChannelQR && channelStatus && (
                 <View style={[s.channelCard, channelStatus.isFull && s.channelCardFull]}>
                   <View style={s.channelCardHeader}>
-                    <Feather name="layers" size={16} color={channelStatus.isFull ? "#ef4444" : colors.light.primary} />
+                    <Feather name="layers" size={16} color={channelStatus.isFull ? "#ef4444" : colors.primary} />
                     <Text style={[s.channelCardTitle, channelStatus.isFull && s.channelCardTitleFull]}>
                       {channelStatus.channel}
                     </Text>
@@ -529,23 +531,25 @@ export default function SeedingWizard() {
                 />
               ) : !scannedChannelQR && (
                 <View style={s.rackRawChip}>
-                  <Feather name="grid" size={14} color={colors.light.primary} />
+                  <Feather name="grid" size={14} color={colors.primary} />
                   <Text style={s.rackRawText}>{form.trayPosition}</Text>
                 </View>
               )}
 
               <View style={s.summaryCard}>
                 <Text style={s.summaryTitle}>Confirm Seeding</Text>
-                <Row label="Seed Name" value={form.seedName} />
+                <Row styles={s} label="Seed Name" value={form.seedName} />
                 <Row
+                  styles={s}
                   label="Trays"
                   value={`${form.fullTrays} full + ${form.halfTrays} half`}
                 />
-                <Row label="Weight/Tray" value={`${form.seedWeightTray} g`} />
-                <Row label="Profile" value={selectedProfile?.name ?? "-"} />
-                <Row label="Seeding Date" value={form.seedingDate} />
+                <Row styles={s} label="Weight/Tray" value={`${form.seedWeightTray} g`} />
+                <Row styles={s} label="Profile" value={selectedProfile?.name ?? "-"} />
+                <Row styles={s} label="Seeding Date" value={form.seedingDate} />
                 {channelStatus && (
                   <Row
+                    styles={s}
                     label="Channel"
                     value={`${channelStatus.channel} (${channelStatus.room})`}
                   />
@@ -567,7 +571,7 @@ export default function SeedingWizard() {
                       ].filter(Boolean).join("  ·  ");
                       return (
                         <View key={qr} style={s.summaryLotRow}>
-                          <Feather name="package" size={12} color={colors.light.primary} />
+                          <Feather name="package" size={12} color={colors.primary} />
                           <View style={{ flex: 1 }}>
                             <Text style={s.summaryLotName}>{name}</Text>
                             {!!sub && <Text style={s.summaryLotSub}>{sub}</Text>}
@@ -603,7 +607,7 @@ export default function SeedingWizard() {
   );
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+function Row({ styles: s, label, value }: { styles: ReturnType<typeof createStyles>; label: string; value: string }) {
   return (
     <View style={s.summaryRow}>
       <Text style={s.summaryLabel}>{label}</Text>
@@ -612,8 +616,8 @@ function Row({ label, value }: { label: string; value: string }) {
   );
 }
 
-const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.light.background },
+const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create({
+  safe: { flex: 1, backgroundColor: colors.background },
   topBar: {
     flexDirection: "row",
     alignItems: "center",
@@ -624,12 +628,12 @@ const s = StyleSheet.create({
   topTitle: {
     fontSize: 17,
     fontFamily: "Inter_600SemiBold",
-    color: colors.light.foreground,
+    color: colors.foreground,
   },
   stepNum: {
     fontSize: 13,
     fontFamily: "Inter_500Medium",
-    color: colors.light.mutedForeground,
+    color: colors.mutedForeground,
   },
   stepDots: {
     flexDirection: "row",
@@ -641,28 +645,28 @@ const s = StyleSheet.create({
     width: 28,
     height: 4,
     borderRadius: 2,
-    backgroundColor: colors.light.muted,
+    backgroundColor: colors.muted,
   },
-  dotActive: { backgroundColor: colors.light.primary },
+  dotActive: { backgroundColor: colors.primary },
   stepContent: { padding: 20, paddingBottom: 40 },
   formScroll: { padding: 20, paddingBottom: 40 },
   stepTitle: {
     fontSize: 22,
     fontFamily: "Inter_700Bold",
-    color: colors.light.foreground,
+    color: colors.foreground,
     marginBottom: 6,
   },
   stepSubtitle: {
     fontSize: 14,
     fontFamily: "Inter_400Regular",
-    color: colors.light.mutedForeground,
+    color: colors.mutedForeground,
     marginBottom: 12,
   },
   qrTypeHint: {
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 8,
-    backgroundColor: colors.light.secondary,
+    backgroundColor: colors.secondary,
     borderRadius: 8,
     padding: 10,
     marginBottom: 14,
@@ -671,7 +675,7 @@ const s = StyleSheet.create({
     flex: 1,
     fontSize: 12,
     fontFamily: "Inter_400Regular",
-    color: colors.light.primary,
+    color: colors.primary,
     lineHeight: 18,
   },
   scannerBox: {
@@ -679,16 +683,16 @@ const s = StyleSheet.create({
     borderRadius: colors.radius,
     overflow: "hidden",
     marginBottom: 16,
-    backgroundColor: colors.light.muted,
+    backgroundColor: colors.muted,
   },
   lotCards: { gap: 8, marginBottom: 16 },
   lotCard: {
-    backgroundColor: colors.light.secondary,
+    backgroundColor: colors.secondary,
     borderRadius: colors.radius,
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderWidth: 1,
-    borderColor: colors.light.primary + "30",
+    borderColor: colors.primary + "30",
   },
   lotCardHeader: {
     flexDirection: "row",
@@ -700,25 +704,25 @@ const s = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     fontFamily: "Inter_600SemiBold",
-    color: colors.light.primary,
+    color: colors.primary,
   },
   lotCardMeta: { gap: 2, paddingLeft: 22 },
   lotMetaText: {
     fontSize: 12,
     fontFamily: "Inter_400Regular",
-    color: colors.light.mutedForeground,
+    color: colors.mutedForeground,
   },
   summaryLots: {
     marginTop: 10,
     paddingTop: 10,
     borderTopWidth: 1,
-    borderTopColor: colors.light.border,
+    borderTopColor: colors.border,
     gap: 8,
   },
   summaryLotsTitle: {
     fontSize: 12,
     fontFamily: "Inter_600SemiBold",
-    color: colors.light.mutedForeground,
+    color: colors.mutedForeground,
     textTransform: "uppercase",
     letterSpacing: 0.4,
     marginBottom: 2,
@@ -731,19 +735,19 @@ const s = StyleSheet.create({
   summaryLotName: {
     fontSize: 13,
     fontFamily: "Inter_500Medium",
-    color: colors.light.foreground,
+    color: colors.foreground,
   },
   summaryLotSub: {
     fontSize: 12,
     fontFamily: "Inter_400Regular",
-    color: colors.light.mutedForeground,
+    color: colors.mutedForeground,
     marginTop: 1,
   },
   rackRawChip: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    backgroundColor: colors.light.secondary,
+    backgroundColor: colors.secondary,
     borderRadius: 8,
     padding: 12,
     marginBottom: 16,
@@ -751,15 +755,15 @@ const s = StyleSheet.create({
   rackRawText: {
     fontSize: 14,
     fontFamily: "Inter_500Medium",
-    color: colors.light.foreground,
+    color: colors.foreground,
   },
   channelCard: {
-    backgroundColor: colors.light.secondary,
+    backgroundColor: colors.secondary,
     borderRadius: colors.radius,
     padding: 14,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: colors.light.primary + "40",
+    borderColor: colors.primary + "40",
     gap: 6,
   },
   channelCardFull: {
@@ -775,7 +779,7 @@ const s = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     fontFamily: "Inter_600SemiBold",
-    color: colors.light.primary,
+    color: colors.primary,
   },
   channelCardTitleFull: {
     color: "#ef4444",
@@ -783,7 +787,7 @@ const s = StyleSheet.create({
   channelCardRoom: {
     fontSize: 12,
     fontFamily: "Inter_400Regular",
-    color: colors.light.mutedForeground,
+    color: colors.mutedForeground,
     marginLeft: 24,
   },
   channelCapacityRow: {
@@ -792,7 +796,7 @@ const s = StyleSheet.create({
     marginTop: 10,
     paddingTop: 10,
     borderTopWidth: 1,
-    borderTopColor: colors.light.border,
+    borderTopColor: colors.border,
   },
   channelStat: {
     flex: 1,
@@ -802,17 +806,17 @@ const s = StyleSheet.create({
   channelStatVal: {
     fontSize: 22,
     fontFamily: "Inter_700Bold",
-    color: colors.light.foreground,
+    color: colors.foreground,
   },
   channelStatLabel: {
     fontSize: 11,
     fontFamily: "Inter_400Regular",
-    color: colors.light.mutedForeground,
+    color: colors.mutedForeground,
   },
   channelStatDivider: {
     width: 1,
     height: 32,
-    backgroundColor: colors.light.border,
+    backgroundColor: colors.border,
   },
   channelTraysLeft: {
     fontSize: 13,
@@ -843,27 +847,27 @@ const s = StyleSheet.create({
   label: {
     fontSize: 13,
     fontFamily: "Inter_500Medium",
-    color: colors.light.foreground,
+    color: colors.foreground,
     marginBottom: 6,
     marginTop: 12,
   },
   input: {
     height: 48,
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: colors.border,
     borderRadius: colors.radius,
     paddingHorizontal: 14,
     fontSize: 15,
     fontFamily: "Inter_400Regular",
-    color: colors.light.foreground,
-    backgroundColor: colors.light.card,
+    color: colors.foreground,
+    backgroundColor: colors.card,
   },
   row: { flexDirection: "row", gap: 12 },
   counter: {
     flexDirection: "row",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: colors.border,
     borderRadius: colors.radius,
     height: 48,
     overflow: "hidden",
@@ -872,7 +876,7 @@ const s = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: colors.light.muted,
+    backgroundColor: colors.muted,
     height: "100%",
   },
   ctrVal: {
@@ -880,45 +884,45 @@ const s = StyleSheet.create({
     textAlign: "center",
     fontSize: 17,
     fontFamily: "Inter_600SemiBold",
-    color: colors.light.foreground,
+    color: colors.foreground,
   },
   profileList: { gap: 8, marginBottom: 4 },
   profileOption: {
     padding: 12,
     borderRadius: colors.radius,
     borderWidth: 1,
-    borderColor: colors.light.border,
-    backgroundColor: colors.light.card,
+    borderColor: colors.border,
+    backgroundColor: colors.card,
   },
   profileOptionSelected: {
-    borderColor: colors.light.primary,
-    backgroundColor: colors.light.secondary,
+    borderColor: colors.primary,
+    backgroundColor: colors.secondary,
   },
   profileName: {
     fontSize: 14,
     fontFamily: "Inter_500Medium",
-    color: colors.light.foreground,
+    color: colors.foreground,
   },
-  profileNameSelected: { color: colors.light.primary, fontFamily: "Inter_600SemiBold" },
+  profileNameSelected: { color: colors.primary, fontFamily: "Inter_600SemiBold" },
   profileMeta: {
     fontSize: 12,
     fontFamily: "Inter_400Regular",
-    color: colors.light.mutedForeground,
+    color: colors.mutedForeground,
     marginTop: 2,
   },
   summaryCard: {
-    backgroundColor: colors.light.card,
+    backgroundColor: colors.card,
     borderRadius: colors.radius,
     padding: 16,
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: colors.border,
     gap: 2,
     marginBottom: 4,
   },
   summaryTitle: {
     fontSize: 17,
     fontFamily: "Inter_700Bold",
-    color: colors.light.foreground,
+    color: colors.foreground,
     marginBottom: 12,
   },
   summaryRow: {
@@ -926,20 +930,20 @@ const s = StyleSheet.create({
     justifyContent: "space-between",
     paddingVertical: 8,
     borderTopWidth: 1,
-    borderTopColor: colors.light.border,
+    borderTopColor: colors.border,
   },
   summaryLabel: {
     fontSize: 13,
     fontFamily: "Inter_400Regular",
-    color: colors.light.mutedForeground,
+    color: colors.mutedForeground,
   },
   autoFillChip: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: colors.light.secondary,
+    backgroundColor: colors.secondary,
     borderWidth: 1,
-    borderColor: colors.light.primary + "40",
+    borderColor: colors.primary + "40",
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 6,
@@ -949,12 +953,12 @@ const s = StyleSheet.create({
     flex: 1,
     fontSize: 12,
     fontFamily: "Inter_500Medium",
-    color: colors.light.primary,
+    color: colors.primary,
   },
   summaryValue: {
     fontSize: 13,
     fontFamily: "Inter_500Medium",
-    color: colors.light.foreground,
+    color: colors.foreground,
     maxWidth: "60%",
     textAlign: "right",
   },
@@ -962,7 +966,7 @@ const s = StyleSheet.create({
     flexDirection: "row",
     height: 50,
     borderRadius: colors.radius,
-    backgroundColor: colors.light.primary,
+    backgroundColor: colors.primary,
     alignItems: "center",
     justifyContent: "center",
     gap: 8,

@@ -1,6 +1,6 @@
 import { useSignIn } from "@clerk/expo";
 import { type Href, useRouter } from "expo-router";
-import React from "react";
+import React, { useMemo } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -13,9 +13,11 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import colors from "@/constants/colors";
+import { useColors } from "@/hooks/useColors";
 
 export default function SignInPage() {
+  const colors = useColors();
+  const s = useMemo(() => createStyles(colors), [colors]);
   const { signIn, errors, fetchStatus } = useSignIn();
   const router = useRouter();
 
@@ -103,7 +105,7 @@ export default function SignInPage() {
             style={s.input}
             value={verifyCode}
             placeholder="6-digit code"
-            placeholderTextColor={colors.light.mutedForeground}
+            placeholderTextColor={colors.mutedForeground}
             onChangeText={setVerifyCode}
             keyboardType="numeric"
             autoComplete="one-time-code"
@@ -157,7 +159,7 @@ export default function SignInPage() {
               autoCapitalize="none"
               value={emailAddress}
               placeholder="you@example.com"
-              placeholderTextColor={colors.light.mutedForeground}
+              placeholderTextColor={colors.mutedForeground}
               onChangeText={setEmailAddress}
               keyboardType="email-address"
               autoCorrect={false}
@@ -172,7 +174,7 @@ export default function SignInPage() {
               style={s.input}
               value={password}
               placeholder="••••••••"
-              placeholderTextColor={colors.light.mutedForeground}
+              placeholderTextColor={colors.mutedForeground}
               secureTextEntry
               onChangeText={setPassword}
               autoComplete="current-password"
@@ -217,8 +219,8 @@ export default function SignInPage() {
   );
 }
 
-const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.light.background },
+const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create({
+  safe: { flex: 1, backgroundColor: colors.background },
   scroll: { flexGrow: 1 },
   container: {
     flex: 1,
@@ -237,46 +239,46 @@ const s = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: colors.light.primary,
+    backgroundColor: colors.primary,
     marginRight: 10,
   },
   logoText: {
     fontSize: 24,
     fontFamily: "Inter_700Bold",
-    color: colors.light.primary,
+    color: colors.primary,
   },
   title: {
     fontSize: 28,
     fontFamily: "Inter_700Bold",
-    color: colors.light.foreground,
+    color: colors.foreground,
     marginBottom: 6,
   },
   subtitle: {
     fontSize: 15,
     fontFamily: "Inter_400Regular",
-    color: colors.light.mutedForeground,
+    color: colors.mutedForeground,
     marginBottom: 32,
   },
   label: {
     fontSize: 14,
     fontFamily: "Inter_500Medium",
-    color: colors.light.foreground,
+    color: colors.foreground,
     marginBottom: 6,
   },
   input: {
     height: 48,
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: colors.border,
     borderRadius: colors.radius,
     paddingHorizontal: 14,
     fontSize: 15,
     fontFamily: "Inter_400Regular",
-    color: colors.light.foreground,
-    backgroundColor: colors.light.card,
+    color: colors.foreground,
+    backgroundColor: colors.card,
     marginBottom: 8,
   },
   errorText: {
-    color: colors.light.destructive,
+    color: colors.destructive,
     fontSize: 13,
     fontFamily: "Inter_400Regular",
     marginBottom: 8,
@@ -284,7 +286,7 @@ const s = StyleSheet.create({
   btn: {
     height: 50,
     borderRadius: colors.radius,
-    backgroundColor: colors.light.primary,
+    backgroundColor: colors.primary,
     alignItems: "center",
     justifyContent: "center",
     marginTop: 16,
@@ -305,14 +307,14 @@ const s = StyleSheet.create({
   footerText: {
     fontSize: 14,
     fontFamily: "Inter_400Regular",
-    color: colors.light.mutedForeground,
+    color: colors.mutedForeground,
     marginTop: 24,
     textAlign: "center",
   },
   linkText: {
     fontSize: 14,
     fontFamily: "Inter_500Medium",
-    color: colors.light.primary,
+    color: colors.primary,
   },
   errorBanner: {
     marginTop: 16,

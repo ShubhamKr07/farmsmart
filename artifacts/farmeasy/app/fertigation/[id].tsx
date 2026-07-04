@@ -19,7 +19,7 @@ import {
   getGetDashboardQueryKey,
   getGetCycleQueryKey,
 } from "@workspace/api-client-react";
-import colors from "@/constants/colors";
+import { useColors } from "@/hooks/useColors";
 import QRScanner from "@/components/QRScanner";
 import RackReadingsCard from "@/components/RackReadingsCard";
 import StageTracker from "@/components/StageTracker";
@@ -28,6 +28,8 @@ import { parseQR, type RackPositionQR } from "@/utils/parseQR";
 type Step = 1 | 2 | 3;
 
 export default function FertigationWizard() {
+  const colors = useColors();
+  const s = useMemo(() => createStyles(colors), [colors]);
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -113,8 +115,26 @@ export default function FertigationWizard() {
   if (!cycle) {
     return (
       <SafeAreaView style={s.safe}>
-        <ActivityIndicator color={colors.light.primary} style={{ flex: 1 }} />
+        <ActivityIndicator color={colors.primary} style={{ flex: 1 }} />
       </SafeAreaView>
+    );
+  }
+
+  function SummaryRow({ label, value }: { label: string; value: string }) {
+    return (
+      <View style={s.summaryRow}>
+        <Text style={s.summaryLabel}>{label}</Text>
+        <Text style={s.summaryValue}>{value}</Text>
+      </View>
+    );
+  }
+
+  function DetailItem({ label, value }: { label: string; value: string }) {
+    return (
+      <View style={s.detailItem}>
+        <Text style={s.detailLabel}>{label}</Text>
+        <Text style={s.detailValue}>{value}</Text>
+      </View>
     );
   }
 
@@ -125,7 +145,7 @@ export default function FertigationWizard() {
           <Feather
             name={step === 1 ? "x" : "arrow-left"}
             size={24}
-            color={colors.light.foreground}
+            color={colors.foreground}
           />
         </Pressable>
         <Text style={s.topTitle}>Move to Fertigation</Text>
@@ -190,8 +210,8 @@ export default function FertigationWizard() {
                       width: `${germinationProgress}%` as any,
                       backgroundColor:
                         germinationProgress >= 100
-                          ? colors.light.primary
-                          : colors.light.warning,
+                          ? colors.primary
+                          : colors.warning,
                     },
                   ]}
                 />
@@ -225,7 +245,7 @@ export default function FertigationWizard() {
               Scan the rack slot QR code to record current environmental readings at this position.
             </Text>
             <View style={s.qrTypeHint}>
-              <Feather name="info" size={13} color={colors.light.primary} />
+              <Feather name="info" size={13} color={colors.primary} />
               <Text style={s.qrTypeHintText}>
                 Rack QR codes contain humidity, temperature, pH, water level and nutrient mix.
               </Text>
@@ -245,7 +265,7 @@ export default function FertigationWizard() {
                 />
               ) : (
                 <View style={s.rackRawChip}>
-                  <Feather name="grid" size={14} color={colors.light.primary} />
+                  <Feather name="grid" size={14} color={colors.primary} />
                   <Text style={s.rackRawText}>{rackQr}</Text>
                 </View>
               )
@@ -292,26 +312,9 @@ export default function FertigationWizard() {
   );
 }
 
-function SummaryRow({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={s.summaryRow}>
-      <Text style={s.summaryLabel}>{label}</Text>
-      <Text style={s.summaryValue}>{value}</Text>
-    </View>
-  );
-}
 
-function DetailItem({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={s.detailItem}>
-      <Text style={s.detailLabel}>{label}</Text>
-      <Text style={s.detailValue}>{value}</Text>
-    </View>
-  );
-}
-
-const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.light.background },
+const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create({
+  safe: { flex: 1, backgroundColor: colors.background },
   topBar: {
     flexDirection: "row",
     alignItems: "center",
@@ -322,12 +325,12 @@ const s = StyleSheet.create({
   topTitle: {
     fontSize: 17,
     fontFamily: "Inter_600SemiBold",
-    color: colors.light.foreground,
+    color: colors.foreground,
   },
   stepNum: {
     fontSize: 13,
     fontFamily: "Inter_500Medium",
-    color: colors.light.mutedForeground,
+    color: colors.mutedForeground,
   },
   stepDots: {
     flexDirection: "row",
@@ -335,11 +338,11 @@ const s = StyleSheet.create({
     gap: 8,
     marginBottom: 16,
   },
-  dot: { width: 36, height: 4, borderRadius: 2, backgroundColor: colors.light.muted },
-  dotActive: { backgroundColor: colors.light.primary },
+  dot: { width: 36, height: 4, borderRadius: 2, backgroundColor: colors.muted },
+  dotActive: { backgroundColor: colors.primary },
   content: { padding: 20, paddingBottom: 40 },
   cycleInfo: {
-    backgroundColor: colors.light.secondary,
+    backgroundColor: colors.secondary,
     borderRadius: colors.radius,
     padding: 14,
     marginBottom: 20,
@@ -348,31 +351,31 @@ const s = StyleSheet.create({
   cycleName: {
     fontSize: 18,
     fontFamily: "Inter_700Bold",
-    color: colors.light.foreground,
+    color: colors.foreground,
   },
   cycleId: {
     fontSize: 13,
     fontFamily: "Inter_400Regular",
-    color: colors.light.mutedForeground,
+    color: colors.mutedForeground,
     marginBottom: 8,
   },
   stepTitle: {
     fontSize: 20,
     fontFamily: "Inter_700Bold",
-    color: colors.light.foreground,
+    color: colors.foreground,
     marginBottom: 6,
   },
   stepSub: {
     fontSize: 14,
     fontFamily: "Inter_400Regular",
-    color: colors.light.mutedForeground,
+    color: colors.mutedForeground,
     marginBottom: 14,
   },
   qrTypeHint: {
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 8,
-    backgroundColor: colors.light.secondary,
+    backgroundColor: colors.secondary,
     borderRadius: 8,
     padding: 10,
     marginBottom: 14,
@@ -381,11 +384,11 @@ const s = StyleSheet.create({
     flex: 1,
     fontSize: 12,
     fontFamily: "Inter_400Regular",
-    color: colors.light.primary,
+    color: colors.primary,
     lineHeight: 18,
   },
   infoBox: {
-    backgroundColor: colors.light.muted,
+    backgroundColor: colors.muted,
     borderRadius: colors.radius,
     padding: 12,
     marginBottom: 12,
@@ -393,26 +396,26 @@ const s = StyleSheet.create({
   infoLabel: {
     fontSize: 13,
     fontFamily: "Inter_500Medium",
-    color: colors.light.mutedForeground,
+    color: colors.mutedForeground,
     marginBottom: 4,
   },
   infoValue: {
     fontSize: 13,
     fontFamily: "Inter_400Regular",
-    color: colors.light.foreground,
+    color: colors.foreground,
   },
   scannerBox: {
     width: "100%",
     borderRadius: colors.radius,
     overflow: "hidden",
-    backgroundColor: colors.light.muted,
+    backgroundColor: colors.muted,
     marginBottom: 16,
   },
   rackRawChip: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    backgroundColor: colors.light.secondary,
+    backgroundColor: colors.secondary,
     borderRadius: 8,
     padding: 12,
     marginBottom: 16,
@@ -420,14 +423,14 @@ const s = StyleSheet.create({
   rackRawText: {
     fontSize: 14,
     fontFamily: "Inter_500Medium",
-    color: colors.light.foreground,
+    color: colors.foreground,
   },
   progressCard: {
-    backgroundColor: colors.light.card,
+    backgroundColor: colors.card,
     borderRadius: colors.radius,
     padding: 16,
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: colors.border,
     marginBottom: 16,
   },
   progressHeader: {
@@ -439,16 +442,16 @@ const s = StyleSheet.create({
   progressLabel: {
     fontSize: 14,
     fontFamily: "Inter_500Medium",
-    color: colors.light.foreground,
+    color: colors.foreground,
   },
   progressDays: {
     fontSize: 14,
     fontFamily: "Inter_700Bold",
-    color: colors.light.primary,
+    color: colors.primary,
   },
   progressTrack: {
     height: 8,
-    backgroundColor: colors.light.muted,
+    backgroundColor: colors.muted,
     borderRadius: 4,
     overflow: "hidden",
     marginBottom: 8,
@@ -460,7 +463,7 @@ const s = StyleSheet.create({
   progressSub: {
     fontSize: 12,
     fontFamily: "Inter_400Regular",
-    color: colors.light.mutedForeground,
+    color: colors.mutedForeground,
   },
   detailGrid: {
     flexDirection: "row",
@@ -471,16 +474,16 @@ const s = StyleSheet.create({
   detailItem: {
     flex: 1,
     minWidth: "45%",
-    backgroundColor: colors.light.card,
+    backgroundColor: colors.card,
     borderRadius: colors.radius,
     padding: 12,
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: colors.border,
   },
   detailLabel: {
     fontSize: 11,
     fontFamily: "Inter_500Medium",
-    color: colors.light.mutedForeground,
+    color: colors.mutedForeground,
     marginBottom: 4,
     textTransform: "uppercase",
     letterSpacing: 0.4,
@@ -488,10 +491,10 @@ const s = StyleSheet.create({
   detailValue: {
     fontSize: 15,
     fontFamily: "Inter_600SemiBold",
-    color: colors.light.foreground,
+    color: colors.foreground,
   },
   errorText: {
-    color: colors.light.destructive,
+    color: colors.destructive,
     fontSize: 13,
     fontFamily: "Inter_400Regular",
     marginTop: 8,
@@ -499,16 +502,16 @@ const s = StyleSheet.create({
   waitingText: {
     fontSize: 14,
     fontFamily: "Inter_400Regular",
-    color: colors.light.mutedForeground,
+    color: colors.mutedForeground,
     textAlign: "center",
     marginTop: 12,
   },
   summaryCard: {
-    backgroundColor: colors.light.card,
+    backgroundColor: colors.card,
     borderRadius: colors.radius,
     padding: 16,
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: colors.border,
     marginBottom: 16,
   },
   summaryRow: {
@@ -516,17 +519,17 @@ const s = StyleSheet.create({
     justifyContent: "space-between",
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: colors.light.border,
+    borderBottomColor: colors.border,
   },
   summaryLabel: {
     fontSize: 13,
     fontFamily: "Inter_400Regular",
-    color: colors.light.mutedForeground,
+    color: colors.mutedForeground,
   },
   summaryValue: {
     fontSize: 13,
     fontFamily: "Inter_500Medium",
-    color: colors.light.foreground,
+    color: colors.foreground,
     flex: 1,
     textAlign: "right",
     marginLeft: 8,
@@ -535,7 +538,7 @@ const s = StyleSheet.create({
     flexDirection: "row",
     height: 52,
     borderRadius: colors.radius,
-    backgroundColor: colors.light.primary,
+    backgroundColor: colors.primary,
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
@@ -550,7 +553,7 @@ const s = StyleSheet.create({
     flexDirection: "row",
     height: 52,
     borderRadius: colors.radius,
-    backgroundColor: colors.light.primary,
+    backgroundColor: colors.primary,
     alignItems: "center",
     justifyContent: "center",
     gap: 8,

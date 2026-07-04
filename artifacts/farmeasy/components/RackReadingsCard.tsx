@@ -1,7 +1,7 @@
 import { Feather } from "@expo/vector-icons";
-import React from "react";
+import React, { useMemo } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import colors from "@/constants/colors";
+import { useColors } from "@/hooks/useColors";
 import type { RackPositionQR } from "@/utils/parseQR";
 
 interface Props {
@@ -17,10 +17,12 @@ interface ReadingRowProps {
 }
 
 function ReadingRow({ icon, label, value, color }: ReadingRowProps) {
+  const colors = useColors();
+  const s = useMemo(() => createStyles(colors), [colors]);
   return (
     <View style={s.row}>
-      <View style={[s.iconWrap, { backgroundColor: (color ?? colors.light.primary) + "18" }]}>
-        <Feather name={icon} size={16} color={color ?? colors.light.primary} />
+      <View style={[s.iconWrap, { backgroundColor: (color ?? colors.primary) + "18" }]}>
+        <Feather name={icon} size={16} color={color ?? colors.primary} />
       </View>
       <Text style={s.rowLabel}>{label}</Text>
       <Text style={[s.rowValue, color ? { color } : null]}>{value}</Text>
@@ -29,12 +31,14 @@ function ReadingRow({ icon, label, value, color }: ReadingRowProps) {
 }
 
 export default function RackReadingsCard({ data, position }: Props) {
+  const colors = useColors();
+  const s = useMemo(() => createStyles(colors), [colors]);
   const pos = position ?? data.position ?? "—";
 
   return (
     <View style={s.card}>
       <View style={s.header}>
-        <Feather name="grid" size={16} color={colors.light.primary} />
+        <Feather name="grid" size={16} color={colors.primary} />
         <Text style={s.headerText}>Rack Position</Text>
         <View style={s.posBadge}>
           <Text style={s.posBadgeText}>{pos}</Text>
@@ -80,19 +84,19 @@ export default function RackReadingsCard({ data, position }: Props) {
           icon="zap"
           label="Nutrient Mix"
           value={data.nutrientMix}
-          color={colors.light.primary}
+          color={colors.primary}
         />
       )}
     </View>
   );
 }
 
-const s = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create({
   card: {
-    backgroundColor: colors.light.card,
+    backgroundColor: colors.card,
     borderRadius: colors.radius,
     borderWidth: 1,
-    borderColor: colors.light.primary + "40",
+    borderColor: colors.primary + "40",
     overflow: "hidden",
     marginBottom: 16,
   },
@@ -101,16 +105,16 @@ const s = StyleSheet.create({
     alignItems: "center",
     gap: 8,
     padding: 12,
-    backgroundColor: colors.light.secondary,
+    backgroundColor: colors.secondary,
   },
   headerText: {
     flex: 1,
     fontSize: 14,
     fontFamily: "Inter_600SemiBold",
-    color: colors.light.primary,
+    color: colors.primary,
   },
   posBadge: {
-    backgroundColor: colors.light.primary,
+    backgroundColor: colors.primary,
     borderRadius: 6,
     paddingHorizontal: 10,
     paddingVertical: 3,
@@ -122,7 +126,7 @@ const s = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: colors.light.border,
+    backgroundColor: colors.border,
   },
   row: {
     flexDirection: "row",
@@ -131,7 +135,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 11,
     borderBottomWidth: 1,
-    borderBottomColor: colors.light.border,
+    borderBottomColor: colors.border,
   },
   iconWrap: {
     width: 30,
@@ -144,11 +148,11 @@ const s = StyleSheet.create({
     flex: 1,
     fontSize: 13,
     fontFamily: "Inter_400Regular",
-    color: colors.light.mutedForeground,
+    color: colors.mutedForeground,
   },
   rowValue: {
     fontSize: 14,
     fontFamily: "Inter_600SemiBold",
-    color: colors.light.foreground,
+    color: colors.foreground,
   },
 });

@@ -1,6 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import React from "react";
+import React, { useMemo } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -18,10 +18,12 @@ import {
   type ManualCheck,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import colors from "@/constants/colors";
+import { useColors } from "@/hooks/useColors";
 import StageTracker, { type CycleStatus } from "@/components/StageTracker";
 
 export default function CycleDetailScreen() {
+  const colors = useColors();
+  const s = useMemo(() => createStyles(colors), [colors]);
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -37,7 +39,7 @@ export default function CycleDetailScreen() {
   if (isLoading) {
     return (
       <SafeAreaView style={s.safe}>
-        <ActivityIndicator color={colors.light.primary} style={{ flex: 1 }} />
+        <ActivityIndicator color={colors.primary} style={{ flex: 1 }} />
       </SafeAreaView>
     );
   }
@@ -68,6 +70,94 @@ export default function CycleDetailScreen() {
     harvestDaysRemaining = Math.max(0, Math.ceil((dueMs - now) / 86_400_000));
   }
 
+  function DetailRow({
+    icon,
+    label,
+    value,
+  }: {
+    icon: string;
+    label: string;
+    value: string;
+  }) {
+    return (
+      <View style={s.detailRow}>
+        <View style={s.detailLeft}>
+          <Feather name={icon as any} size={14} color={colors.mutedForeground} />
+          <Text style={s.detailLabel}>{label}</Text>
+        </View>
+        <Text style={s.detailValue}>{value}</Text>
+      </View>
+    );
+  }
+
+  function TimelineEntry({
+    icon,
+    label,
+    date,
+    done,
+  }: {
+    icon: string;
+    label: string;
+    date?: string | null;
+    done: boolean;
+  }) {
+    const formatted = date
+      ? new Date(date).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        })
+      : null;
+    return (
+      <View style={s.timelineRow}>
+        <View style={[s.timelineDot, done && s.timelineDotDone]}>
+          <Feather
+            name={icon as any}
+            size={12}
+            color={done ? "#fff" : colors.mutedForeground}
+          />
+        </View>
+        <View style={s.timelineContent}>
+          <Text style={s.timelineLabel}>{label}</Text>
+          {formatted && <Text style={s.timelineDate}>{formatted}</Text>}
+        </View>
+      </View>
+    );
+  }
+
+  function CheckCard({ check }: { check: ManualCheck }) {
+    return (
+      <View style={s.checkCard}>
+        <View style={s.checkHeader}>
+          <Text style={s.checkDate}>
+            {new Date(check.createdAt).toLocaleDateString()}
+          </Text>
+          {check.isBadTrays && (
+            <View style={s.badTrayBadge}>
+              <Text style={s.badTrayText}>Bad Trays</Text>
+            </View>
+          )}
+        </View>
+        <Text style={s.checkMeta}>
+          {check.fullTrays}F + {check.halfTrays}H trays
+        </Text>
+        {check.issue && (
+          <Text style={s.checkIssue}>{check.issue}</Text>
+        )}
+        {check.notes && <Text style={s.checkNotes}>{check.notes}</Text>}
+        {check.photoUrls.length > 0 && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <View style={s.photoRow}>
+              {check.photoUrls.slice(0, 4).map((uri, i) => (
+                <Image key={i} source={{ uri }} style={s.checkPhoto} />
+              ))}
+            </View>
+          </ScrollView>
+        )}
+      </View>
+    );
+  }
+
   return (
     <SafeAreaView style={s.safe} edges={["bottom"]}>
       <ScrollView
@@ -81,7 +171,7 @@ export default function CycleDetailScreen() {
                 queryKey: getGetCycleQueryKey(cycleId),
               });
             }}
-            tintColor={colors.light.primary}
+            tintColor={colors.primary}
           />
         }
       >
@@ -118,7 +208,7 @@ export default function CycleDetailScreen() {
           )}
           {cycle.seedLotQrCodes.length > 0 && (
             <View style={s.seedLotRow}>
-              <Feather name="tag" size={16} color={colors.light.mutedForeground} style={{ marginRight: 8 }} />
+              <Feather name="tag" size={16} color={colors.mutedForeground} style={{ marginRight: 8 }} />
               <Text style={s.detailLabel}>Seed Lots</Text>
               <View style={s.seedLotChips}>
                 {cycle.seedLotQrCodes.map((qr) => (
@@ -128,7 +218,7 @@ export default function CycleDetailScreen() {
                     style={s.seedLotChip}
                   >
                     <Text style={s.seedLotChipText} numberOfLines={1}>{qr}</Text>
-                    <Feather name="chevron-right" size={12} color={colors.light.primary} />
+                    <Feather name="chevron-right" size={12} color={colors.primary} />
                   </Pressable>
                 ))}
               </View>
@@ -156,7 +246,7 @@ export default function CycleDetailScreen() {
               <Feather
                 name="alert-circle"
                 size={16}
-                color={colors.light.destructive}
+                color={colors.destructive}
               />
               <Text style={s.overdueAlertText}>
                 Fertigation is {cycle.daysOverdueFertigation} day(s) overdue
@@ -168,7 +258,7 @@ export default function CycleDetailScreen() {
               <Feather
                 name="alert-circle"
                 size={16}
-                color={colors.light.destructive}
+                color={colors.destructive}
               />
               <Text style={s.overdueAlertText}>
                 Harvest is {cycle.daysOverdueHarvest} day(s) overdue
@@ -180,7 +270,7 @@ export default function CycleDetailScreen() {
         {/* Actions */}
         {canFertigation && fertigationDaysRemaining > 0 && (
           <View style={s.lockedBtn}>
-            <Feather name="lock" size={18} color={colors.light.mutedForeground} />
+            <Feather name="lock" size={18} color={colors.mutedForeground} />
             <Text style={s.lockedBtnText}>Locked — {fertigationDaysRemaining}d remaining</Text>
           </View>
         )}
@@ -195,7 +285,7 @@ export default function CycleDetailScreen() {
         )}
         {canHarvest && harvestDaysRemaining > 0 && (
           <View style={[s.lockedBtn, { marginBottom: 10 }]}>
-            <Feather name="lock" size={18} color={colors.light.mutedForeground} />
+            <Feather name="lock" size={18} color={colors.mutedForeground} />
             <Text style={s.lockedBtnText}>Locked — {harvestDaysRemaining}d remaining</Text>
           </View>
         )}
@@ -213,7 +303,7 @@ export default function CycleDetailScreen() {
             style={s.secondaryBtn}
             onPress={() => router.push(`/manual-check/${cycleId}` as any)}
           >
-            <Feather name="clipboard" size={18} color={colors.light.primary} />
+            <Feather name="clipboard" size={18} color={colors.primary} />
             <Text style={s.secondaryBtnText}>Manual Check</Text>
           </Pressable>
         )}
@@ -272,114 +362,26 @@ export default function CycleDetailScreen() {
   );
 }
 
-function DetailRow({
-  icon,
-  label,
-  value,
-}: {
-  icon: string;
-  label: string;
-  value: string;
-}) {
-  return (
-    <View style={s.detailRow}>
-      <View style={s.detailLeft}>
-        <Feather name={icon as any} size={14} color={colors.light.mutedForeground} />
-        <Text style={s.detailLabel}>{label}</Text>
-      </View>
-      <Text style={s.detailValue}>{value}</Text>
-    </View>
-  );
-}
-
-function TimelineEntry({
-  icon,
-  label,
-  date,
-  done,
-}: {
-  icon: string;
-  label: string;
-  date?: string | null;
-  done: boolean;
-}) {
-  const formatted = date
-    ? new Date(date).toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      })
-    : null;
-  return (
-    <View style={s.timelineRow}>
-      <View style={[s.timelineDot, done && s.timelineDotDone]}>
-        <Feather
-          name={icon as any}
-          size={12}
-          color={done ? "#fff" : colors.light.mutedForeground}
-        />
-      </View>
-      <View style={s.timelineContent}>
-        <Text style={s.timelineLabel}>{label}</Text>
-        {formatted && <Text style={s.timelineDate}>{formatted}</Text>}
-      </View>
-    </View>
-  );
-}
-
-function CheckCard({ check }: { check: ManualCheck }) {
-  return (
-    <View style={s.checkCard}>
-      <View style={s.checkHeader}>
-        <Text style={s.checkDate}>
-          {new Date(check.createdAt).toLocaleDateString()}
-        </Text>
-        {check.isBadTrays && (
-          <View style={s.badTrayBadge}>
-            <Text style={s.badTrayText}>Bad Trays</Text>
-          </View>
-        )}
-      </View>
-      <Text style={s.checkMeta}>
-        {check.fullTrays}F + {check.halfTrays}H trays
-      </Text>
-      {check.issue && (
-        <Text style={s.checkIssue}>{check.issue}</Text>
-      )}
-      {check.notes && <Text style={s.checkNotes}>{check.notes}</Text>}
-      {check.photoUrls.length > 0 && (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <View style={s.photoRow}>
-            {check.photoUrls.slice(0, 4).map((uri, i) => (
-              <Image key={i} source={{ uri }} style={s.checkPhoto} />
-            ))}
-          </View>
-        </ScrollView>
-      )}
-    </View>
-  );
-}
-
-const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.light.background },
+const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create({
+  safe: { flex: 1, backgroundColor: colors.background },
   scroll: { padding: 16, paddingBottom: 40 },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
   emptyText: {
     fontSize: 16,
     fontFamily: "Inter_400Regular",
-    color: colors.light.mutedForeground,
+    color: colors.mutedForeground,
   },
   heroCard: {
-    backgroundColor: colors.light.card,
+    backgroundColor: colors.card,
     borderRadius: colors.radius,
     padding: 16,
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: colors.border,
     marginBottom: 12,
   },
   heroTop: { flexDirection: "row", marginBottom: 8 },
   idChip: {
-    backgroundColor: colors.light.muted,
+    backgroundColor: colors.muted,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
@@ -387,33 +389,33 @@ const s = StyleSheet.create({
   idText: {
     fontSize: 12,
     fontFamily: "Inter_600SemiBold",
-    color: colors.light.mutedForeground,
+    color: colors.mutedForeground,
   },
   heroName: {
     fontSize: 22,
     fontFamily: "Inter_700Bold",
-    color: colors.light.foreground,
+    color: colors.foreground,
     marginBottom: 2,
   },
   heroProfile: {
     fontSize: 14,
     fontFamily: "Inter_400Regular",
-    color: colors.light.mutedForeground,
+    color: colors.mutedForeground,
     marginBottom: 14,
   },
   trackerWrap: {},
   card: {
-    backgroundColor: colors.light.card,
+    backgroundColor: colors.card,
     borderRadius: colors.radius,
     padding: 16,
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: colors.border,
     marginBottom: 12,
   },
   cardTitle: {
     fontSize: 16,
     fontFamily: "Inter_600SemiBold",
-    color: colors.light.foreground,
+    color: colors.foreground,
     marginBottom: 12,
   },
   detailRow: {
@@ -422,18 +424,18 @@ const s = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 10,
     borderTopWidth: 1,
-    borderTopColor: colors.light.border,
+    borderTopColor: colors.border,
   },
   detailLeft: { flexDirection: "row", alignItems: "center", gap: 8 },
   detailLabel: {
     fontSize: 14,
     fontFamily: "Inter_400Regular",
-    color: colors.light.mutedForeground,
+    color: colors.mutedForeground,
   },
   detailValue: {
     fontSize: 14,
     fontFamily: "Inter_500Medium",
-    color: colors.light.foreground,
+    color: colors.foreground,
     maxWidth: "50%",
     textAlign: "right",
   },
@@ -441,7 +443,7 @@ const s = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    backgroundColor: colors.light.destructive + "15",
+    backgroundColor: colors.destructive + "15",
     padding: 12,
     borderRadius: colors.radius,
     marginTop: 8,
@@ -449,22 +451,22 @@ const s = StyleSheet.create({
   overdueAlertText: {
     fontSize: 13,
     fontFamily: "Inter_500Medium",
-    color: colors.light.destructive,
+    color: colors.destructive,
   },
   lockedBtn: {
     flexDirection: "row",
     height: 50,
     borderRadius: colors.radius,
-    backgroundColor: colors.light.muted,
+    backgroundColor: colors.muted,
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: colors.border,
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
     marginBottom: 10,
   },
   lockedBtnText: {
-    color: colors.light.mutedForeground,
+    color: colors.mutedForeground,
     fontSize: 15,
     fontFamily: "Inter_500Medium",
   },
@@ -472,7 +474,7 @@ const s = StyleSheet.create({
     flexDirection: "row",
     height: 50,
     borderRadius: colors.radius,
-    backgroundColor: colors.light.primary,
+    backgroundColor: colors.primary,
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
@@ -488,21 +490,21 @@ const s = StyleSheet.create({
     height: 50,
     borderRadius: colors.radius,
     borderWidth: 1.5,
-    borderColor: colors.light.primary,
+    borderColor: colors.primary,
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
     marginBottom: 12,
   },
   secondaryBtnText: {
-    color: colors.light.primary,
+    color: colors.primary,
     fontSize: 16,
     fontFamily: "Inter_600SemiBold",
   },
   checkCard: {
     paddingVertical: 12,
     borderTopWidth: 1,
-    borderTopColor: colors.light.border,
+    borderTopColor: colors.border,
   },
   checkHeader: {
     flexDirection: "row",
@@ -513,10 +515,10 @@ const s = StyleSheet.create({
   checkDate: {
     fontSize: 13,
     fontFamily: "Inter_500Medium",
-    color: colors.light.foreground,
+    color: colors.foreground,
   },
   badTrayBadge: {
-    backgroundColor: colors.light.destructive + "20",
+    backgroundColor: colors.destructive + "20",
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
@@ -524,24 +526,24 @@ const s = StyleSheet.create({
   badTrayText: {
     fontSize: 11,
     fontFamily: "Inter_500Medium",
-    color: colors.light.destructive,
+    color: colors.destructive,
   },
   checkMeta: {
     fontSize: 12,
     fontFamily: "Inter_400Regular",
-    color: colors.light.mutedForeground,
+    color: colors.mutedForeground,
     marginBottom: 4,
   },
   checkIssue: {
     fontSize: 13,
     fontFamily: "Inter_400Regular",
-    color: colors.light.destructive,
+    color: colors.destructive,
     marginBottom: 4,
   },
   checkNotes: {
     fontSize: 13,
     fontFamily: "Inter_400Regular",
-    color: colors.light.mutedForeground,
+    color: colors.mutedForeground,
     marginBottom: 8,
   },
   photoRow: { flexDirection: "row", gap: 8 },
@@ -549,7 +551,7 @@ const s = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: colors.radius,
-    backgroundColor: colors.light.muted,
+    backgroundColor: colors.muted,
   },
   timelineRow: {
     flexDirection: "row",
@@ -557,28 +559,28 @@ const s = StyleSheet.create({
     gap: 12,
     paddingVertical: 10,
     borderTopWidth: 1,
-    borderTopColor: colors.light.border,
+    borderTopColor: colors.border,
   },
   timelineDot: {
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: colors.light.muted,
+    backgroundColor: colors.muted,
     alignItems: "center",
     justifyContent: "center",
     marginTop: 2,
   },
-  timelineDotDone: { backgroundColor: colors.light.primary },
+  timelineDotDone: { backgroundColor: colors.primary },
   timelineContent: { flex: 1 },
   timelineLabel: {
     fontSize: 14,
     fontFamily: "Inter_500Medium",
-    color: colors.light.foreground,
+    color: colors.foreground,
   },
   timelineDate: {
     fontSize: 12,
     fontFamily: "Inter_400Regular",
-    color: colors.light.mutedForeground,
+    color: colors.mutedForeground,
     marginTop: 2,
   },
   seedLotRow: {
@@ -586,7 +588,7 @@ const s = StyleSheet.create({
     alignItems: "flex-start",
     paddingVertical: 10,
     borderTopWidth: 1,
-    borderTopColor: colors.light.border,
+    borderTopColor: colors.border,
     gap: 8,
   },
   seedLotChips: { flex: 1, gap: 4 },
@@ -594,7 +596,7 @@ const s = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: colors.light.secondary,
+    backgroundColor: colors.secondary,
     borderRadius: 6,
     paddingHorizontal: 10,
     paddingVertical: 5,
@@ -602,7 +604,7 @@ const s = StyleSheet.create({
   seedLotChipText: {
     fontSize: 12,
     fontFamily: "Inter_400Regular",
-    color: colors.light.primary,
+    color: colors.primary,
     flex: 1,
   },
 });

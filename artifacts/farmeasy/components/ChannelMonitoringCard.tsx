@@ -1,7 +1,7 @@
 import { Feather } from "@expo/vector-icons";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
-import colors from "@/constants/colors";
+import { useColors } from "@/hooks/useColors";
 import type { ChannelResolved } from "@workspace/api-client-react";
 
 interface Props {
@@ -62,13 +62,15 @@ interface ReadingRowProps {
 }
 
 function ReadingRow({ icon, label, url, unit = "", color }: ReadingRowProps) {
+  const colors = useColors();
+  const s = useMemo(() => createStyles(colors), [colors]);
   const metric = useMetric(url);
 
   let display: React.ReactNode;
   if (!url) {
     display = <Text style={s.notConfigured}>Not configured</Text>;
   } else if (metric.loading) {
-    display = <ActivityIndicator size="small" color={color ?? colors.light.primary} />;
+    display = <ActivityIndicator size="small" color={color ?? colors.primary} />;
   } else if (metric.error) {
     display = <Text style={s.errorText}>Unavailable</Text>;
   } else {
@@ -81,8 +83,8 @@ function ReadingRow({ icon, label, url, unit = "", color }: ReadingRowProps) {
 
   return (
     <View style={s.row}>
-      <View style={[s.iconWrap, { backgroundColor: (color ?? colors.light.primary) + "18" }]}>
-        <Feather name={icon} size={16} color={color ?? colors.light.primary} />
+      <View style={[s.iconWrap, { backgroundColor: (color ?? colors.primary) + "18" }]}>
+        <Feather name={icon} size={16} color={color ?? colors.primary} />
       </View>
       <Text style={s.rowLabel}>{label}</Text>
       {display}
@@ -91,13 +93,15 @@ function ReadingRow({ icon, label, url, unit = "", color }: ReadingRowProps) {
 }
 
 export default function ChannelMonitoringCard({ data }: Props) {
+  const colors = useColors();
+  const s = useMemo(() => createStyles(colors), [colors]);
   const roomLabel = ROOM_LABEL[data.room] ?? data.room;
   const hasAnyApi = data.monitoringApiPh || data.monitoringApiTemp || data.monitoringApiWaterLevel;
 
   return (
     <View style={s.card}>
       <View style={s.header}>
-        <Feather name="activity" size={16} color={colors.light.primary} />
+        <Feather name="activity" size={16} color={colors.primary} />
         <Text style={s.headerText}>Environmental Readings</Text>
         <View style={s.badge}>
           <Text style={s.badgeText}>{roomLabel}</Text>
@@ -105,11 +109,11 @@ export default function ChannelMonitoringCard({ data }: Props) {
       </View>
 
       <View style={s.channelRow}>
-        <Feather name="layers" size={13} color={colors.light.mutedForeground} />
+        <Feather name="layers" size={13} color={colors.mutedForeground} />
         <Text style={s.channelText}>{data.channel}</Text>
         {data.rack ? (
           <>
-            <Feather name="chevron-right" size={13} color={colors.light.mutedForeground} />
+            <Feather name="chevron-right" size={13} color={colors.mutedForeground} />
             <Text style={s.channelText}>{data.rack}</Text>
           </>
         ) : null}
@@ -145,7 +149,7 @@ export default function ChannelMonitoringCard({ data }: Props) {
         </>
       ) : (
         <View style={s.noConfig}>
-          <Feather name="wifi-off" size={20} color={colors.light.mutedForeground} />
+          <Feather name="wifi-off" size={20} color={colors.mutedForeground} />
           <Text style={s.noConfigText}>No monitoring APIs configured for this channel.</Text>
           <Text style={s.noConfigHint}>An admin can add them in the Facility Layout page.</Text>
         </View>
@@ -154,12 +158,12 @@ export default function ChannelMonitoringCard({ data }: Props) {
   );
 }
 
-const s = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create({
   card: {
-    backgroundColor: colors.light.card,
+    backgroundColor: colors.card,
     borderRadius: colors.radius,
     borderWidth: 1,
-    borderColor: colors.light.primary + "40",
+    borderColor: colors.primary + "40",
     overflow: "hidden",
     marginBottom: 16,
   },
@@ -168,16 +172,16 @@ const s = StyleSheet.create({
     alignItems: "center",
     gap: 8,
     padding: 12,
-    backgroundColor: colors.light.secondary,
+    backgroundColor: colors.secondary,
   },
   headerText: {
     flex: 1,
     fontSize: 14,
     fontFamily: "Inter_600SemiBold",
-    color: colors.light.primary,
+    color: colors.primary,
   },
   badge: {
-    backgroundColor: colors.light.primary,
+    backgroundColor: colors.primary,
     borderRadius: 6,
     paddingHorizontal: 10,
     paddingVertical: 3,
@@ -197,16 +201,16 @@ const s = StyleSheet.create({
   channelText: {
     fontSize: 13,
     fontFamily: "Inter_500Medium",
-    color: colors.light.foreground,
+    color: colors.foreground,
   },
   trayCount: {
     fontSize: 12,
     fontFamily: "Inter_400Regular",
-    color: colors.light.mutedForeground,
+    color: colors.mutedForeground,
   },
   divider: {
     height: 1,
-    backgroundColor: colors.light.border,
+    backgroundColor: colors.border,
   },
   row: {
     flexDirection: "row",
@@ -215,7 +219,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: colors.light.border,
+    borderBottomColor: colors.border,
   },
   iconWrap: {
     width: 30,
@@ -228,17 +232,17 @@ const s = StyleSheet.create({
     flex: 1,
     fontSize: 13,
     fontFamily: "Inter_400Regular",
-    color: colors.light.mutedForeground,
+    color: colors.mutedForeground,
   },
   rowValue: {
     fontSize: 14,
     fontFamily: "Inter_600SemiBold",
-    color: colors.light.foreground,
+    color: colors.foreground,
   },
   notConfigured: {
     fontSize: 12,
     fontFamily: "Inter_400Regular",
-    color: colors.light.mutedForeground,
+    color: colors.mutedForeground,
     fontStyle: "italic",
   },
   errorText: {
@@ -254,13 +258,13 @@ const s = StyleSheet.create({
   noConfigText: {
     fontSize: 13,
     fontFamily: "Inter_500Medium",
-    color: colors.light.mutedForeground,
+    color: colors.mutedForeground,
     textAlign: "center",
   },
   noConfigHint: {
     fontSize: 12,
     fontFamily: "Inter_400Regular",
-    color: colors.light.mutedForeground,
+    color: colors.mutedForeground,
     textAlign: "center",
   },
 });

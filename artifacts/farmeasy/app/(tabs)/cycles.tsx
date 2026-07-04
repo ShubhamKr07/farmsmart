@@ -18,7 +18,7 @@ import {
   type Cycle,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import colors from "@/constants/colors";
+import { useColors } from "@/hooks/useColors";
 import CycleCard from "@/components/CycleCard";
 import { useUserRole } from "@/hooks/useUserRole";
 import { matchesSearch, matchesStage, matchesDateRange } from "@/utils/cycleFilters";
@@ -39,6 +39,8 @@ const HISTORY_STAGES: { label: string; value: StageFilter }[] = [
 ];
 
 export default function CyclesScreen() {
+  const colors = useColors();
+  const s = useMemo(() => createStyles(colors), [colors]);
   const { isSupervisor } = useUserRole();
   const [activeTab, setActiveTab] = useState<Tab>("ongoing");
   const router = useRouter();
@@ -111,7 +113,7 @@ export default function CyclesScreen() {
           </Pressable>
         ) : (
           <View style={[s.tab, s.lockedTab]}>
-            <Feather name="lock" size={12} color={colors.light.mutedForeground} />
+            <Feather name="lock" size={12} color={colors.mutedForeground} />
             <Text style={s.lockedTabText}> History</Text>
           </View>
         )}
@@ -120,20 +122,20 @@ export default function CyclesScreen() {
       {/* Search bar */}
       <View style={s.searchRow}>
         <View style={s.searchInputWrap}>
-          <Feather name="search" size={16} color={colors.light.mutedForeground} style={s.searchIcon} />
+          <Feather name="search" size={16} color={colors.mutedForeground} style={s.searchIcon} />
           <TextInput
             style={s.searchInput}
             value={searchText}
             onChangeText={setSearchText}
             placeholder="Search by name, seed, lot code…"
-            placeholderTextColor={colors.light.mutedForeground}
+            placeholderTextColor={colors.mutedForeground}
             autoCorrect={false}
             autoCapitalize="none"
             clearButtonMode="while-editing"
           />
           {searchText.length > 0 && (
             <Pressable onPress={() => setSearchText("")} style={s.clearInputBtn}>
-              <Feather name="x" size={14} color={colors.light.mutedForeground} />
+              <Feather name="x" size={14} color={colors.mutedForeground} />
             </Pressable>
           )}
         </View>
@@ -144,7 +146,7 @@ export default function CyclesScreen() {
           <Feather
             name="sliders"
             size={16}
-            color={showFilters ? "#fff" : colors.light.foreground}
+            color={showFilters ? "#fff" : colors.foreground}
           />
           {activeFilterCount > 0 && (
             <View style={s.filterBadge}>
@@ -188,13 +190,13 @@ export default function CyclesScreen() {
                 value={dateFrom}
                 onChangeText={setDateFrom}
                 placeholder="YYYY-MM-DD"
-                placeholderTextColor={colors.light.mutedForeground}
+                placeholderTextColor={colors.mutedForeground}
                 autoCorrect={false}
                 keyboardType="numbers-and-punctuation"
               />
             </View>
             <View style={s.dateSep}>
-              <Feather name="arrow-right" size={14} color={colors.light.mutedForeground} />
+              <Feather name="arrow-right" size={14} color={colors.mutedForeground} />
             </View>
             <View style={s.dateInputWrap}>
               <Text style={s.dateInputLabel}>To</Text>
@@ -203,7 +205,7 @@ export default function CyclesScreen() {
                 value={dateTo}
                 onChangeText={setDateTo}
                 placeholder="YYYY-MM-DD"
-                placeholderTextColor={colors.light.mutedForeground}
+                placeholderTextColor={colors.mutedForeground}
                 autoCorrect={false}
                 keyboardType="numbers-and-punctuation"
               />
@@ -212,7 +214,7 @@ export default function CyclesScreen() {
 
           {activeFilterCount > 0 && (
             <Pressable style={s.clearFiltersBtn} onPress={handleClearAll}>
-              <Feather name="x-circle" size={14} color={colors.light.destructive} />
+              <Feather name="x-circle" size={14} color={colors.destructive} />
               <Text style={s.clearFiltersText}>Clear all filters</Text>
             </Pressable>
           )}
@@ -222,7 +224,7 @@ export default function CyclesScreen() {
       {/* Active filter summary strip */}
       {hasAnyFilter && !showFilters && (
         <View style={s.filterSummary}>
-          <Feather name="filter" size={12} color={colors.light.primary} />
+          <Feather name="filter" size={12} color={colors.primary} />
           <Text style={s.filterSummaryText} numberOfLines={1}>
             {[
               searchText.trim() && `"${searchText.trim()}"`,
@@ -241,7 +243,7 @@ export default function CyclesScreen() {
 
       {isLoading ? (
         <View style={s.loadingWrap}>
-          <ActivityIndicator size="large" color={colors.light.primary} />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       ) : (
         <FlatList
@@ -257,7 +259,7 @@ export default function CyclesScreen() {
                   queryKey: getListCyclesQueryKey({ status: activeTab }),
                 });
               }}
-              tintColor={colors.light.primary}
+              tintColor={colors.primary}
             />
           }
           ListEmptyComponent={
@@ -265,7 +267,7 @@ export default function CyclesScreen() {
               <Feather
                 name={hasAnyFilter ? "search" : "inbox"}
                 size={40}
-                color={colors.light.mutedForeground}
+                color={colors.mutedForeground}
               />
               <Text style={s.emptyText}>
                 {hasAnyFilter
@@ -307,8 +309,8 @@ export default function CyclesScreen() {
   );
 }
 
-const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.light.background },
+const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create({
+  safe: { flex: 1, backgroundColor: colors.background },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -319,7 +321,7 @@ const s = StyleSheet.create({
   title: {
     fontSize: 22,
     fontFamily: "Inter_700Bold",
-    color: colors.light.foreground,
+    color: colors.foreground,
   },
   tabBar: {
     flexDirection: "row",
@@ -331,14 +333,14 @@ const s = StyleSheet.create({
     flex: 1,
     paddingVertical: 8,
     borderRadius: colors.radius,
-    backgroundColor: colors.light.muted,
+    backgroundColor: colors.muted,
     alignItems: "center",
   },
-  tabActive: { backgroundColor: colors.light.primary },
+  tabActive: { backgroundColor: colors.primary },
   tabText: {
     fontSize: 14,
     fontFamily: "Inter_500Medium",
-    color: colors.light.mutedForeground,
+    color: colors.mutedForeground,
   },
   tabTextActive: { color: "#fff", fontFamily: "Inter_600SemiBold" },
 
@@ -356,9 +358,9 @@ const s = StyleSheet.create({
     alignItems: "center",
     height: 40,
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: colors.border,
     borderRadius: colors.radius,
-    backgroundColor: colors.light.card,
+    backgroundColor: colors.card,
     paddingHorizontal: 10,
     gap: 6,
   },
@@ -367,7 +369,7 @@ const s = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     fontFamily: "Inter_400Regular",
-    color: colors.light.foreground,
+    color: colors.foreground,
     paddingVertical: 0,
   },
   clearInputBtn: { padding: 2 },
@@ -376,14 +378,14 @@ const s = StyleSheet.create({
     height: 40,
     borderRadius: colors.radius,
     borderWidth: 1,
-    borderColor: colors.light.border,
-    backgroundColor: colors.light.card,
+    borderColor: colors.border,
+    backgroundColor: colors.card,
     alignItems: "center",
     justifyContent: "center",
   },
   filterBtnActive: {
-    backgroundColor: colors.light.primary,
-    borderColor: colors.light.primary,
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   filterBadge: {
     position: "absolute",
@@ -392,7 +394,7 @@ const s = StyleSheet.create({
     width: 16,
     height: 16,
     borderRadius: 8,
-    backgroundColor: colors.light.destructive,
+    backgroundColor: colors.destructive,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -406,17 +408,17 @@ const s = StyleSheet.create({
   filterPanel: {
     marginHorizontal: 16,
     marginBottom: 8,
-    backgroundColor: colors.light.card,
+    backgroundColor: colors.card,
     borderRadius: colors.radius,
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: colors.border,
     padding: 14,
     gap: 8,
   },
   filterLabel: {
     fontSize: 12,
     fontFamily: "Inter_600SemiBold",
-    color: colors.light.mutedForeground,
+    color: colors.mutedForeground,
     textTransform: "uppercase",
     letterSpacing: 0.5,
     marginBottom: 2,
@@ -431,18 +433,18 @@ const s = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
-    backgroundColor: colors.light.muted,
+    backgroundColor: colors.muted,
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: colors.border,
   },
   stageChipActive: {
-    backgroundColor: colors.light.primary,
-    borderColor: colors.light.primary,
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   stageChipText: {
     fontSize: 13,
     fontFamily: "Inter_500Medium",
-    color: colors.light.mutedForeground,
+    color: colors.mutedForeground,
   },
   stageChipTextActive: {
     color: "#fff",
@@ -458,19 +460,19 @@ const s = StyleSheet.create({
   dateInputLabel: {
     fontSize: 11,
     fontFamily: "Inter_500Medium",
-    color: colors.light.mutedForeground,
+    color: colors.mutedForeground,
     marginBottom: 4,
   },
   dateInput: {
     height: 38,
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: colors.border,
     borderRadius: colors.radius - 2,
     paddingHorizontal: 10,
     fontSize: 13,
     fontFamily: "Inter_400Regular",
-    color: colors.light.foreground,
-    backgroundColor: colors.light.background,
+    color: colors.foreground,
+    backgroundColor: colors.background,
   },
   dateSep: {
     paddingTop: 18,
@@ -486,7 +488,7 @@ const s = StyleSheet.create({
   clearFiltersText: {
     fontSize: 13,
     fontFamily: "Inter_500Medium",
-    color: colors.light.destructive,
+    color: colors.destructive,
   },
 
   /* Active filter summary strip */
@@ -496,7 +498,7 @@ const s = StyleSheet.create({
     gap: 6,
     marginHorizontal: 16,
     marginBottom: 8,
-    backgroundColor: colors.light.secondary,
+    backgroundColor: colors.secondary,
     borderRadius: colors.radius - 2,
     paddingHorizontal: 10,
     paddingVertical: 6,
@@ -505,12 +507,12 @@ const s = StyleSheet.create({
     flex: 1,
     fontSize: 12,
     fontFamily: "Inter_400Regular",
-    color: colors.light.primary,
+    color: colors.primary,
   },
   filterSummaryClear: {
     fontSize: 12,
     fontFamily: "Inter_600SemiBold",
-    color: colors.light.primary,
+    color: colors.primary,
   },
 
   /* List */
@@ -520,10 +522,10 @@ const s = StyleSheet.create({
   emptyText: {
     fontSize: 16,
     fontFamily: "Inter_400Regular",
-    color: colors.light.mutedForeground,
+    color: colors.mutedForeground,
   },
   emptyBtn: {
-    backgroundColor: colors.light.primary,
+    backgroundColor: colors.primary,
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: colors.radius,
@@ -543,6 +545,6 @@ const s = StyleSheet.create({
   lockedTabText: {
     fontSize: 14,
     fontFamily: "Inter_500Medium",
-    color: colors.light.mutedForeground,
+    color: colors.mutedForeground,
   },
 });

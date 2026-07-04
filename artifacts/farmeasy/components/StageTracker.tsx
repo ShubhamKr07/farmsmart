@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import colors from "@/constants/colors";
+import { useColors } from "@/hooks/useColors";
 
 export type CycleStatus = "germination" | "fertigation" | "harvest" | "completed";
 
@@ -23,6 +23,8 @@ interface Props {
 }
 
 export default function StageTracker({ status }: Props) {
+  const colors = useColors();
+  const s = useMemo(() => createStyles(colors), [colors]);
   const currentIdx = STATUS_INDEX[status] ?? 0;
 
   return (
@@ -65,7 +67,7 @@ export default function StageTracker({ status }: Props) {
   );
 }
 
-const s = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create({
   row: {
     flexDirection: "row",
     alignItems: "flex-start",
@@ -80,19 +82,19 @@ const s = StyleSheet.create({
     height: 20,
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: colors.light.border,
-    backgroundColor: colors.light.card,
+    borderColor: colors.border,
+    backgroundColor: colors.card,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 4,
   },
   dotActive: {
-    borderColor: colors.light.primary,
-    backgroundColor: colors.light.primary,
+    borderColor: colors.primary,
+    backgroundColor: colors.primary,
   },
   dotDone: {
-    borderColor: colors.light.primary,
-    backgroundColor: colors.light.primary,
+    borderColor: colors.primary,
+    backgroundColor: colors.primary,
   },
   check: {
     color: "#fff",
@@ -102,24 +104,24 @@ const s = StyleSheet.create({
   label: {
     fontSize: 9,
     fontFamily: "Inter_400Regular",
-    color: colors.light.mutedForeground,
+    color: colors.mutedForeground,
     textAlign: "center",
   },
   labelActive: {
     fontFamily: "Inter_600SemiBold",
-    color: colors.light.primary,
+    color: colors.primary,
   },
   labelDone: {
-    color: colors.light.primary,
+    color: colors.primary,
   },
   line: {
     flex: 1,
     height: 2,
-    backgroundColor: colors.light.border,
+    backgroundColor: colors.border,
     marginTop: 9,
     marginHorizontal: -6,
   },
   lineDone: {
-    backgroundColor: colors.light.primary,
+    backgroundColor: colors.primary,
   },
 });

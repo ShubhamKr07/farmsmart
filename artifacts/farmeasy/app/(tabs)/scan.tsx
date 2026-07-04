@@ -1,5 +1,5 @@
 import { Feather } from "@expo/vector-icons";
-import React, { useState, useCallback } from "react";
+import React, { useMemo, useState, useCallback } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -14,7 +14,7 @@ import type { ChannelResolved } from "@workspace/api-client-react";
 import QRScanner from "@/components/QRScanner";
 import ChannelMonitoringCard from "@/components/ChannelMonitoringCard";
 import { parseQR, type LayoutQR } from "@/utils/parseQR";
-import colors from "@/constants/colors";
+import { useColors } from "@/hooks/useColors";
 
 type ScanState =
   | { status: "idle" }
@@ -23,6 +23,8 @@ type ScanState =
   | { status: "error"; qr: LayoutQR; message: string };
 
 export default function ScanScreen() {
+  const colors = useColors();
+  const s = useMemo(() => createStyles(colors), [colors]);
   const [scanState, setScanState] = useState<ScanState>({ status: "idle" });
   const [resolveParams, setResolveParams] = useState<{
     room: string;
@@ -97,7 +99,7 @@ export default function ScanScreen() {
 
       {scanState.status === "resolving" && (
         <View style={s.centered}>
-          <ActivityIndicator size="large" color={colors.light.primary} />
+          <ActivityIndicator size="large" color={colors.primary} />
           <Text style={s.resolving}>Resolving channel…</Text>
         </View>
       )}
@@ -115,7 +117,7 @@ export default function ScanScreen() {
           )}
 
           <Pressable style={s.scanAgain} onPress={handleReset}>
-            <Feather name="refresh-cw" size={16} color={colors.light.primaryForeground} />
+            <Feather name="refresh-cw" size={16} color={colors.primaryForeground} />
             <Text style={s.scanAgainText}>Scan Another</Text>
           </Pressable>
         </ScrollView>
@@ -124,10 +126,10 @@ export default function ScanScreen() {
   );
 }
 
-const s = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: colors.light.background,
+    backgroundColor: colors.background,
   },
   header: {
     paddingHorizontal: 20,
@@ -137,13 +139,13 @@ const s = StyleSheet.create({
   title: {
     fontSize: 22,
     fontFamily: "Inter_700Bold",
-    color: colors.light.foreground,
+    color: colors.foreground,
   },
   subtitle: {
     marginTop: 4,
     fontSize: 13,
     fontFamily: "Inter_400Regular",
-    color: colors.light.mutedForeground,
+    color: colors.mutedForeground,
     lineHeight: 18,
   },
   scannerWrap: {
@@ -151,7 +153,7 @@ const s = StyleSheet.create({
     borderRadius: 16,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: colors.border,
     flex: 1,
   },
   centered: {
@@ -163,7 +165,7 @@ const s = StyleSheet.create({
   resolving: {
     fontSize: 14,
     fontFamily: "Inter_500Medium",
-    color: colors.light.mutedForeground,
+    color: colors.mutedForeground,
   },
   results: {
     padding: 20,
@@ -192,7 +194,7 @@ const s = StyleSheet.create({
     lineHeight: 19,
   },
   scanAgain: {
-    backgroundColor: colors.light.primary,
+    backgroundColor: colors.primary,
     borderRadius: 12,
     paddingVertical: 14,
     flexDirection: "row",
@@ -203,6 +205,6 @@ const s = StyleSheet.create({
   scanAgainText: {
     fontSize: 15,
     fontFamily: "Inter_600SemiBold",
-    color: colors.light.primaryForeground,
+    color: colors.primaryForeground,
   },
 });

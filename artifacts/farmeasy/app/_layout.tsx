@@ -15,7 +15,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { setBaseUrl } from "@workspace/api-client-react";
-import colors from "@/constants/colors";
+import { useColors } from "@/hooks/useColors";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
@@ -51,6 +51,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 }
 
 export default function RootLayout() {
+  const colors = useColors();
   const [fontsLoaded, fontError] = useFonts({
     Inter_400Regular,
     Inter_500Medium,
@@ -93,7 +94,7 @@ export default function RootLayout() {
                         options={{
                           headerShown: true,
                           title: "Cycle Detail",
-                          headerTintColor: "#1A6B3C",
+                          headerTintColor: colors.primary,
                         }}
                       />
                       <Stack.Screen
@@ -129,7 +130,7 @@ export default function RootLayout() {
                         options={{
                           headerShown: true,
                           title: "Seed Lot",
-                          headerTintColor: colors.light.primary,
+                          headerTintColor: colors.primary,
                         }}
                       />
                     </Stack>

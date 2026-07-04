@@ -2,7 +2,7 @@ import { useUser } from "@clerk/expo";
 import { Feather } from "@expo/vector-icons";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import Svg, { Polyline, Line, Text as SvgText } from "react-native-svg";
 import {
   ActivityIndicator,
@@ -19,7 +19,7 @@ import {
   getGetDashboardQueryKey,
   type ActionRequiredItem,
 } from "@workspace/api-client-react";
-import colors from "@/constants/colors";
+import { useColors } from "@/hooks/useColors";
 import { useSignOutAndClear } from "@/hooks/useSignOutAndClear";
 import { useUserRole } from "@/hooks/useUserRole";
 
@@ -27,6 +27,8 @@ type ActionFilter = "all" | "fertigation" | "harvest";
 type YieldPeriod = "week" | "month";
 
 export default function HomeScreen() {
+  const colors = useColors();
+  const s = useMemo(() => createStyles(colors), [colors]);
   const { user } = useUser();
   const { label: roleLabel } = useUserRole();
   const router = useRouter();
@@ -66,7 +68,7 @@ export default function HomeScreen() {
                 queryKey: getGetDashboardQueryKey(),
               });
             }}
-            tintColor={colors.light.primary}
+            tintColor={colors.primary}
           />
         }
       >
@@ -100,7 +102,7 @@ export default function HomeScreen() {
 
         {isLoading ? (
           <View style={s.loadingWrap}>
-            <ActivityIndicator size="large" color={colors.light.primary} />
+            <ActivityIndicator size="large" color={colors.primary} />
           </View>
         ) : (
           <>
@@ -116,8 +118,8 @@ export default function HomeScreen() {
                         width: `${Math.min(utilizationPct, 100)}%` as any,
                         backgroundColor:
                           utilizationPct > 80
-                            ? colors.light.warning
-                            : colors.light.primary,
+                            ? colors.warning
+                            : colors.primary,
                       },
                     ]}
                   />
@@ -159,6 +161,7 @@ export default function HomeScreen() {
                 </View>
               </View>
               <YieldLineChart
+                styles={s}
                 yieldData={yieldPeriod === "week" ? ((stats as any)?.yieldByDay ?? []) : ((stats as any)?.yieldByWeek ?? [])}
                 seedingData={yieldPeriod === "week" ? ((stats as any)?.seedingByDay ?? []) : ((stats as any)?.seedingByWeek ?? [])}
                 badTrayData={yieldPeriod === "week" ? ((stats as any)?.badTrayByDay ?? []) : ((stats as any)?.badTrayByWeek ?? [])}
@@ -223,8 +226,8 @@ export default function HomeScreen() {
                           {
                             backgroundColor:
                               item.daysOverdue > 1
-                                ? colors.light.destructive
-                                : colors.light.warning,
+                                ? colors.destructive
+                                : colors.warning,
                           },
                         ]}
                       />
@@ -245,7 +248,7 @@ export default function HomeScreen() {
                       <Feather
                         name="chevron-right"
                         size={16}
-                        color={colors.light.mutedForeground}
+                        color={colors.mutedForeground}
                       />
                     </View>
                   </Pressable>
@@ -264,10 +267,12 @@ export default function HomeScreen() {
 }
 
 function YieldLineChart({
+  styles: s,
   yieldData,
   seedingData,
   badTrayData,
 }: {
+  styles: ReturnType<typeof createStyles>;
   yieldData: { label: string; value: number }[];
   seedingData: { label: string; value: number }[];
   badTrayData: { label: string; value: number }[];
@@ -355,8 +360,8 @@ function formatGrams(g: number) {
   return `${Math.round(g)} g`;
 }
 
-const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.light.background },
+const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create({
+  safe: { flex: 1, backgroundColor: colors.background },
   scroll: { padding: 16, paddingBottom: 100 },
   header: {
     flexDirection: "row",
@@ -367,27 +372,27 @@ const s = StyleSheet.create({
   greeting: {
     fontSize: 13,
     fontFamily: "Inter_400Regular",
-    color: colors.light.mutedForeground,
+    color: colors.mutedForeground,
   },
   userName: {
     fontSize: 22,
     fontFamily: "Inter_700Bold",
-    color: colors.light.foreground,
+    color: colors.foreground,
   },
   roleBadge: {
     marginTop: 4,
     alignSelf: "flex-start",
-    backgroundColor: colors.light.muted,
+    backgroundColor: colors.muted,
     borderRadius: 6,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: colors.border,
   },
   roleText: {
     fontSize: 11,
     fontFamily: "Inter_600SemiBold",
-    color: colors.light.primary,
+    color: colors.primary,
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
@@ -395,7 +400,7 @@ const s = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: colors.light.primary,
+    backgroundColor: colors.primary,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -407,33 +412,33 @@ const s = StyleSheet.create({
   loadingWrap: { flex: 1, alignItems: "center", padding: 60 },
   statsRow: { flexDirection: "row", gap: 12, marginBottom: 12 },
   statCard: {
-    backgroundColor: colors.light.card,
+    backgroundColor: colors.card,
     borderRadius: colors.radius,
     padding: 16,
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: colors.border,
   },
   statLabel: {
     fontSize: 12,
     fontFamily: "Inter_500Medium",
-    color: colors.light.mutedForeground,
+    color: colors.mutedForeground,
     marginBottom: 4,
   },
   statValue: {
     fontSize: 28,
     fontFamily: "Inter_700Bold",
-    color: colors.light.foreground,
+    color: colors.foreground,
     marginBottom: 8,
   },
   statSub: {
     fontSize: 12,
     fontFamily: "Inter_400Regular",
-    color: colors.light.mutedForeground,
+    color: colors.mutedForeground,
     marginTop: 4,
   },
   progressTrack: {
     height: 6,
-    backgroundColor: colors.light.muted,
+    backgroundColor: colors.muted,
     borderRadius: 3,
     overflow: "hidden",
   },
@@ -442,11 +447,11 @@ const s = StyleSheet.create({
     borderRadius: 3,
   },
   card: {
-    backgroundColor: colors.light.card,
+    backgroundColor: colors.card,
     borderRadius: colors.radius,
     padding: 16,
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: colors.border,
     marginBottom: 12,
   },
   cardHeaderRow: {
@@ -463,10 +468,10 @@ const s = StyleSheet.create({
   cardTitle: {
     fontSize: 16,
     fontFamily: "Inter_600SemiBold",
-    color: colors.light.foreground,
+    color: colors.foreground,
   },
   badge: {
-    backgroundColor: colors.light.destructive,
+    backgroundColor: colors.destructive,
     borderRadius: 10,
     paddingHorizontal: 7,
     paddingVertical: 2,
@@ -478,7 +483,7 @@ const s = StyleSheet.create({
   },
   toggle: {
     flexDirection: "row",
-    backgroundColor: colors.light.muted,
+    backgroundColor: colors.muted,
     borderRadius: 8,
     padding: 2,
   },
@@ -488,7 +493,7 @@ const s = StyleSheet.create({
     borderRadius: 6,
   },
   toggleBtnActive: {
-    backgroundColor: colors.light.card,
+    backgroundColor: colors.card,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.08,
@@ -498,10 +503,10 @@ const s = StyleSheet.create({
   toggleBtnText: {
     fontSize: 12,
     fontFamily: "Inter_500Medium",
-    color: colors.light.mutedForeground,
+    color: colors.mutedForeground,
   },
   toggleBtnTextActive: {
-    color: colors.light.foreground,
+    color: colors.foreground,
     fontFamily: "Inter_600SemiBold",
   },
   lineChartWrap: {
@@ -526,7 +531,7 @@ const s = StyleSheet.create({
   legendLabel: {
     fontSize: 11,
     fontFamily: "Inter_400Regular",
-    color: colors.light.mutedForeground,
+    color: colors.mutedForeground,
   },
   yieldTotalRow: {
     flexDirection: "row",
@@ -534,17 +539,17 @@ const s = StyleSheet.create({
     justifyContent: "space-between",
     paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: colors.light.border,
+    borderTopColor: colors.border,
   },
   yieldTotalLabel: {
     fontSize: 13,
     fontFamily: "Inter_400Regular",
-    color: colors.light.mutedForeground,
+    color: colors.mutedForeground,
   },
   yieldNum: {
     fontSize: 22,
     fontFamily: "Inter_700Bold",
-    color: colors.light.primary,
+    color: colors.primary,
   },
   filterChips: {
     flexDirection: "row",
@@ -555,18 +560,18 @@ const s = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
-    backgroundColor: colors.light.muted,
+    backgroundColor: colors.muted,
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: colors.border,
   },
   chipActive: {
-    backgroundColor: colors.light.primary,
-    borderColor: colors.light.primary,
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   chipText: {
     fontSize: 12,
     fontFamily: "Inter_500Medium",
-    color: colors.light.mutedForeground,
+    color: colors.mutedForeground,
   },
   chipTextActive: {
     color: "#fff",
@@ -575,7 +580,7 @@ const s = StyleSheet.create({
   emptyText: {
     fontSize: 14,
     fontFamily: "Inter_400Regular",
-    color: colors.light.mutedForeground,
+    color: colors.mutedForeground,
     textAlign: "center",
     paddingVertical: 12,
   },
@@ -585,26 +590,26 @@ const s = StyleSheet.create({
     justifyContent: "space-between",
     paddingVertical: 12,
     borderTopWidth: 1,
-    borderTopColor: colors.light.border,
+    borderTopColor: colors.border,
   },
   actionLeft: { flexDirection: "row", alignItems: "center", gap: 10 },
   actionDot: { width: 10, height: 10, borderRadius: 5 },
   actionName: {
     fontSize: 14,
     fontFamily: "Inter_500Medium",
-    color: colors.light.foreground,
+    color: colors.foreground,
   },
   actionSub: {
     fontSize: 12,
     fontFamily: "Inter_400Regular",
-    color: colors.light.mutedForeground,
+    color: colors.mutedForeground,
     marginTop: 1,
   },
   actionRight: { flexDirection: "row", alignItems: "center", gap: 4 },
   overdueText: {
     fontSize: 12,
     fontFamily: "Inter_500Medium",
-    color: colors.light.destructive,
+    color: colors.destructive,
   },
   fab: {
     position: "absolute",
@@ -613,7 +618,7 @@ const s = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: colors.light.primary,
+    backgroundColor: colors.primary,
     alignItems: "center",
     justifyContent: "center",
     shadowColor: "#000",

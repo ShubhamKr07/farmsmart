@@ -32,6 +32,43 @@ const colors = {
     info: "#3B82F6",
   },
 
+  // Mirrors the web dashboard's .dark palette (artifacts/admin-dashboard/src/index.css)
+  // hue-for-hue, converted from its HSL tokens — same brand green primary, same
+  // background/foreground relationship, so the two apps read as one product in
+  // either theme.
+  dark: {
+    text: "#F0F2F4",
+    tint: "#3D8F5B",
+
+    background: "#16181D",
+    foreground: "#F0F2F4",
+
+    card: "#1A1D23",
+    cardForeground: "#F0F2F4",
+
+    primary: "#3D8F5B",
+    primaryForeground: "#FFFFFF",
+
+    secondary: "#272C35",
+    secondaryForeground: "#F0F2F4",
+
+    muted: "#272C35",
+    mutedForeground: "#8F96A3",
+
+    accent: "#2ECC71",
+    accentForeground: "#0B2818",
+
+    destructive: "#DD3C3C",
+    destructiveForeground: "#FFFFFF",
+
+    border: "#2B303B",
+    input: "#363D49",
+
+    success: "#45A167",
+    warning: "#E8A530",
+    info: "#3B82F6",
+  },
+
   radius: 10,
 };
 

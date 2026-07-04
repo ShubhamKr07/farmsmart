@@ -1,7 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -21,7 +21,7 @@ import {
   getGetDashboardQueryKey,
   getGetCycleQueryKey,
 } from "@workspace/api-client-react";
-import colors from "@/constants/colors";
+import { useColors } from "@/hooks/useColors";
 import QRScanner from "@/components/QRScanner";
 import RackReadingsCard from "@/components/RackReadingsCard";
 import StageTracker from "@/components/StageTracker";
@@ -42,6 +42,8 @@ const ISSUE_OPTIONS = [
 type IssueId = (typeof ISSUE_OPTIONS)[number]["id"];
 
 export default function HarvestWizard() {
+  const colors = useColors();
+  const s = useMemo(() => createStyles(colors), [colors]);
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -118,8 +120,17 @@ export default function HarvestWizard() {
   if (!cycle) {
     return (
       <SafeAreaView style={s.safe}>
-        <ActivityIndicator color={colors.light.primary} style={{ flex: 1 }} />
+        <ActivityIndicator color={colors.primary} style={{ flex: 1 }} />
       </SafeAreaView>
+    );
+  }
+
+  function SummaryRow({ label, value }: { label: string; value: string }) {
+    return (
+      <View style={s.summaryRow}>
+        <Text style={s.summaryLabel}>{label}</Text>
+        <Text style={s.summaryValue}>{value}</Text>
+      </View>
     );
   }
 
@@ -130,7 +141,7 @@ export default function HarvestWizard() {
           <Feather
             name={step === 1 ? "x" : "arrow-left"}
             size={24}
-            color={colors.light.foreground}
+            color={colors.foreground}
           />
         </Pressable>
         <Text style={s.topTitle}>Harvest</Text>
@@ -158,7 +169,7 @@ export default function HarvestWizard() {
               Confirm the seed lot by scanning a QR code from the tray label.
             </Text>
             <View style={s.qrTypeHint}>
-              <Feather name="info" size={13} color={colors.light.primary} />
+              <Feather name="info" size={13} color={colors.primary} />
               <Text style={s.qrTypeHintText}>
                 Seed lot QR codes contain the seed name, lot ID and variety.
               </Text>
@@ -183,14 +194,14 @@ export default function HarvestWizard() {
                     style={s.ctrBtn}
                     onPress={() => setFullTrays((v) => String(Math.max(0, parseInt(v || "0") - 1)))}
                   >
-                    <Feather name="minus" size={18} color={colors.light.foreground} />
+                    <Feather name="minus" size={18} color={colors.foreground} />
                   </Pressable>
                   <Text style={s.ctrVal}>{fullTrays}</Text>
                   <Pressable
                     style={s.ctrBtn}
                     onPress={() => setFullTrays((v) => String(parseInt(v || "0") + 1))}
                   >
-                    <Feather name="plus" size={18} color={colors.light.foreground} />
+                    <Feather name="plus" size={18} color={colors.foreground} />
                   </Pressable>
                 </View>
               </View>
@@ -201,14 +212,14 @@ export default function HarvestWizard() {
                     style={s.ctrBtn}
                     onPress={() => setHalfTrays((v) => String(Math.max(0, parseInt(v || "0") - 1)))}
                   >
-                    <Feather name="minus" size={18} color={colors.light.foreground} />
+                    <Feather name="minus" size={18} color={colors.foreground} />
                   </Pressable>
                   <Text style={s.ctrVal}>{halfTrays}</Text>
                   <Pressable
                     style={s.ctrBtn}
                     onPress={() => setHalfTrays((v) => String(parseInt(v || "0") + 1))}
                   >
-                    <Feather name="plus" size={18} color={colors.light.foreground} />
+                    <Feather name="plus" size={18} color={colors.foreground} />
                   </Pressable>
                 </View>
               </View>
@@ -221,7 +232,7 @@ export default function HarvestWizard() {
               onChangeText={setHarvestedQty}
               keyboardType="numeric"
               placeholder="0"
-              placeholderTextColor={colors.light.mutedForeground}
+              placeholderTextColor={colors.mutedForeground}
             />
 
             <View style={s.toggleRow}>
@@ -235,7 +246,7 @@ export default function HarvestWizard() {
                   setIsBadTrays(v);
                   if (!v) setSelectedIssue(null);
                 }}
-                trackColor={{ false: colors.light.muted, true: colors.light.destructive }}
+                trackColor={{ false: colors.muted, true: colors.destructive }}
                 thumbColor="#fff"
               />
             </View>
@@ -291,7 +302,7 @@ export default function HarvestWizard() {
               Scan the rack slot QR code to capture environmental readings and confirm the harvest location.
             </Text>
             <View style={s.qrTypeHint}>
-              <Feather name="info" size={13} color={colors.light.primary} />
+              <Feather name="info" size={13} color={colors.primary} />
               <Text style={s.qrTypeHintText}>
                 Rack QR codes contain humidity, temperature, pH, water level and nutrient mix.
               </Text>
@@ -311,7 +322,7 @@ export default function HarvestWizard() {
                 />
               ) : (
                 <View style={s.rackRawChip}>
-                  <Feather name="grid" size={14} color={colors.light.primary} />
+                  <Feather name="grid" size={14} color={colors.primary} />
                   <Text style={s.rackRawText}>{rackQr}</Text>
                 </View>
               )
@@ -359,17 +370,8 @@ export default function HarvestWizard() {
   );
 }
 
-function SummaryRow({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={s.summaryRow}>
-      <Text style={s.summaryLabel}>{label}</Text>
-      <Text style={s.summaryValue}>{value}</Text>
-    </View>
-  );
-}
-
-const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.light.background },
+const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create({
+  safe: { flex: 1, backgroundColor: colors.background },
   topBar: {
     flexDirection: "row",
     alignItems: "center",
@@ -377,38 +379,38 @@ const s = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
-  topTitle: { fontSize: 17, fontFamily: "Inter_600SemiBold", color: colors.light.foreground },
-  stepNum: { fontSize: 13, fontFamily: "Inter_500Medium", color: colors.light.mutedForeground },
+  topTitle: { fontSize: 17, fontFamily: "Inter_600SemiBold", color: colors.foreground },
+  stepNum: { fontSize: 13, fontFamily: "Inter_500Medium", color: colors.mutedForeground },
   stepDots: { flexDirection: "row", justifyContent: "center", gap: 8, marginBottom: 16 },
-  dot: { width: 28, height: 4, borderRadius: 2, backgroundColor: colors.light.muted },
-  dotActive: { backgroundColor: colors.light.primary },
+  dot: { width: 28, height: 4, borderRadius: 2, backgroundColor: colors.muted },
+  dotActive: { backgroundColor: colors.primary },
   content: { padding: 20, paddingBottom: 40 },
   cycleInfo: {
-    backgroundColor: colors.light.secondary,
+    backgroundColor: colors.secondary,
     borderRadius: colors.radius,
     padding: 14,
     marginBottom: 20,
     gap: 4,
   },
-  cycleName: { fontSize: 18, fontFamily: "Inter_700Bold", color: colors.light.foreground },
+  cycleName: { fontSize: 18, fontFamily: "Inter_700Bold", color: colors.foreground },
   cycleId: {
     fontSize: 13,
     fontFamily: "Inter_400Regular",
-    color: colors.light.mutedForeground,
+    color: colors.mutedForeground,
     marginBottom: 8,
   },
-  stepTitle: { fontSize: 20, fontFamily: "Inter_700Bold", color: colors.light.foreground, marginBottom: 6 },
+  stepTitle: { fontSize: 20, fontFamily: "Inter_700Bold", color: colors.foreground, marginBottom: 6 },
   stepSub: {
     fontSize: 14,
     fontFamily: "Inter_400Regular",
-    color: colors.light.mutedForeground,
+    color: colors.mutedForeground,
     marginBottom: 14,
   },
   qrTypeHint: {
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 8,
-    backgroundColor: colors.light.secondary,
+    backgroundColor: colors.secondary,
     borderRadius: 8,
     padding: 10,
     marginBottom: 14,
@@ -417,21 +419,21 @@ const s = StyleSheet.create({
     flex: 1,
     fontSize: 12,
     fontFamily: "Inter_400Regular",
-    color: colors.light.primary,
+    color: colors.primary,
     lineHeight: 18,
   },
   scannerBox: {
     width: "100%",
     borderRadius: colors.radius,
     overflow: "hidden",
-    backgroundColor: colors.light.muted,
+    backgroundColor: colors.muted,
     marginBottom: 16,
   },
   rackRawChip: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    backgroundColor: colors.light.secondary,
+    backgroundColor: colors.secondary,
     borderRadius: 8,
     padding: 12,
     marginBottom: 16,
@@ -439,27 +441,27 @@ const s = StyleSheet.create({
   rackRawText: {
     fontSize: 14,
     fontFamily: "Inter_500Medium",
-    color: colors.light.foreground,
+    color: colors.foreground,
   },
   rowInput: { flexDirection: "row", gap: 12 },
-  label: { fontSize: 13, fontFamily: "Inter_500Medium", color: colors.light.foreground, marginBottom: 6, marginTop: 12 },
-  required: { color: colors.light.destructive },
+  label: { fontSize: 13, fontFamily: "Inter_500Medium", color: colors.foreground, marginBottom: 6, marginTop: 12 },
+  required: { color: colors.destructive },
   input: {
     height: 48,
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: colors.border,
     borderRadius: colors.radius,
     paddingHorizontal: 14,
     fontSize: 15,
     fontFamily: "Inter_400Regular",
-    color: colors.light.foreground,
-    backgroundColor: colors.light.card,
+    color: colors.foreground,
+    backgroundColor: colors.card,
   },
   counter: {
     flexDirection: "row",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: colors.border,
     borderRadius: colors.radius,
     height: 48,
     overflow: "hidden",
@@ -468,7 +470,7 @@ const s = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: colors.light.muted,
+    backgroundColor: colors.muted,
     height: "100%",
   },
   ctrVal: {
@@ -476,20 +478,20 @@ const s = StyleSheet.create({
     textAlign: "center",
     fontSize: 17,
     fontFamily: "Inter_600SemiBold",
-    color: colors.light.foreground,
+    color: colors.foreground,
   },
   toggleRow: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: colors.light.card,
+    backgroundColor: colors.card,
     padding: 14,
     borderRadius: colors.radius,
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: colors.border,
     marginVertical: 12,
   },
-  toggleLabel: { fontSize: 15, fontFamily: "Inter_500Medium", color: colors.light.foreground },
-  toggleSub: { fontSize: 12, fontFamily: "Inter_400Regular", color: colors.light.mutedForeground, marginTop: 2 },
+  toggleLabel: { fontSize: 15, fontFamily: "Inter_500Medium", color: colors.foreground },
+  toggleSub: { fontSize: 12, fontFamily: "Inter_400Regular", color: colors.mutedForeground, marginTop: 2 },
   issueGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -503,28 +505,28 @@ const s = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 20,
     borderWidth: 1.5,
-    borderColor: colors.light.border,
-    backgroundColor: colors.light.card,
+    borderColor: colors.border,
+    backgroundColor: colors.card,
   },
   issueChipActive: {
-    backgroundColor: colors.light.destructive,
-    borderColor: colors.light.destructive,
+    backgroundColor: colors.destructive,
+    borderColor: colors.destructive,
   },
   issueChipText: {
     fontSize: 13,
     fontFamily: "Inter_500Medium",
-    color: colors.light.foreground,
+    color: colors.foreground,
   },
   issueChipTextActive: {
     color: "#fff",
     fontFamily: "Inter_600SemiBold",
   },
   summaryCard: {
-    backgroundColor: colors.light.card,
+    backgroundColor: colors.card,
     borderRadius: colors.radius,
     padding: 16,
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: colors.border,
     marginBottom: 4,
   },
   summaryRow: {
@@ -532,15 +534,15 @@ const s = StyleSheet.create({
     justifyContent: "space-between",
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: colors.light.border,
+    borderBottomColor: colors.border,
   },
-  summaryLabel: { fontSize: 13, fontFamily: "Inter_400Regular", color: colors.light.mutedForeground },
-  summaryValue: { fontSize: 13, fontFamily: "Inter_500Medium", color: colors.light.foreground, flex: 1, textAlign: "right", marginLeft: 8 },
-  errorText: { color: colors.light.destructive, fontSize: 13, fontFamily: "Inter_400Regular", marginTop: 8 },
+  summaryLabel: { fontSize: 13, fontFamily: "Inter_400Regular", color: colors.mutedForeground },
+  summaryValue: { fontSize: 13, fontFamily: "Inter_500Medium", color: colors.foreground, flex: 1, textAlign: "right", marginLeft: 8 },
+  errorText: { color: colors.destructive, fontSize: 13, fontFamily: "Inter_400Regular", marginTop: 8 },
   waitingText: {
     fontSize: 14,
     fontFamily: "Inter_400Regular",
-    color: colors.light.mutedForeground,
+    color: colors.mutedForeground,
     textAlign: "center",
     marginTop: 12,
   },
@@ -548,7 +550,7 @@ const s = StyleSheet.create({
     flexDirection: "row",
     height: 50,
     borderRadius: colors.radius,
-    backgroundColor: colors.light.primary,
+    backgroundColor: colors.primary,
     alignItems: "center",
     justifyContent: "center",
     gap: 8,

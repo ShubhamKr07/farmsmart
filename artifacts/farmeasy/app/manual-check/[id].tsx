@@ -2,7 +2,7 @@ import { Feather } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -20,7 +20,7 @@ import {
   useCreateManualCheck,
   getGetCycleQueryKey,
 } from "@workspace/api-client-react";
-import colors from "@/constants/colors";
+import { useColors } from "@/hooks/useColors";
 import { uploadPhoto } from "@/utils/uploadPhoto";
 
 type Step = 1 | 2;
@@ -38,6 +38,8 @@ const ISSUE_OPTIONS = [
 type IssueId = (typeof ISSUE_OPTIONS)[number]["id"];
 
 export default function ManualCheckWizard() {
+  const colors = useColors();
+  const s = useMemo(() => createStyles(colors), [colors]);
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -112,7 +114,7 @@ export default function ManualCheckWizard() {
     return (
       <SafeAreaView style={s.safe}>
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-          <Text style={{ fontFamily: "Inter_400Regular", color: colors.light.mutedForeground }}>
+          <Text style={{ fontFamily: "Inter_400Regular", color: colors.mutedForeground }}>
             Invalid cycle
           </Text>
         </View>
@@ -123,8 +125,17 @@ export default function ManualCheckWizard() {
   if (!cycle) {
     return (
       <SafeAreaView style={s.safe}>
-        <ActivityIndicator color={colors.light.primary} style={{ flex: 1 }} />
+        <ActivityIndicator color={colors.primary} style={{ flex: 1 }} />
       </SafeAreaView>
+    );
+  }
+
+  function SummaryRow({ label, value }: { label: string; value: string }) {
+    return (
+      <View style={s.summaryRow}>
+        <Text style={s.summaryLabel}>{label}</Text>
+        <Text style={s.summaryValue}>{value}</Text>
+      </View>
     );
   }
 
@@ -135,7 +146,7 @@ export default function ManualCheckWizard() {
           <Feather
             name={step === 1 ? "x" : "arrow-left"}
             size={24}
-            color={colors.light.foreground}
+            color={colors.foreground}
           />
         </Pressable>
         <Text style={s.topTitle}>Manual Check</Text>
@@ -165,14 +176,14 @@ export default function ManualCheckWizard() {
                     style={s.ctrBtn}
                     onPress={() => setFullTrays((v) => String(Math.max(0, parseInt(v || "0") - 1)))}
                   >
-                    <Feather name="minus" size={18} color={colors.light.foreground} />
+                    <Feather name="minus" size={18} color={colors.foreground} />
                   </Pressable>
                   <Text style={s.ctrVal}>{fullTrays}</Text>
                   <Pressable
                     style={s.ctrBtn}
                     onPress={() => setFullTrays((v) => String(parseInt(v || "0") + 1))}
                   >
-                    <Feather name="plus" size={18} color={colors.light.foreground} />
+                    <Feather name="plus" size={18} color={colors.foreground} />
                   </Pressable>
                 </View>
               </View>
@@ -183,14 +194,14 @@ export default function ManualCheckWizard() {
                     style={s.ctrBtn}
                     onPress={() => setHalfTrays((v) => String(Math.max(0, parseInt(v || "0") - 1)))}
                   >
-                    <Feather name="minus" size={18} color={colors.light.foreground} />
+                    <Feather name="minus" size={18} color={colors.foreground} />
                   </Pressable>
                   <Text style={s.ctrVal}>{halfTrays}</Text>
                   <Pressable
                     style={s.ctrBtn}
                     onPress={() => setHalfTrays((v) => String(parseInt(v || "0") + 1))}
                   >
-                    <Feather name="plus" size={18} color={colors.light.foreground} />
+                    <Feather name="plus" size={18} color={colors.foreground} />
                   </Pressable>
                 </View>
               </View>
@@ -212,11 +223,11 @@ export default function ManualCheckWizard() {
               {photos.length < 6 && (
                 <View style={s.photoActions}>
                   <Pressable style={s.photoBtn} onPress={pickPhoto}>
-                    <Feather name="camera" size={22} color={colors.light.primary} />
+                    <Feather name="camera" size={22} color={colors.primary} />
                     <Text style={s.photoBtnText}>Camera</Text>
                   </Pressable>
                   <Pressable style={s.photoBtn} onPress={pickFromLibrary}>
-                    <Feather name="image" size={22} color={colors.light.primary} />
+                    <Feather name="image" size={22} color={colors.primary} />
                     <Text style={s.photoBtnText}>Library</Text>
                   </Pressable>
                 </View>
@@ -238,8 +249,8 @@ export default function ManualCheckWizard() {
                   }
                 }}
                 trackColor={{
-                  false: colors.light.muted,
-                  true: colors.light.destructive,
+                  false: colors.muted,
+                  true: colors.destructive,
                 }}
                 thumbColor="#fff"
               />
@@ -280,7 +291,7 @@ export default function ManualCheckWizard() {
                       value={otherIssueText}
                       onChangeText={setOtherIssueText}
                       placeholder="Describe what you observed..."
-                      placeholderTextColor={colors.light.mutedForeground}
+                      placeholderTextColor={colors.mutedForeground}
                       multiline
                     />
                   </>
@@ -294,7 +305,7 @@ export default function ManualCheckWizard() {
               value={notes}
               onChangeText={setNotes}
               placeholder="Additional observations..."
-              placeholderTextColor={colors.light.mutedForeground}
+              placeholderTextColor={colors.mutedForeground}
               multiline
             />
 
@@ -362,17 +373,8 @@ export default function ManualCheckWizard() {
   );
 }
 
-function SummaryRow({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={s.summaryRow}>
-      <Text style={s.summaryLabel}>{label}</Text>
-      <Text style={s.summaryValue}>{value}</Text>
-    </View>
-  );
-}
-
-const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.light.background },
+const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create({
+  safe: { flex: 1, backgroundColor: colors.background },
   topBar: {
     flexDirection: "row",
     alignItems: "center",
@@ -380,46 +382,46 @@ const s = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
-  topTitle: { fontSize: 17, fontFamily: "Inter_600SemiBold", color: colors.light.foreground },
-  stepNum: { fontSize: 13, fontFamily: "Inter_500Medium", color: colors.light.mutedForeground },
+  topTitle: { fontSize: 17, fontFamily: "Inter_600SemiBold", color: colors.foreground },
+  stepNum: { fontSize: 13, fontFamily: "Inter_500Medium", color: colors.mutedForeground },
   stepDots: { flexDirection: "row", justifyContent: "center", gap: 8, marginBottom: 16 },
-  dot: { width: 40, height: 4, borderRadius: 2, backgroundColor: colors.light.muted },
-  dotActive: { backgroundColor: colors.light.primary },
+  dot: { width: 40, height: 4, borderRadius: 2, backgroundColor: colors.muted },
+  dotActive: { backgroundColor: colors.primary },
   content: { padding: 20, paddingBottom: 60 },
   cycleInfo: {
-    backgroundColor: colors.light.secondary,
+    backgroundColor: colors.secondary,
     borderRadius: colors.radius,
     padding: 14,
     marginBottom: 20,
   },
-  cycleName: { fontSize: 17, fontFamily: "Inter_700Bold", color: colors.light.foreground },
-  cycleId: { fontSize: 13, fontFamily: "Inter_400Regular", color: colors.light.mutedForeground, marginTop: 2 },
+  cycleName: { fontSize: 17, fontFamily: "Inter_700Bold", color: colors.foreground },
+  cycleId: { fontSize: 13, fontFamily: "Inter_400Regular", color: colors.mutedForeground, marginTop: 2 },
   sectionTitle: {
     fontSize: 16,
     fontFamily: "Inter_600SemiBold",
-    color: colors.light.foreground,
+    color: colors.foreground,
     marginBottom: 10,
     marginTop: 16,
   },
-  required: { color: colors.light.destructive },
+  required: { color: colors.destructive },
   rowInput: { flexDirection: "row", gap: 12 },
-  label: { fontSize: 13, fontFamily: "Inter_500Medium", color: colors.light.foreground, marginBottom: 6, marginTop: 12 },
+  label: { fontSize: 13, fontFamily: "Inter_500Medium", color: colors.foreground, marginBottom: 6, marginTop: 12 },
   input: {
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: colors.border,
     borderRadius: colors.radius,
     paddingHorizontal: 14,
     paddingVertical: 10,
     fontSize: 15,
     fontFamily: "Inter_400Regular",
-    color: colors.light.foreground,
-    backgroundColor: colors.light.card,
+    color: colors.foreground,
+    backgroundColor: colors.card,
   },
   counter: {
     flexDirection: "row",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: colors.border,
     borderRadius: colors.radius,
     height: 48,
     overflow: "hidden",
@@ -428,7 +430,7 @@ const s = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: colors.light.muted,
+    backgroundColor: colors.muted,
     height: "100%",
   },
   ctrVal: {
@@ -436,7 +438,7 @@ const s = StyleSheet.create({
     textAlign: "center",
     fontSize: 17,
     fontFamily: "Inter_600SemiBold",
-    color: colors.light.foreground,
+    color: colors.foreground,
   },
   photoGrid: {
     flexDirection: "row",
@@ -449,7 +451,7 @@ const s = StyleSheet.create({
     width: 90,
     height: 90,
     borderRadius: colors.radius,
-    backgroundColor: colors.light.muted,
+    backgroundColor: colors.muted,
   },
   removePhoto: {
     position: "absolute",
@@ -458,7 +460,7 @@ const s = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: colors.light.destructive,
+    backgroundColor: colors.destructive,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -471,30 +473,30 @@ const s = StyleSheet.create({
     height: 90,
     borderRadius: colors.radius,
     borderWidth: 2,
-    borderColor: colors.light.border,
+    borderColor: colors.border,
     borderStyle: "dashed",
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
-    backgroundColor: colors.light.card,
+    backgroundColor: colors.card,
   },
   photoBtnText: {
     fontSize: 11,
     fontFamily: "Inter_500Medium",
-    color: colors.light.primary,
+    color: colors.primary,
   },
   toggleRow: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: colors.light.card,
+    backgroundColor: colors.card,
     padding: 14,
     borderRadius: colors.radius,
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: colors.border,
     marginVertical: 12,
   },
-  toggleLabel: { fontSize: 15, fontFamily: "Inter_500Medium", color: colors.light.foreground },
-  toggleSub: { fontSize: 12, fontFamily: "Inter_400Regular", color: colors.light.mutedForeground, marginTop: 2 },
+  toggleLabel: { fontSize: 15, fontFamily: "Inter_500Medium", color: colors.foreground },
+  toggleSub: { fontSize: 12, fontFamily: "Inter_400Regular", color: colors.mutedForeground, marginTop: 2 },
   issueGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -508,28 +510,28 @@ const s = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 20,
     borderWidth: 1.5,
-    borderColor: colors.light.border,
-    backgroundColor: colors.light.card,
+    borderColor: colors.border,
+    backgroundColor: colors.card,
   },
   issueChipActive: {
-    backgroundColor: colors.light.destructive,
-    borderColor: colors.light.destructive,
+    backgroundColor: colors.destructive,
+    borderColor: colors.destructive,
   },
   issueChipText: {
     fontSize: 13,
     fontFamily: "Inter_500Medium",
-    color: colors.light.foreground,
+    color: colors.foreground,
   },
   issueChipTextActive: {
     color: "#fff",
     fontFamily: "Inter_600SemiBold",
   },
   summaryCard: {
-    backgroundColor: colors.light.card,
+    backgroundColor: colors.card,
     borderRadius: colors.radius,
     padding: 16,
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: colors.border,
     marginBottom: 16,
   },
   summaryRow: {
@@ -537,27 +539,27 @@ const s = StyleSheet.create({
     justifyContent: "space-between",
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: colors.light.border,
+    borderBottomColor: colors.border,
   },
-  summaryLabel: { fontSize: 13, fontFamily: "Inter_400Regular", color: colors.light.mutedForeground },
-  summaryValue: { fontSize: 13, fontFamily: "Inter_500Medium", color: colors.light.foreground, flex: 1, textAlign: "right", marginLeft: 8 },
+  summaryLabel: { fontSize: 13, fontFamily: "Inter_400Regular", color: colors.mutedForeground },
+  summaryValue: { fontSize: 13, fontFamily: "Inter_500Medium", color: colors.foreground, flex: 1, textAlign: "right", marginLeft: 8 },
   previewRow: { flexDirection: "row", gap: 8, marginBottom: 16 },
   previewPhoto: { width: 80, height: 80, borderRadius: colors.radius },
   morePhotos: {
     width: 80,
     height: 80,
     borderRadius: colors.radius,
-    backgroundColor: colors.light.muted,
+    backgroundColor: colors.muted,
     alignItems: "center",
     justifyContent: "center",
   },
-  morePhotosText: { fontSize: 16, fontFamily: "Inter_600SemiBold", color: colors.light.mutedForeground },
-  errorText: { color: colors.light.destructive, fontSize: 13, fontFamily: "Inter_400Regular", marginBottom: 8 },
+  morePhotosText: { fontSize: 16, fontFamily: "Inter_600SemiBold", color: colors.mutedForeground },
+  errorText: { color: colors.destructive, fontSize: 13, fontFamily: "Inter_400Regular", marginBottom: 8 },
   nextBtn: {
     flexDirection: "row",
     height: 50,
     borderRadius: colors.radius,
-    backgroundColor: colors.light.primary,
+    backgroundColor: colors.primary,
     alignItems: "center",
     justifyContent: "center",
     gap: 8,

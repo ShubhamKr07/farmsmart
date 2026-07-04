@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Platform,
@@ -8,7 +8,7 @@ import {
   TextInput,
   View,
 } from "react-native";
-import colors from "@/constants/colors";
+import { useColors } from "@/hooks/useColors";
 
 interface Props {
   onScanned: (value: string) => void;
@@ -29,6 +29,8 @@ try {
 }
 
 function NativeScanner({ onScanned, hint, multiScan }: Props) {
+  const colors = useColors();
+  const s = useMemo(() => createStyles(colors), [colors]);
   const [permission, requestPermission] = useCameraPermissionsHook();
   const [scanned, setScanned] = useState(false);
   const [flashLabel, setFlashLabel] = useState<string | null>(null);
@@ -38,7 +40,7 @@ function NativeScanner({ onScanned, hint, multiScan }: Props) {
   if (!permission) {
     return (
       <View style={s.center}>
-        <ActivityIndicator color={colors.light.primary} />
+        <ActivityIndicator color={colors.primary} />
       </View>
     );
   }
@@ -60,7 +62,7 @@ function NativeScanner({ onScanned, hint, multiScan }: Props) {
               value={manual}
               onChangeText={setManual}
               placeholder="Enter QR code value"
-              placeholderTextColor={colors.light.mutedForeground}
+              placeholderTextColor={colors.mutedForeground}
               autoCorrect={false}
               autoCapitalize="none"
             />
@@ -86,7 +88,7 @@ function NativeScanner({ onScanned, hint, multiScan }: Props) {
           value={manual}
           onChangeText={setManual}
           placeholder="QR code value"
-          placeholderTextColor={colors.light.mutedForeground}
+          placeholderTextColor={colors.mutedForeground}
           autoCorrect={false}
           autoCapitalize="none"
           autoFocus
@@ -150,6 +152,8 @@ function NativeScanner({ onScanned, hint, multiScan }: Props) {
 }
 
 function WebScanner({ onScanned, hint }: Props) {
+  const colors = useColors();
+  const s = useMemo(() => createStyles(colors), [colors]);
   const [value, setValue] = useState("");
   return (
     <View style={s.center}>
@@ -159,7 +163,7 @@ function WebScanner({ onScanned, hint }: Props) {
         value={value}
         onChangeText={setValue}
         placeholder="QR code value"
-        placeholderTextColor={colors.light.mutedForeground}
+        placeholderTextColor={colors.mutedForeground}
         autoCorrect={false}
         autoCapitalize="none"
       />
@@ -181,7 +185,7 @@ export default function QRScanner(props: Props) {
   return <NativeScanner {...props} multiScan={props.multiScan} />;
 }
 
-const s = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create({
   center: { padding: 24, alignItems: "center", gap: 12 },
   scannerWrap: { width: "100%", aspectRatio: 1, position: "relative" },
   overlay: {
@@ -193,7 +197,7 @@ const s = StyleSheet.create({
     width: 200,
     height: 200,
     borderWidth: 2,
-    borderColor: colors.light.primary,
+    borderColor: colors.primary,
     borderRadius: 12,
     backgroundColor: "transparent",
   },
@@ -209,7 +213,7 @@ const s = StyleSheet.create({
   },
   flashBadge: {
     marginTop: 12,
-    backgroundColor: colors.light.primary,
+    backgroundColor: colors.primary,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
@@ -223,7 +227,7 @@ const s = StyleSheet.create({
     position: "absolute",
     bottom: 16,
     alignSelf: "center",
-    backgroundColor: colors.light.primary,
+    backgroundColor: colors.primary,
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: colors.radius,
@@ -242,26 +246,26 @@ const s = StyleSheet.create({
   hintText: {
     fontSize: 15,
     fontFamily: "Inter_500Medium",
-    color: colors.light.foreground,
+    color: colors.foreground,
     textAlign: "center",
   },
   input: {
     width: "100%",
     height: 48,
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: colors.border,
     borderRadius: colors.radius,
     paddingHorizontal: 14,
     fontSize: 15,
     fontFamily: "Inter_400Regular",
-    color: colors.light.foreground,
-    backgroundColor: colors.light.card,
+    color: colors.foreground,
+    backgroundColor: colors.card,
   },
   btn: {
     width: "100%",
     height: 48,
     borderRadius: colors.radius,
-    backgroundColor: colors.light.primary,
+    backgroundColor: colors.primary,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -275,7 +279,7 @@ const s = StyleSheet.create({
   linkText: {
     fontSize: 13,
     fontFamily: "Inter_500Medium",
-    color: colors.light.primary,
+    color: colors.primary,
   },
   manualWrap: { width: "100%", gap: 10, marginTop: 8 },
 });
