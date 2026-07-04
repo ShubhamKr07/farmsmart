@@ -1,3 +1,4 @@
+import asyncio
 from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI
@@ -5,7 +6,9 @@ from fastapi import Depends, FastAPI
 from app.auth import require_internal_key
 from app.cache_repo import search_cache
 from app.db import close_pool, get_pool
+from app.embed_upsert import upsert_cache_docs
 from app.embeddings import embed
+from app.ingest import run_tavily_ingest
 from app.models import RecommendRequest, RecommendResponse, Source
 
 
@@ -27,26 +30,34 @@ async def healthz():
 @app.post("/recommend", response_model=RecommendResponse, dependencies=[Depends(require_internal_key)])
 async def recommend(req: RecommendRequest) -> RecommendResponse:
     """
-    Phase R1: cache-only. Embeds the question, vector-searches
-    recommender_cache, and returns the closest matches as-is (no LLM
-    synthesis yet — that's R3). If the cache has nothing relevant, says so
-    plainly rather than fabricating an answer; live search-API fallback on a
-    miss is R2.
+    Embeds the question, vector-searches recommender_cache. On a miss, runs
+    a live Tavily search (via dlt), embeds + upserts the new docs into
+    recommender_cache, and re-searches. Returns the closest matches as-is —
+    no LLM synthesis yet (R3); this just surfaces raw cached/fetched docs
+    with citations.
     """
     question_embedding = await embed(req.question)
     hits = await search_cache(question_embedding, limit=5)
+    used_live_search = False
+
+    if not hits:
+        docs = await asyncio.to_thread(run_tavily_ingest, req.question)
+        await upsert_cache_docs(docs)
+        hits = await search_cache(question_embedding, limit=5)
+        used_live_search = True
 
     if not hits:
         return RecommendResponse(
-            answer="No cached knowledge matches this question yet. Live search + synthesis is coming in a later phase.",
+            answer="No relevant results found, even after a live search.",
             sources=[],
             cache_hit=False,
         )
 
     top = hits[0]
-    answer = f"Closest cached match: {top['title'] or top['source_url']}\n\n{top['content'][:500]}"
+    prefix = "Found via live search: " if used_live_search else "Closest cached match: "
+    answer = f"{prefix}{top['title'] or top['source_url']}\n\n{top['content'][:500]}"
     sources = [
         Source(title=h["title"], url=h["source_url"], similarity=round(h["similarity"], 3))
         for h in hits
     ]
-    return RecommendResponse(answer=answer, sources=sources, cache_hit=True)
+    return RecommendResponse(answer=answer, sources=sources, cache_hit=not used_live_search)

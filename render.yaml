@@ -102,6 +102,8 @@ services:
         sync: false # same Neon connection string as farmsmart-api
       - key: GEMINI_API_KEY
         sync: false # aistudio.google.com — used for gemini-embedding-001
+      - key: TAVILY_API_KEY
+        sync: false # tavily.com — live search on a cache miss (free tier: 1,000 credits/mo)
       - key: INTERNAL_API_KEY
         sync: false # shared secret with farmsmart-api's RECOMMENDER_INTERNAL_KEY —
                      # same value as that key, generated once via: openssl rand -base64 32

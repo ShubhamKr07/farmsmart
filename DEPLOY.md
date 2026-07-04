@@ -49,3 +49,4 @@ Render → service → Settings → Custom Domain. Point `farmsmart.app` (or `da
 | `BASE_PATH` | Dashboard | `/` (preset) |
 | `DATABASE_URL` | Recommender | same Neon connection string as the API |
 | `GEMINI_API_KEY` | Recommender | `aistudio.google.com` key, used for `gemini-embedding-001` |
+| `TAVILY_API_KEY` | Recommender | `tavily.com` key, live search on a cache miss (free tier: 1,000 credits/mo) |
