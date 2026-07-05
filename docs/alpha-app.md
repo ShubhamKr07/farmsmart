@@ -242,8 +242,12 @@ Port a lightweight equivalent of web's `MetricPicker` + `TimeRangeSelector` to m
 
 ## Build order
 
-1. **4.0** — token rebuild + migration (foundation, nothing else looks right until this lands).
-2. **4.1** — global shell (header, hamburger-reach fix, alerts, health, theme toggle, search).
-3. **4.2** — status/chart color fixes (quick, mechanical, depends on 4.0's new token names existing).
-4. **4.3** — facility logs (the original Phase 4 feature, now on solid ground).
-5. **4.4** — dashboard parity, optional, only if there's appetite after the above.
+1. **4.0** — token rebuild + migration (foundation, nothing else looks right until this lands). **Shipped.**
+2. **4.1** — global shell (header, hamburger-reach fix, alerts, health, theme toggle, search). **Shipped.**
+3. **4.2** — status/chart color fixes (quick, mechanical, depends on 4.0's new token names existing). **Shipped.**
+4. **4.3** — facility logs (the original Phase 4 feature, now on solid ground). **Shipped** — migration applied to the live DB, api-server deployed (Render autoDeploy), verified end-to-end on the Android emulator (category picker, form validation, live 401-not-404 confirming the deployed route).
+5. **4.4** — dashboard parity, optional. **Not built** — descoped by explicit user decision; Phase 4 is considered complete without it.
+
+## Status: Phase 4 complete (4.0-4.3)
+
+Verified on the Android emulator throughout: new light/dark palettes, AppHeader (hamburger/logo/alerts/health/theme-toggle) on all 3 tabs, hamburger panel's Search + Data Logs rows, Search modal, theme-toggle cycling, chart/cycle-stage colors matching web, and the full facility-logs flow (category picker → form → validated submit against the live, deployed API). Repo-wide typecheck clean throughout (only the 6 pre-existing baseline errors, unrelated to this work, survive).
