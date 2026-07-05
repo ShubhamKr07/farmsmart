@@ -475,7 +475,7 @@ export default function SeedingWizard() {
               {scannedChannelQR && channelStatus && (
                 <View style={[s.channelCard, channelStatus.isFull && s.channelCardFull]}>
                   <View style={s.channelCardHeader}>
-                    <Feather name="layers" size={16} color={channelStatus.isFull ? "#ef4444" : colors.primary} />
+                    <Feather name="layers" size={16} color={channelStatus.isFull ? colors.destructive : colors.primary} />
                     <Text style={[s.channelCardTitle, channelStatus.isFull && s.channelCardTitleFull]}>
                       {channelStatus.channel}
                     </Text>
@@ -495,12 +495,12 @@ export default function SeedingWizard() {
                     </View>
                     <View style={s.channelStatDivider} />
                     <View style={s.channelStat}>
-                      <Text style={[s.channelStatVal, { color: "#ef4444" }]}>{channelStatus.activeCycles}</Text>
+                      <Text style={[s.channelStatVal, { color: colors.destructive }]}>{channelStatus.activeCycles}</Text>
                       <Text style={s.channelStatLabel}>In use</Text>
                     </View>
                     <View style={s.channelStatDivider} />
                     <View style={s.channelStat}>
-                      <Text style={[s.channelStatVal, { color: channelStatus.availableTrays > 0 ? "#22c55e" : "#ef4444" }]}>
+                      <Text style={[s.channelStatVal, { color: channelStatus.availableTrays > 0 ? colors.success : colors.destructive }]}>
                         {channelStatus.availableTrays}
                       </Text>
                       <Text style={s.channelStatLabel}>Available</Text>
@@ -767,8 +767,8 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
     gap: 6,
   },
   channelCardFull: {
-    borderColor: "#ef444440",
-    backgroundColor: "#fef2f2",
+    borderColor: colors.destructive + "40",
+    backgroundColor: colors.destructive + "12",
   },
   channelCardHeader: {
     flexDirection: "row",
@@ -782,7 +782,7 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
     color: colors.primary,
   },
   channelCardTitleFull: {
-    color: "#ef4444",
+    color: colors.destructive,
   },
   channelCardRoom: {
     fontSize: 12,
@@ -821,19 +821,19 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   channelTraysLeft: {
     fontSize: 13,
     fontFamily: "Inter_500Medium",
-    color: "#22c55e",
+    color: colors.success,
     marginTop: 4,
     textAlign: "center",
   },
   channelFullWarning: {
     fontSize: 12,
     fontFamily: "Inter_400Regular",
-    color: "#ef4444",
+    color: colors.destructive,
     marginTop: 4,
     textAlign: "center",
   },
   fullBadge: {
-    backgroundColor: "#ef4444",
+    backgroundColor: colors.destructive,
     borderRadius: 4,
     paddingHorizontal: 6,
     paddingVertical: 2,

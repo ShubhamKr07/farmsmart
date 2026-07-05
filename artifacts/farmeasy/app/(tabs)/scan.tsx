@@ -110,7 +110,7 @@ export default function ScanScreen() {
             <ChannelMonitoringCard data={scanState.data} />
           ) : (
             <View style={s.errorCard}>
-              <Feather name="alert-circle" size={28} color="#C62828" />
+              <Feather name="alert-circle" size={28} color={colors.destructive} />
               <Text style={s.errorTitle}>Not Recognized</Text>
               <Text style={s.errorMessage}>{scanState.message}</Text>
             </View>
@@ -172,10 +172,10 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
     paddingBottom: 40,
   },
   errorCard: {
-    backgroundColor: "#FFF3F3",
+    backgroundColor: colors.destructive + "12",
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#FFCDD2",
+    borderColor: colors.destructive + "40",
     padding: 24,
     alignItems: "center",
     gap: 8,
@@ -184,12 +184,12 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   errorTitle: {
     fontSize: 16,
     fontFamily: "Inter_600SemiBold",
-    color: "#C62828",
+    color: colors.destructive,
   },
   errorMessage: {
     fontSize: 13,
     fontFamily: "Inter_400Regular",
-    color: "#B71C1C",
+    color: colors.destructive,
     textAlign: "center",
     lineHeight: 19,
   },

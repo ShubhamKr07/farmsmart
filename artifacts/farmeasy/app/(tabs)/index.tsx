@@ -160,6 +160,7 @@ export default function HomeScreen() {
               </View>
               <YieldLineChart
                 styles={s}
+                colors={colors}
                 yieldData={yieldPeriod === "week" ? ((stats as any)?.yieldByDay ?? []) : ((stats as any)?.yieldByWeek ?? [])}
                 seedingData={yieldPeriod === "week" ? ((stats as any)?.seedingByDay ?? []) : ((stats as any)?.seedingByWeek ?? [])}
                 badTrayData={yieldPeriod === "week" ? ((stats as any)?.badTrayByDay ?? []) : ((stats as any)?.badTrayByWeek ?? [])}
@@ -278,11 +279,13 @@ export default function HomeScreen() {
 
 function YieldLineChart({
   styles: s,
+  colors,
   yieldData,
   seedingData,
   badTrayData,
 }: {
   styles: ReturnType<typeof createStyles>;
+  colors: ReturnType<typeof useColors>;
   yieldData: { label: string; value: number }[];
   seedingData: { label: string; value: number }[];
   badTrayData: { label: string; value: number }[];
@@ -316,16 +319,16 @@ function YieldLineChart({
   return (
     <View style={s.lineChartWrap}>
       <Svg width="100%" height={VH} viewBox={`0 0 ${VW} ${VH}`}>
-        <Line x1={PL} y1={PT} x2={PL} y2={PT + chartH} stroke="#e5e7eb" strokeWidth={1} />
-        <Line x1={PL} y1={PT + chartH} x2={VW - PR} y2={PT + chartH} stroke="#e5e7eb" strokeWidth={1} />
+        <Line x1={PL} y1={PT} x2={PL} y2={PT + chartH} stroke={colors.border} strokeWidth={1} />
+        <Line x1={PL} y1={PT + chartH} x2={VW - PR} y2={PT + chartH} stroke={colors.border} strokeWidth={1} />
         {yieldData.length >= 2 && (
-          <Polyline points={pts(yieldData)} fill="none" stroke="#22c55e" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+          <Polyline points={pts(yieldData)} fill="none" stroke={colors.primary} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
         )}
         {seedingData.length >= 2 && (
-          <Polyline points={pts(seedingData)} fill="none" stroke="#3b82f6" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+          <Polyline points={pts(seedingData)} fill="none" stroke={colors.info} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
         )}
         {badTrayData.length >= 2 && (
-          <Polyline points={pts(badTrayData)} fill="none" stroke="#ef4444" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+          <Polyline points={pts(badTrayData)} fill="none" stroke={colors.destructive} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
         )}
         {labels.map((label, i) => (
           <SvgText
@@ -333,7 +336,7 @@ function YieldLineChart({
             x={PL + (i / (n - 1)) * chartW}
             y={VH - 4}
             fontSize={8}
-            fill="#9ca3af"
+            fill={colors.mutedForeground}
             textAnchor="middle"
           >
             {label}
@@ -342,15 +345,15 @@ function YieldLineChart({
       </Svg>
       <View style={s.chartLegend}>
         <View style={s.legendItem}>
-          <View style={[s.legendDot, { backgroundColor: "#22c55e" }]} />
+          <View style={[s.legendDot, { backgroundColor: colors.primary }]} />
           <Text style={s.legendLabel}>Yield</Text>
         </View>
         <View style={s.legendItem}>
-          <View style={[s.legendDot, { backgroundColor: "#3b82f6" }]} />
+          <View style={[s.legendDot, { backgroundColor: colors.info }]} />
           <Text style={s.legendLabel}>Seeding</Text>
         </View>
         <View style={s.legendItem}>
-          <View style={[s.legendDot, { backgroundColor: "#ef4444" }]} />
+          <View style={[s.legendDot, { backgroundColor: colors.destructive }]} />
           <Text style={s.legendLabel}>Bad Trays</Text>
         </View>
       </View>

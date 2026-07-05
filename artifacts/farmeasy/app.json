@@ -58,6 +58,16 @@
           "cameraPermission": "FarmEasy needs camera access to take photos during manual checks.",
           "photosPermission": "FarmEasy needs photo library access for manual check photos."
         }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "packagingOptions": {
+              "exclude": ["META-INF/versions/9/OSGI-INF/MANIFEST.MF"]
+            }
+          }
+        }
       ]
     ],
     "experiments": {

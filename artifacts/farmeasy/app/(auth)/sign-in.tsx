@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
+import LogoMark from "@/components/LogoMark";
 
 export default function SignInPage() {
   const colors = useColors();
@@ -96,7 +97,7 @@ export default function SignInPage() {
       <SafeAreaView style={s.safe}>
         <View style={s.container}>
           <View style={s.logoRow}>
-            <View style={s.logoCircle} />
+            <LogoMark size={32} />
             <Text style={s.logoText}>FarmEasy</Text>
           </View>
           <Text style={s.title}>Verify your identity</Text>
@@ -147,7 +148,7 @@ export default function SignInPage() {
         >
           <View style={s.container}>
             <View style={s.logoRow}>
-              <View style={s.logoCircle} />
+              <LogoMark size={32} />
               <Text style={s.logoText}>FarmEasy</Text>
             </View>
             <Text style={s.title}>Welcome back</Text>
@@ -235,17 +236,11 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
     alignItems: "center",
     marginBottom: 40,
   },
-  logoCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.primary,
-    marginRight: 10,
-  },
   logoText: {
     fontSize: 24,
     fontFamily: "Inter_700Bold",
     color: colors.primary,
+    marginLeft: 10,
   },
   title: {
     fontSize: 28,
@@ -320,14 +315,14 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
     marginTop: 16,
     padding: 12,
     borderRadius: colors.radius,
-    backgroundColor: "#FEE2E2",
+    backgroundColor: colors.destructive + "18",
     borderWidth: 1,
-    borderColor: "#FECACA",
+    borderColor: colors.destructive + "40",
   },
   errorBannerText: {
     fontSize: 14,
     fontFamily: "Inter_400Regular",
-    color: "#B91C1C",
+    color: colors.destructive,
     textAlign: "center",
   },
 });

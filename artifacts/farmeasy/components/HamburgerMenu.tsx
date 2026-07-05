@@ -1,13 +1,15 @@
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useEffect, useMemo } from "react";
-import { Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { Modal, Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import Animated, {
+  runOnJS,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
 } from "react-native-reanimated";
 import { useColors } from "@/hooks/useColors";
+import LogoMark from "@/components/LogoMark";
 
 const PANEL_WIDTH = 280;
 
@@ -44,13 +46,22 @@ export default function HamburgerMenu({
   const s = useMemo(() => createStyles(colors), [colors]);
   const router = useRouter();
   const { height } = useWindowDimensions();
+  const [modalVisible, setModalVisible] = React.useState(open);
 
   const translateX = useSharedValue(-PANEL_WIDTH);
   const backdropOpacity = useSharedValue(0);
 
   useEffect(() => {
-    translateX.value = withTiming(open ? 0 : -PANEL_WIDTH, { duration: 220 });
-    backdropOpacity.value = withTiming(open ? 1 : 0, { duration: 220 });
+    if (open) {
+      setModalVisible(true);
+      translateX.value = withTiming(0, { duration: 220 });
+      backdropOpacity.value = withTiming(1, { duration: 220 });
+    } else {
+      translateX.value = withTiming(-PANEL_WIDTH, { duration: 220 });
+      backdropOpacity.value = withTiming(0, { duration: 220 }, (finished) => {
+        if (finished) runOnJS(setModalVisible)(false);
+      });
+    }
   }, [open, translateX, backdropOpacity]);
 
   const panelStyle = useAnimatedStyle(() => ({
@@ -61,47 +72,56 @@ export default function HamburgerMenu({
   }));
 
   return (
-    <View
-      style={[StyleSheet.absoluteFill, { height, zIndex: 50 }]}
-      pointerEvents={open ? "auto" : "none"}
+    <Modal
+      transparent
+      visible={modalVisible}
+      onRequestClose={onClose}
+      statusBarTranslucent
     >
-      <Animated.View style={[styles.backdrop, backdropStyle]}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Close menu" />
-      </Animated.View>
+      <View style={[StyleSheet.absoluteFill, { height }]} pointerEvents={open ? "auto" : "none"}>
+        <Animated.View style={[styles.backdrop, backdropStyle]}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Close menu" />
+        </Animated.View>
 
-      <Animated.View style={[s.panel, panelStyle]}>
-        <View style={s.accountBlock}>
-          <View style={s.avatar}>
-            <Text style={s.avatarText}>{userInitial}</Text>
+        <Animated.View style={[s.panel, panelStyle]}>
+          <View style={s.brandRow}>
+            <LogoMark size={22} />
+            <Text style={s.brandText}>FarmEasy</Text>
           </View>
-          <Text style={s.userName}>{userName}</Text>
-          <View style={s.roleBadge}>
-            <Text style={s.roleText}>{roleLabel}</Text>
+
+          <View style={s.accountBlock}>
+            <View style={s.avatar}>
+              <Text style={s.avatarText}>{userInitial}</Text>
+            </View>
+            <Text style={s.userName}>{userName}</Text>
+            <View style={s.roleBadge}>
+              <Text style={s.roleText}>{roleLabel}</Text>
+            </View>
           </View>
-        </View>
 
-        <View style={s.divider} />
+          <View style={s.divider} />
 
-        <Pressable
-          style={s.menuRow}
-          onPress={() => {
-            onClose();
-            router.push("/logs" as any);
-          }}
-        >
-          <Feather name="clipboard" size={18} color={colors.foreground} />
-          <Text style={s.menuRowText}>Data Logs</Text>
-          <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
-        </Pressable>
+          <Pressable
+            style={s.menuRow}
+            onPress={() => {
+              onClose();
+              router.push("/logs" as any);
+            }}
+          >
+            <Feather name="clipboard" size={18} color={colors.foreground} />
+            <Text style={s.menuRowText}>Data Logs</Text>
+            <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
+          </Pressable>
 
-        <View style={s.divider} />
+          <View style={s.divider} />
 
-        <Pressable style={s.menuRow} onPress={onSignOut} testID="menu-sign-out">
-          <Feather name="log-out" size={18} color={colors.destructive} />
-          <Text style={[s.menuRowText, { color: colors.destructive }]}>Sign Out</Text>
-        </Pressable>
-      </Animated.View>
-    </View>
+          <Pressable style={s.menuRow} onPress={onSignOut} testID="menu-sign-out">
+            <Feather name="log-out" size={18} color={colors.destructive} />
+            <Text style={[s.menuRowText, { color: colors.destructive }]}>Sign Out</Text>
+          </Pressable>
+        </Animated.View>
+      </View>
+    </Modal>
   );
 }
 
@@ -128,6 +148,8 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
     shadowRadius: 12,
     elevation: 10,
   },
+  brandRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 24 },
+  brandText: { fontSize: 16, fontFamily: "Inter_700Bold", color: colors.primary },
   accountBlock: { alignItems: "flex-start", marginBottom: 20 },
   avatar: {
     width: 48,

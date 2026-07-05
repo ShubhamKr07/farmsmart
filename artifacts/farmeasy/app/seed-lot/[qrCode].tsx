@@ -27,10 +27,10 @@ export default function SeedLotDetailScreen() {
 
   function typeColor(type: string) {
     switch (type.toLowerCase()) {
-      case "microgreen": return { backgroundColor: "#E8F5E9" };
-      case "lettuce":    return { backgroundColor: "#E3F2FD" };
-      case "edible flower": return { backgroundColor: "#FCE4EC" };
-      default:           return { backgroundColor: colors.muted };
+      case "microgreen": return { backgroundColor: "#2E7D3222", text: "#2E7D32" };
+      case "lettuce":    return { backgroundColor: "#1565C022", text: "#1565C0" };
+      case "edible flower": return { backgroundColor: "#AD145722", text: "#AD1457" };
+      default:           return { backgroundColor: colors.muted, text: colors.foreground };
     }
   }
 
@@ -71,13 +71,13 @@ export default function SeedLotDetailScreen() {
         <View style={s.heroCard}>
           <View style={s.heroTop}>
             {lot.type && (
-              <View style={[s.typeBadge, typeColor(lot.type)]}>
-                <Text style={s.typeBadgeText}>{lot.type}</Text>
+              <View style={[s.typeBadge, { backgroundColor: typeColor(lot.type).backgroundColor }]}>
+                <Text style={[s.typeBadgeText, { color: typeColor(lot.type).text }]}>{lot.type}</Text>
               </View>
             )}
             {lot.currentlyGrown !== null && (
-              <View style={[s.grownBadge, lot.currentlyGrown ? s.grownYes : s.grownNo]}>
-                <Text style={s.grownBadgeText}>
+              <View style={[s.grownBadge, { backgroundColor: lot.currentlyGrown ? colors.success + "22" : colors.warning + "22" }]}>
+                <Text style={[s.grownBadgeText, { color: lot.currentlyGrown ? colors.success : colors.warning }]}>
                   {lot.currentlyGrown ? "Currently Grown" : "Not Currently Grown"}
                 </Text>
               </View>
@@ -141,8 +141,6 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   typeBadgeText: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: colors.foreground },
   grownBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
   grownBadgeText: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
-  grownYes: { backgroundColor: "#E8F5E9" },
-  grownNo: { backgroundColor: "#FFF3E0" },
 
   card: {
     backgroundColor: colors.card,
