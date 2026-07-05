@@ -111,9 +111,139 @@ No list/history/detail-view endpoints for phase one — history browsing is expl
 2. **History list view** — skipped for this phase. Create-only; the data isn't lost (shared table), just not browsable yet.
 3. **Hamburger scope** — houses Data Logs *and* the account/sign-out actions currently living in Home's header avatar-tap.
 
-## Suggested build order (once approved)
+## Suggested build order (Phases 1-3 shipped; superseded for Phase 4 — see below)
 
-1. Dark mode + brand assets (small, low-risk, unblocks everything else visually).
-2. Ask Me FAB (reuses existing backend, no new data model).
-3. Hamburger panel (account header + sign-out + Data Logs entry point) — needed before the logs feature has anywhere to live.
-4. Facility logs: backend (migration + `POST` route) → logs list screen → per-category entry forms.
+1. ~~Dark mode + brand assets~~ — shipped.
+2. ~~Ask Me FAB~~ — shipped.
+3. ~~Hamburger panel~~ — shipped (found and fixed a real z-order bug during verification: the panel painted under the tab bar/FABs since `zIndex` can't escape its own nesting parent; fixed with a `Modal` wrapper).
+4. Facility logs — **superseded**, folded into the Phase 4 rebuild plan below.
+
+A post-Phase-3 design/UX audit (comparing every token, chart, badge color, and navigation pattern against the web admin dashboard) found the mobile app's palette and IA had drifted from web in specific, fixable ways. Phase 4 below fixes those first, then builds facility logs on the corrected foundation instead of building it once and retrofitting later.
+
+---
+
+# Phase 4 — Design/UX Parity Rebuild + Facility Logs
+
+Status: **planning only, nothing built**. Supersedes the old single-bullet "Facility logs" Phase 4 above — same feature, folded into a larger sequence so it's built on a design system that actually matches web, not on top of unreconciled tokens.
+
+## Why this exists
+
+Two audits (design-token diff, UX/IA diff) against the web admin dashboard found:
+
+- Mobile's **light-mode palette** was never derived from web's tokens — it's an older, independent palette with a consistent green-tinted-vs-neutral hue-cast difference on nearly every neutral token (background, foreground, secondary, muted, border).
+- Mobile's **dark-mode palette** (built in Phase 1) is 9/11 tokens pixel-exact vs web, but 2 are wrong: `accent` was set to a vivid brand green when web's `accent` is actually a neutral hover-surface (same value as `secondary`/`muted`); `destructive` was accidentally sourced from web's `--status-critical` instead of web's actual `--destructive`.
+- Mobile's **chart** (`YieldLineChart`) uses green/blue/red (`primary`/`info`/`destructive`) where web's equivalent chart uses a monochromatic green scale (`primary`/`chart-2`) plus red only for the bad-trays series — mobile's blue has no counterpart anywhere in web's chart language.
+- Mobile's **cycle-stage badges** (`CycleCard`) color "Fertigation" blue; web colors it green (`primary`). Same semantic stage, different hue family.
+- Mobile's **radius** (10) doesn't match web's (`.5rem` = 8px); mobile has no shared **elevation/shadow scale** (web's `hover-elevate`/`elevate-1`/`elevate-2` utilities) — shadows are hand-rolled per component (`(tabs)/index.tsx`, `AskMeFab.tsx`, `ErrorFallback.tsx`, `HamburgerMenu.tsx`).
+- Mobile's **hamburger is Home-only** — web's own responsive layout (`TopBar.tsx` + `MobileNav.tsx`) puts the nav trigger in a header rendered on every route via the shared layout, so a web user can always reach nav/account. A mobile user on Cycles or Scan currently cannot reach Sign Out without navigating back to Home first — a real dead end, not cosmetic.
+- Mobile has **no persistent alerts affordance, no connectivity/health indicator, no manual theme toggle, no search**, and **no dashboard customization** (web's `MetricPicker` + `TimeRangeSelector`) — all present on every page of web's `TopBar`/`Overview`, absent everywhere on mobile.
+
+## Phase 4.0 — Design token rebuild (foundation; blocks 4.1–4.3 visually)
+
+File: `constants/colors.ts`.
+
+Rebuild `light` from web's actual light HSL tokens (`artifacts/admin-dashboard/src/index.css`), converted to hex:
+
+```ts
+light: {
+  background: "#F6F6F9",
+  foreground: "#16181D",
+  card: "#FFFFFF",
+  cardForeground: "#16181D",
+  primary: "#2E6B44",
+  primaryForeground: "#FFFFFF",
+  secondary: "#F3F4F6",
+  secondaryForeground: "#2E3140",       // web --secondary-foreground: 220 15% 20%
+  muted: "#F3F4F6",
+  mutedForeground: "#5C6370",
+  accent: "#F3F4F6",                    // was vivid green — web's accent is a neutral hover-surface, = secondary/muted
+  accentForeground: "#2E3140",
+  destructive: "#EF4343",               // was #C62828 (actually web's status-critical, not destructive)
+  destructiveForeground: "#FFFFFF",
+  border: "#E5E7EB",
+  input: "#E5E7EB",
+  statusOk: "#2D7648",
+  statusOkForeground: "#FFFFFF",
+  statusWarn: "#C68310",
+  statusWarnForeground: "#FFFFFF",
+  statusCritical: "#C52020",
+  statusCriticalForeground: "#FFFFFF",
+  chart1: "#2E6B44",
+  chart2: "#59A675",
+  chart3: "#A3C2AE",
+  chart4: "#576175",
+  chart5: "#8A94A8",
+  highlight: "#2ECC71",                 // the old vivid green, kept as a distinct, intentional brand pop-color — not the same slot as accent anymore
+},
+```
+
+Dark: keep the 9 already-exact tokens (`background`/`foreground`/`card`/`primary`/`secondary`/`muted`/`mutedForeground`/`border`/`input`), fix the 2 wrong ones, add the same new keys:
+
+```ts
+dark: {
+  // ...9 unchanged tokens...
+  accent: "#272C35",          // was "#2ECC71"
+  destructive: "#DD3C3C",     // stays — this value was actually correct for statusCritical, now correctly labeled
+  destructiveActual: "#7C1D1D", // web's real dark --destructive; reconcile naming below
+  statusOk: "#45A167",
+  statusWarn: "#E8A530",
+  statusCritical: "#DD3C3C",
+  chart1: "#3D8F5B",
+  chart2: "#7AB891",
+  chart3: "#C2D6C9",
+  chart4: "#8A94A8",
+  chart5: "#C4C9D4",
+  highlight: "#2ECC71",
+},
+radius: 8,  // was 10, matches web's .5rem
+```
+
+(The dark `destructive` line above needs one build-time decision, not a design fork: either keep `#DD3C3C` as `destructive` for continuity with what's shipped in Phases 1-3's already-fixed error banners — meaning mobile's "destructive" intentionally tracks web's status-critical brightness rather than web's actual dimmer `#7C1D1D` button-destructive — or switch to the true `#7C1D1D` and re-verify every destructive-colored surface still reads clearly on mobile's smaller touch targets. Recommend keeping `#DD3C3C`: it's already shipped and verified legible; web's dimmer `#7C1D1D` was tuned for button contexts sitting on `--card`, not verified against mobile's usage on the FAB/banner/badge surfaces added in Phases 1-3.)
+
+**Migration (mechanical, exact files, from a live grep of current usage):**
+- `colors.success` → `colors.statusOk` in `app/seed-lot/[qrCode].tsx`, `app/seeding.tsx`, `components/CycleCard.tsx`.
+- `colors.warning` → `colors.statusWarn` in `app/(tabs)/index.tsx`, `app/cycle/[id].tsx`, `app/fertigation/[id].tsx`, `app/seed-lot/[qrCode].tsx`, `components/CycleCard.tsx`.
+- `colors.info` → `colors.chart2` in `app/(tabs)/index.tsx` (the one `YieldLineChart` usage — see 4.2).
+- `colors.accent`: zero current usages (confirmed via grep) — safe to redefine with no migration needed.
+
+**Elevation**: new `constants/elevation.ts` exporting `elevation(level: 1 | 2, colors)` returning `{ shadowColor, shadowOffset, shadowOpacity, shadowRadius, elevation }`, mirroring web's `--elevate-1`/`--elevate-2` alpha values (`rgba(0,0,0,.03)`/`.08` light, `rgba(255,255,255,.04)`/`.09` dark). Replace the 4 files with hand-rolled shadow values (`(tabs)/index.tsx`, `AskMeFab.tsx`, `ErrorFallback.tsx`, `HamburgerMenu.tsx`) with calls to this helper.
+
+## Phase 4.1 — Global shell: header, nav reach, alerts, health, theme, search
+
+New `components/AppHeader.tsx`, mounted at the top of all three tab screens (`(tabs)/index.tsx`, `cycles.tsx`, `scan.tsx`) instead of Home's bespoke header row. Contains, left to right: hamburger button, small `LogoMark`, spacer, alerts bell, connectivity dot, theme-toggle button.
+
+**Hamburger reach**: lift `menuOpen` state out of `(tabs)/index.tsx` into a new `context/AppShellContext.tsx` (`{ menuOpen, openMenu, closeMenu }`), provided at `(tabs)/_layout.tsx` (same level `AskMeFab` already safely lives at — proven pattern from the Phase 3 z-order fix). `<HamburgerMenu>` moves to mount there too, alongside `AskMeFab`; each tab screen's `AppHeader` calls `openMenu()` from context instead of local state. Fixes the Home-only dead-end found in the UX audit.
+
+**Alerts**: new `components/AlertsBell.tsx` using `useListAlerts({ status: "current", limit: 50 })` (already generated in `@workspace/api-client-react`, same hook web's `TopBar` uses) — badge count, `colors.destructive` if any `severity === "critical"` else `colors.primary`, matching web's exact logic. Tap opens new `app/alerts.tsx` (modal, reuses the list-row idiom already established in `CycleCard`/logs list).
+
+**Connectivity**: small inline icon in `AppHeader` using `useHealthCheck` (already generated), Wifi/WifiOff swap, no tap action — glance-only, matches web.
+
+**Theme toggle**: new `hooks/useThemeOverride.ts` — `AsyncStorage` key `farmeasy.themeOverride` (`"light" | "dark" | "system"`), defaults to `"system"`. `useColors()` checks this before falling back to `useColorScheme()`. `AppHeader`'s toggle button cycles it. This is additive — Phases 1-3's automatic OS-driven dark mode keeps working as the default, this just adds an explicit override on top.
+
+**Search**: new `app/search.tsx` (modal) — single field, hits existing lookup endpoints (`useLookupSeedLot`, cycle-by-id) rather than a full command-palette (⌘K doesn't map to touch). Triggered from a search icon in `AppHeader` if there's room, otherwise from the hamburger panel as a menu row — decide placement during build based on how `AppHeader` looks with 4 icons already in it on a narrow screen.
+
+## Phase 4.2 — Status & chart color correctness
+
+- `components/CycleCard.tsx`: `STATUS_COLOR` map → `germination: colors.statusOk, fertigation: colors.primary, harvest: colors.statusWarn` (was `#10B981`/`#3B82F6`/`#F59E0B` Tailwind hex) — matches web's `Cycles.tsx` stage-badge mapping exactly, fixes the green-vs-blue fertigation mismatch.
+- `app/(tabs)/index.tsx` `YieldLineChart`: seeding line `colors.info` → `colors.chart2` (lighter green, matches web's monochromatic chart convention); yield stays `colors.primary`; badTrays stays `colors.destructive` (now correct hex from 4.0).
+- Home's "Action Required" badge: check whether `ActionRequiredItem` (from `@workspace/api-client-react`) carries a severity field. If yes, color the count badge the same way `AlertsBell` does (4.1). If no, note this as a small API-shape addition needed on `artifacts/api-server`'s dashboard route, not assumed free.
+- Sweep remaining categorical hex (`seed-lot` type-tint badges, `RackReadingsCard`/`ChannelMonitoringCard` sensor-type accents, `cycle/[id].tsx`'s harvest-ready button) — these are legitimately categorical (not light/dark-theme-dependent), decide case by case whether to map onto `chart1-5` for consistency or leave as intentional fixed accents; don't blanket-convert without checking each reads fine against both `card` backgrounds.
+
+## Phase 4.3 — Facility logs (original Phase 4 scope, unchanged, built on the corrected tokens)
+
+Everything already specified above under "Data model," "API surface," and "Mobile UI plan" — carried forward as-is. Only two changes from sequencing this after 4.0-4.2 instead of standalone:
+
+1. Built with `colors.statusOk`/`statusWarn`/`chart1-5`/`radius: 8`/the new `elevation()` helper from day one — no retrofit pass needed afterward.
+2. The hamburger's existing "Data Logs" row (already built in Phase 3, already navigates to `/logs`) gets its real destination: new `app/logs/index.tsx`, a **category-picker landing screen** — 6 tiles (icon-in-rounded-square + title + subtitle + chevron, the same row idiom already used by `CycleCard`), one per log type, each opening its entry-form modal. This is a picker, not a history/browse list — the "no history view" decision from the original Phase 4 stands unchanged.
+
+## Phase 4.4 — Dashboard parity (optional / lower priority)
+
+Port a lightweight equivalent of web's `MetricPicker` + `TimeRangeSelector` to mobile Home, replacing the local Week/Month toggle currently scoped to just the yield chart. Reuse `@workspace/metrics`'s registry if its shape fits a mobile card list without a rewrite. Flagged optional: least load-bearing of the audit's findings, and the one with the most net-new scope (persisted per-user selection storage, more card variants to build). Suggest revisiting only after 4.0-4.3 ship and there's appetite for more.
+
+## Build order
+
+1. **4.0** — token rebuild + migration (foundation, nothing else looks right until this lands).
+2. **4.1** — global shell (header, hamburger-reach fix, alerts, health, theme toggle, search).
+3. **4.2** — status/chart color fixes (quick, mechanical, depends on 4.0's new token names existing).
+4. **4.3** — facility logs (the original Phase 4 feature, now on solid ground).
+5. **4.4** — dashboard parity, optional, only if there's appetite after the above.
