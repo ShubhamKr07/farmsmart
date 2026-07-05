@@ -22,6 +22,7 @@ import {
 import { useColors } from "@/hooks/useColors";
 import { useSignOutAndClear } from "@/hooks/useSignOutAndClear";
 import { useUserRole } from "@/hooks/useUserRole";
+import HamburgerMenu from "@/components/HamburgerMenu";
 
 type ActionFilter = "all" | "fertigation" | "harvest";
 type YieldPeriod = "week" | "month";
@@ -34,9 +35,16 @@ export default function HomeScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const signOut = useSignOutAndClear();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const [yieldPeriod, setYieldPeriod] = useState<YieldPeriod>("week");
   const [actionFilter, setActionFilter] = useState<ActionFilter>("all");
+
+  const displayName =
+    user?.firstName ?? user?.emailAddresses[0]?.emailAddress?.split("@")[0] ?? "Technician";
+  const userInitial = (
+    user?.firstName?.[0] ?? user?.emailAddresses[0]?.emailAddress?.[0] ?? "T"
+  ).toUpperCase();
 
   const { data: stats, isLoading, refetch, isRefetching } = useGetDashboard();
 
@@ -73,31 +81,21 @@ export default function HomeScreen() {
         }
       >
         <View style={s.header}>
-          <View>
-            <Text style={s.greeting}>Good {getGreeting()},</Text>
-            <Text style={s.userName}>
-              {user?.firstName ??
-                user?.emailAddresses[0]?.emailAddress?.split("@")[0] ??
-                "Technician"}
-            </Text>
-            <View style={s.roleBadge}>
-              <Text style={s.roleText}>{roleLabel}</Text>
-            </View>
-          </View>
           <Pressable
-            style={s.avatarBtn}
-            onPress={signOut}
-            accessibilityLabel="Sign out"
-            testID="sign-out-btn"
+            style={s.hamburgerBtn}
+            onPress={() => setMenuOpen(true)}
+            accessibilityLabel="Open menu"
+            testID="button-hamburger-menu"
           >
-            <Text style={s.avatarText}>
-              {(
-                user?.firstName?.[0] ??
-                user?.emailAddresses[0]?.emailAddress?.[0] ??
-                "T"
-              ).toUpperCase()}
-            </Text>
+            <Feather name="menu" size={22} color={colors.foreground} />
           </Pressable>
+          <View style={s.headerTextWrap}>
+            <Text style={s.greeting}>Good {getGreeting()},</Text>
+            <Text style={s.userName}>{displayName}</Text>
+          </View>
+          <View style={s.avatarBtn}>
+            <Text style={s.avatarText}>{userInitial}</Text>
+          </View>
         </View>
 
         {isLoading ? (
@@ -262,6 +260,18 @@ export default function HomeScreen() {
       <Pressable style={s.fab} onPress={() => router.push("/seeding" as any)}>
         <Feather name="plus" size={26} color="#fff" />
       </Pressable>
+
+      <HamburgerMenu
+        open={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        userName={displayName}
+        userInitial={userInitial}
+        roleLabel={roleLabel}
+        onSignOut={() => {
+          setMenuOpen(false);
+          signOut();
+        }}
+      />
     </SafeAreaView>
   );
 }
@@ -365,10 +375,17 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   scroll: { padding: 16, paddingBottom: 100 },
   header: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
+    alignItems: "center",
+    gap: 12,
     marginBottom: 20,
   },
+  hamburgerBtn: {
+    width: 40,
+    height: 40,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerTextWrap: { flex: 1 },
   greeting: {
     fontSize: 13,
     fontFamily: "Inter_400Regular",
@@ -378,23 +395,6 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
     fontSize: 22,
     fontFamily: "Inter_700Bold",
     color: colors.foreground,
-  },
-  roleBadge: {
-    marginTop: 4,
-    alignSelf: "flex-start",
-    backgroundColor: colors.muted,
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  roleText: {
-    fontSize: 11,
-    fontFamily: "Inter_600SemiBold",
-    color: colors.primary,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
   },
   avatarBtn: {
     width: 40,

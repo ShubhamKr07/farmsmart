@@ -1,0 +1,172 @@
+import { Feather } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import React, { useEffect, useMemo } from "react";
+import { Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
+import { useColors } from "@/hooks/useColors";
+
+const PANEL_WIDTH = 280;
+
+interface Props {
+  open: boolean;
+  onClose: () => void;
+  userName: string;
+  userInitial: string;
+  roleLabel: string;
+  onSignOut: () => void;
+}
+
+/**
+ * Left-side slide-in account/navigation panel, triggered by the hamburger
+ * icon in Home's header. Built with react-native-reanimated +
+ * react-native-gesture-handler (both already installed) rather than adding
+ * @react-navigation/drawer as a new dependency — same "don't add a library
+ * the app doesn't already need" call made for web's drag-reorder (native
+ * HTML5 DnD over dnd-kit).
+ *
+ * Houses the account identity + Sign Out (previously a direct tap-the
+ * -avatar action in Home's header, now an explicit menu row) and Data Logs
+ * (Alpha App Phase 4).
+ */
+export default function HamburgerMenu({
+  open,
+  onClose,
+  userName,
+  userInitial,
+  roleLabel,
+  onSignOut,
+}: Props) {
+  const colors = useColors();
+  const s = useMemo(() => createStyles(colors), [colors]);
+  const router = useRouter();
+  const { height } = useWindowDimensions();
+
+  const translateX = useSharedValue(-PANEL_WIDTH);
+  const backdropOpacity = useSharedValue(0);
+
+  useEffect(() => {
+    translateX.value = withTiming(open ? 0 : -PANEL_WIDTH, { duration: 220 });
+    backdropOpacity.value = withTiming(open ? 1 : 0, { duration: 220 });
+  }, [open, translateX, backdropOpacity]);
+
+  const panelStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value }],
+  }));
+  const backdropStyle = useAnimatedStyle(() => ({
+    opacity: backdropOpacity.value,
+  }));
+
+  return (
+    <View
+      style={[StyleSheet.absoluteFill, { height, zIndex: 50 }]}
+      pointerEvents={open ? "auto" : "none"}
+    >
+      <Animated.View style={[styles.backdrop, backdropStyle]}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Close menu" />
+      </Animated.View>
+
+      <Animated.View style={[s.panel, panelStyle]}>
+        <View style={s.accountBlock}>
+          <View style={s.avatar}>
+            <Text style={s.avatarText}>{userInitial}</Text>
+          </View>
+          <Text style={s.userName}>{userName}</Text>
+          <View style={s.roleBadge}>
+            <Text style={s.roleText}>{roleLabel}</Text>
+          </View>
+        </View>
+
+        <View style={s.divider} />
+
+        <Pressable
+          style={s.menuRow}
+          onPress={() => {
+            onClose();
+            router.push("/logs" as any);
+          }}
+        >
+          <Feather name="clipboard" size={18} color={colors.foreground} />
+          <Text style={s.menuRowText}>Data Logs</Text>
+          <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
+        </Pressable>
+
+        <View style={s.divider} />
+
+        <Pressable style={s.menuRow} onPress={onSignOut} testID="menu-sign-out">
+          <Feather name="log-out" size={18} color={colors.destructive} />
+          <Text style={[s.menuRowText, { color: colors.destructive }]}>Sign Out</Text>
+        </Pressable>
+      </Animated.View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.4)",
+  },
+});
+
+const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create({
+  panel: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: PANEL_WIDTH,
+    backgroundColor: colors.card,
+    paddingTop: 60,
+    paddingHorizontal: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 2, height: 0 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 10,
+  },
+  accountBlock: { alignItems: "flex-start", marginBottom: 20 },
+  avatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: colors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 10,
+  },
+  avatarText: { color: "#fff", fontSize: 18, fontFamily: "Inter_700Bold" },
+  userName: { fontSize: 17, fontFamily: "Inter_700Bold", color: colors.foreground },
+  roleBadge: {
+    marginTop: 6,
+    backgroundColor: colors.muted,
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  roleText: {
+    fontSize: 11,
+    fontFamily: "Inter_600SemiBold",
+    color: colors.primary,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  divider: { height: 1, backgroundColor: colors.border, marginVertical: 8 },
+  menuRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 14,
+  },
+  menuRowText: {
+    flex: 1,
+    fontSize: 15,
+    fontFamily: "Inter_500Medium",
+    color: colors.foreground,
+  },
+});
