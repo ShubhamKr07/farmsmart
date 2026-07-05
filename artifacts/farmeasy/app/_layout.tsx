@@ -98,6 +98,13 @@ export default function RootLayout() {
                         }}
                       />
                       <Stack.Screen
+                        name="ask"
+                        options={{
+                          presentation: "modal",
+                          headerShown: false,
+                        }}
+                      />
+                      <Stack.Screen
                         name="seeding"
                         options={{
                           presentation: "modal",

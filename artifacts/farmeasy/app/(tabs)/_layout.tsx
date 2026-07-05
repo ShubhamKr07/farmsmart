@@ -10,23 +10,27 @@ import { Platform, StyleSheet, View, useColorScheme } from "react-native";
 import { setAuthTokenGetter } from "@workspace/api-client-react";
 
 import { useColors } from "@/hooks/useColors";
+import AskMeFab from "@/components/AskMeFab";
 
 function NativeTabLayout() {
   return (
-    <NativeTabs>
-      <NativeTabs.Trigger name="index">
-        <Icon sf={{ default: "house", selected: "house.fill" }} />
-        <Label>Home</Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="cycles">
-        <Icon sf={{ default: "leaf", selected: "leaf.fill" }} />
-        <Label>Cycles</Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="scan">
-        <Icon sf={{ default: "qrcode.viewfinder", selected: "qrcode.viewfinder" }} />
-        <Label>Scan</Label>
-      </NativeTabs.Trigger>
-    </NativeTabs>
+    <View style={{ flex: 1 }}>
+      <NativeTabs>
+        <NativeTabs.Trigger name="index">
+          <Icon sf={{ default: "house", selected: "house.fill" }} />
+          <Label>Home</Label>
+        </NativeTabs.Trigger>
+        <NativeTabs.Trigger name="cycles">
+          <Icon sf={{ default: "leaf", selected: "leaf.fill" }} />
+          <Label>Cycles</Label>
+        </NativeTabs.Trigger>
+        <NativeTabs.Trigger name="scan">
+          <Icon sf={{ default: "qrcode.viewfinder", selected: "qrcode.viewfinder" }} />
+          <Label>Scan</Label>
+        </NativeTabs.Trigger>
+      </NativeTabs>
+      <AskMeFab />
+    </View>
   );
 }
 
@@ -38,73 +42,76 @@ function ClassicTabLayout() {
   const isWeb = Platform.OS === "web";
 
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.mutedForeground,
-        headerShown: false,
-        tabBarStyle: {
-          position: "absolute",
-          backgroundColor: isIOS ? "transparent" : colors.background,
-          borderTopWidth: isWeb ? 1 : 0,
-          borderTopColor: colors.border,
-          elevation: 0,
-          ...(isWeb ? { height: 84 } : {}),
-        },
-        tabBarBackground: () =>
-          isIOS ? (
-            <BlurView
-              intensity={100}
-              tint={isDark ? "dark" : "light"}
-              style={StyleSheet.absoluteFill}
-            />
-          ) : isWeb ? (
-            <View
-              style={[
-                StyleSheet.absoluteFill,
-                { backgroundColor: colors.background },
-              ]}
-            />
-          ) : null,
-      }}
-    >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: "Home",
-          tabBarIcon: ({ color }) =>
+    <View style={{ flex: 1 }}>
+      <Tabs
+        screenOptions={{
+          tabBarActiveTintColor: colors.primary,
+          tabBarInactiveTintColor: colors.mutedForeground,
+          headerShown: false,
+          tabBarStyle: {
+            position: "absolute",
+            backgroundColor: isIOS ? "transparent" : colors.background,
+            borderTopWidth: isWeb ? 1 : 0,
+            borderTopColor: colors.border,
+            elevation: 0,
+            ...(isWeb ? { height: 84 } : {}),
+          },
+          tabBarBackground: () =>
             isIOS ? (
-              <SymbolView name="house" tintColor={color} size={24} />
-            ) : (
-              <Feather name="home" size={22} color={color} />
-            ),
+              <BlurView
+                intensity={100}
+                tint={isDark ? "dark" : "light"}
+                style={StyleSheet.absoluteFill}
+              />
+            ) : isWeb ? (
+              <View
+                style={[
+                  StyleSheet.absoluteFill,
+                  { backgroundColor: colors.background },
+                ]}
+              />
+            ) : null,
         }}
-      />
-      <Tabs.Screen
-        name="cycles"
-        options={{
-          title: "Cycles",
-          tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="leaf" tintColor={color} size={24} />
-            ) : (
-              <Feather name="list" size={22} color={color} />
-            ),
-        }}
-      />
-      <Tabs.Screen
-        name="scan"
-        options={{
-          title: "Scan",
-          tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="qrcode.viewfinder" tintColor={color} size={24} />
-            ) : (
-              <Feather name="maximize" size={22} color={color} />
-            ),
-        }}
-      />
-    </Tabs>
+      >
+        <Tabs.Screen
+          name="index"
+          options={{
+            title: "Home",
+            tabBarIcon: ({ color }) =>
+              isIOS ? (
+                <SymbolView name="house" tintColor={color} size={24} />
+              ) : (
+                <Feather name="home" size={22} color={color} />
+              ),
+          }}
+        />
+        <Tabs.Screen
+          name="cycles"
+          options={{
+            title: "Cycles",
+            tabBarIcon: ({ color }) =>
+              isIOS ? (
+                <SymbolView name="leaf" tintColor={color} size={24} />
+              ) : (
+                <Feather name="list" size={22} color={color} />
+              ),
+          }}
+        />
+        <Tabs.Screen
+          name="scan"
+          options={{
+            title: "Scan",
+            tabBarIcon: ({ color }) =>
+              isIOS ? (
+                <SymbolView name="qrcode.viewfinder" tintColor={color} size={24} />
+              ) : (
+                <Feather name="maximize" size={22} color={color} />
+              ),
+          }}
+        />
+      </Tabs>
+      <AskMeFab />
+    </View>
   );
 }
 
