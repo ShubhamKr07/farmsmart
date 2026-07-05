@@ -1086,3 +1086,13 @@ export const PostRecommendResponse = zod.object({
 })
 
 
+/**
+ * @summary Create a facility compliance log entry (Alpha App mobile)
+ */
+export const PostFacilityLogBody = zod.object({
+  "logType": zod.enum(['maintenance', 'waste', 'env_check', 'cleaning', 'receiving', 'visitor']),
+  "data": zod.record(zod.string(), zod.unknown()),
+  "notes": zod.string().optional()
+})
+
+

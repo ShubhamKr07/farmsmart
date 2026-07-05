@@ -9,6 +9,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { useColors } from "@/hooks/useColors";
+import { elevation } from "@/constants/elevation";
 import LogoMark from "@/components/LogoMark";
 
 const PANEL_WIDTH = 280;
@@ -105,6 +106,18 @@ export default function HamburgerMenu({
             style={s.menuRow}
             onPress={() => {
               onClose();
+              router.push("/search" as any);
+            }}
+          >
+            <Feather name="search" size={18} color={colors.foreground} />
+            <Text style={s.menuRowText}>Search</Text>
+            <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
+          </Pressable>
+
+          <Pressable
+            style={s.menuRow}
+            onPress={() => {
+              onClose();
               router.push("/logs" as any);
             }}
           >
@@ -142,11 +155,7 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
     backgroundColor: colors.card,
     paddingTop: 60,
     paddingHorizontal: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 2, height: 0 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 10,
+    ...elevation(2, colors),
   },
   brandRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 24 },
   brandText: { fontSize: 16, fontFamily: "Inter_700Bold", color: colors.primary },

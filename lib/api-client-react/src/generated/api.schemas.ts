@@ -269,6 +269,49 @@ export interface RecommendResponse {
   cache_hit: boolean;
 }
 
+export type FacilityLogRequestLogType = typeof FacilityLogRequestLogType[keyof typeof FacilityLogRequestLogType];
+
+
+export const FacilityLogRequestLogType = {
+  maintenance: 'maintenance',
+  waste: 'waste',
+  env_check: 'env_check',
+  cleaning: 'cleaning',
+  receiving: 'receiving',
+  visitor: 'visitor',
+} as const;
+
+export type FacilityLogRequestData = { [key: string]: unknown };
+
+export interface FacilityLogRequest {
+  logType: FacilityLogRequestLogType;
+  data: FacilityLogRequestData;
+  notes?: string;
+}
+
+export type FacilityLogLogType = typeof FacilityLogLogType[keyof typeof FacilityLogLogType];
+
+
+export const FacilityLogLogType = {
+  maintenance: 'maintenance',
+  waste: 'waste',
+  env_check: 'env_check',
+  cleaning: 'cleaning',
+  receiving: 'receiving',
+  visitor: 'visitor',
+} as const;
+
+export type FacilityLogData = { [key: string]: unknown };
+
+export interface FacilityLog {
+  id: number;
+  logType: FacilityLogLogType;
+  data: FacilityLogData;
+  /** @nullable */
+  notes?: string | null;
+  createdAt: string;
+}
+
 export type AlertSeverity = typeof AlertSeverity[keyof typeof AlertSeverity];
 
 

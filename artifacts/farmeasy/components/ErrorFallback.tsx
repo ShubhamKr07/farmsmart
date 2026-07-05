@@ -13,6 +13,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useColors } from "@/hooks/useColors";
+import { elevation } from "@/constants/elevation";
 
 export type ErrorFallbackProps = {
   error: Error;
@@ -81,6 +82,7 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
           onPress={handleRestart}
           style={({ pressed }) => [
             styles.button,
+            elevation(1, colors),
             {
               backgroundColor: colors.primary,
               opacity: pressed ? 0.9 : 1,
@@ -214,14 +216,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 24,
     minWidth: 200,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
   buttonText: {
     fontWeight: "600",

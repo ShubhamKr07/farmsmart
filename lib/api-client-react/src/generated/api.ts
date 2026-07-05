@@ -45,6 +45,8 @@ import type {
   DashboardStats,
   DeleteResult,
   ErrorResponse,
+  FacilityLog,
+  FacilityLogRequest,
   GrowthProfile,
   HealthStatus,
   InventoryItem,
@@ -4200,5 +4202,76 @@ export const usePostRecommend = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getPostRecommendMutationOptions(options));
+    }
+
+export const getPostFacilityLogUrl = () => {
+
+
+
+
+  return `/api/facility-logs`
+}
+
+/**
+ * @summary Create a facility compliance log entry (Alpha App mobile)
+ */
+export const postFacilityLog = async (facilityLogRequest: FacilityLogRequest, options?: RequestInit): Promise<FacilityLog> => {
+
+  return customFetch<FacilityLog>(getPostFacilityLogUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      facilityLogRequest,)
+  }
+);}
+
+
+
+
+export const getPostFacilityLogMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postFacilityLog>>, TError,{data: BodyType<FacilityLogRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof postFacilityLog>>, TError,{data: BodyType<FacilityLogRequest>}, TContext> => {
+
+const mutationKey = ['postFacilityLog'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postFacilityLog>>, {data: BodyType<FacilityLogRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  postFacilityLog(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostFacilityLogMutationResult = NonNullable<Awaited<ReturnType<typeof postFacilityLog>>>
+    export type PostFacilityLogMutationBody = BodyType<FacilityLogRequest>
+    export type PostFacilityLogMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create a facility compliance log entry (Alpha App mobile)
+ */
+export const usePostFacilityLog = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postFacilityLog>>, TError,{data: BodyType<FacilityLogRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof postFacilityLog>>,
+        TError,
+        {data: BodyType<FacilityLogRequest>},
+        TContext
+      > => {
+      return useMutation(getPostFacilityLogMutationOptions(options));
     }
 

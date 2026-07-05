@@ -1187,6 +1187,25 @@ paths:
               schema:
                 $ref: "#/components/schemas/RecommendResponse"
 
+  /facility-logs:
+    post:
+      operationId: postFacilityLog
+      tags: [facilityLogs]
+      summary: Create a facility compliance log entry (Alpha App mobile)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FacilityLogRequest"
+      responses:
+        "201":
+          description: Created facility log
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FacilityLog"
+
 components:
   schemas:
     HealthStatus:
@@ -1645,6 +1664,36 @@ components:
         cache_hit:
           type: boolean
       required: [answer, sources, cache_hit]
+
+    FacilityLogRequest:
+      type: object
+      properties:
+        logType:
+          type: string
+          enum: [maintenance, waste, env_check, cleaning, receiving, visitor]
+        data:
+          type: object
+          additionalProperties: true
+        notes:
+          type: string
+      required: [logType, data]
+
+    FacilityLog:
+      type: object
+      properties:
+        id:
+          type: integer
+        logType:
+          type: string
+          enum: [maintenance, waste, env_check, cleaning, receiving, visitor]
+        data:
+          type: object
+          additionalProperties: true
+        notes:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+      required: [id, logType, data, createdAt]
 
     ActionRequiredItem:
       type: object

@@ -530,3 +530,32 @@ export const recommenderQueriesTable = pgTable(
     index("recommender_queries_created_at_idx").on(table.createdAt),
   ],
 );
+
+// ── Alpha App Phase 4.3: facility compliance logs (mobile-only feature) ─────
+// One shared table + jsonb payload (matches recommender_queries.sources/
+// farm_context_used) rather than six separate tables — per-type Zod schemas
+// on the API give type safety without a migration every time a field changes.
+
+export const facilityLogTypeEnum = pgEnum("facility_log_type", [
+  "maintenance",
+  "waste",
+  "env_check",
+  "cleaning",
+  "receiving",
+  "visitor",
+]);
+
+export const facilityLogsTable = pgTable(
+  "facility_logs",
+  {
+    id: serial("id").primaryKey(),
+    logType: facilityLogTypeEnum("log_type").notNull(),
+    clerkUserId: text("clerk_user_id").notNull(),
+    data: jsonb("data").notNull(),
+    notes: text("notes"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => [
+    index("facility_logs_type_created_at_idx").on(table.logType, table.createdAt),
+  ],
+);

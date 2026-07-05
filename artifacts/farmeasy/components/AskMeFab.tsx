@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import React from "react";
 import { Pressable, StyleSheet } from "react-native";
 import { useColors } from "@/hooks/useColors";
+import { elevation } from "@/constants/elevation";
 
 /**
  * Global entry point to the Ask Me assistant — floating, bottom-left,
@@ -16,7 +17,7 @@ export default function AskMeFab() {
 
   return (
     <Pressable
-      style={[styles.fab, { backgroundColor: colors.primary }]}
+      style={[styles.fab, { backgroundColor: colors.primary }, elevation(2, colors)]}
       onPress={() => router.push("/ask" as any)}
       accessibilityLabel="Ask Me"
       hitSlop={8}
@@ -36,11 +37,6 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 6,
     zIndex: 10,
   },
 });

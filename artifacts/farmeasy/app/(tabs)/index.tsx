@@ -20,9 +20,8 @@ import {
   type ActionRequiredItem,
 } from "@workspace/api-client-react";
 import { useColors } from "@/hooks/useColors";
-import { useSignOutAndClear } from "@/hooks/useSignOutAndClear";
-import { useUserRole } from "@/hooks/useUserRole";
-import HamburgerMenu from "@/components/HamburgerMenu";
+import { elevation } from "@/constants/elevation";
+import AppHeader from "@/components/AppHeader";
 
 type ActionFilter = "all" | "fertigation" | "harvest";
 type YieldPeriod = "week" | "month";
@@ -31,20 +30,14 @@ export default function HomeScreen() {
   const colors = useColors();
   const s = useMemo(() => createStyles(colors), [colors]);
   const { user } = useUser();
-  const { label: roleLabel } = useUserRole();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const signOut = useSignOutAndClear();
-  const [menuOpen, setMenuOpen] = useState(false);
 
   const [yieldPeriod, setYieldPeriod] = useState<YieldPeriod>("week");
   const [actionFilter, setActionFilter] = useState<ActionFilter>("all");
 
   const displayName =
     user?.firstName ?? user?.emailAddresses[0]?.emailAddress?.split("@")[0] ?? "Technician";
-  const userInitial = (
-    user?.firstName?.[0] ?? user?.emailAddresses[0]?.emailAddress?.[0] ?? "T"
-  ).toUpperCase();
 
   const { data: stats, isLoading, refetch, isRefetching } = useGetDashboard();
 
@@ -65,6 +58,7 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={s.safe} edges={["top"]}>
+      <AppHeader />
       <ScrollView
         contentContainerStyle={s.scroll}
         refreshControl={
@@ -81,21 +75,8 @@ export default function HomeScreen() {
         }
       >
         <View style={s.header}>
-          <Pressable
-            style={s.hamburgerBtn}
-            onPress={() => setMenuOpen(true)}
-            accessibilityLabel="Open menu"
-            testID="button-hamburger-menu"
-          >
-            <Feather name="menu" size={22} color={colors.foreground} />
-          </Pressable>
-          <View style={s.headerTextWrap}>
-            <Text style={s.greeting}>Good {getGreeting()},</Text>
-            <Text style={s.userName}>{displayName}</Text>
-          </View>
-          <View style={s.avatarBtn}>
-            <Text style={s.avatarText}>{userInitial}</Text>
-          </View>
+          <Text style={s.greeting}>Good {getGreeting()},</Text>
+          <Text style={s.userName}>{displayName}</Text>
         </View>
 
         {isLoading ? (
@@ -116,7 +97,7 @@ export default function HomeScreen() {
                         width: `${Math.min(utilizationPct, 100)}%` as any,
                         backgroundColor:
                           utilizationPct > 80
-                            ? colors.warning
+                            ? colors.statusWarn
                             : colors.primary,
                       },
                     ]}
@@ -226,7 +207,7 @@ export default function HomeScreen() {
                             backgroundColor:
                               item.daysOverdue > 1
                                 ? colors.destructive
-                                : colors.warning,
+                                : colors.statusWarn,
                           },
                         ]}
                       />
@@ -261,18 +242,6 @@ export default function HomeScreen() {
       <Pressable style={s.fab} onPress={() => router.push("/seeding" as any)}>
         <Feather name="plus" size={26} color="#fff" />
       </Pressable>
-
-      <HamburgerMenu
-        open={menuOpen}
-        onClose={() => setMenuOpen(false)}
-        userName={displayName}
-        userInitial={userInitial}
-        roleLabel={roleLabel}
-        onSignOut={() => {
-          setMenuOpen(false);
-          signOut();
-        }}
-      />
     </SafeAreaView>
   );
 }
@@ -325,7 +294,7 @@ function YieldLineChart({
           <Polyline points={pts(yieldData)} fill="none" stroke={colors.primary} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
         )}
         {seedingData.length >= 2 && (
-          <Polyline points={pts(seedingData)} fill="none" stroke={colors.info} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+          <Polyline points={pts(seedingData)} fill="none" stroke={colors.chart2} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
         )}
         {badTrayData.length >= 2 && (
           <Polyline points={pts(badTrayData)} fill="none" stroke={colors.destructive} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
@@ -349,7 +318,7 @@ function YieldLineChart({
           <Text style={s.legendLabel}>Yield</Text>
         </View>
         <View style={s.legendItem}>
-          <View style={[s.legendDot, { backgroundColor: colors.info }]} />
+          <View style={[s.legendDot, { backgroundColor: colors.chart2 }]} />
           <Text style={s.legendLabel}>Seeding</Text>
         </View>
         <View style={s.legendItem}>
@@ -377,18 +346,8 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   safe: { flex: 1, backgroundColor: colors.background },
   scroll: { padding: 16, paddingBottom: 100 },
   header: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
     marginBottom: 20,
   },
-  hamburgerBtn: {
-    width: 40,
-    height: 40,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  headerTextWrap: { flex: 1 },
   greeting: {
     fontSize: 13,
     fontFamily: "Inter_400Regular",
@@ -398,19 +357,6 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
     fontSize: 22,
     fontFamily: "Inter_700Bold",
     color: colors.foreground,
-  },
-  avatarBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.primary,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  avatarText: {
-    color: "#fff",
-    fontSize: 16,
-    fontFamily: "Inter_700Bold",
   },
   loadingWrap: { flex: 1, alignItems: "center", padding: 60 },
   statsRow: { flexDirection: "row", gap: 12, marginBottom: 12 },
@@ -497,11 +443,7 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   },
   toggleBtnActive: {
     backgroundColor: colors.card,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 2,
-    elevation: 1,
+    ...elevation(1, colors),
   },
   toggleBtnText: {
     fontSize: 12,
@@ -624,10 +566,6 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
     backgroundColor: colors.primary,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 6,
+    ...elevation(2, colors),
   },
 });

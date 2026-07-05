@@ -76,8 +76,8 @@ export default function SeedLotDetailScreen() {
               </View>
             )}
             {lot.currentlyGrown !== null && (
-              <View style={[s.grownBadge, { backgroundColor: lot.currentlyGrown ? colors.success + "22" : colors.warning + "22" }]}>
-                <Text style={[s.grownBadgeText, { color: lot.currentlyGrown ? colors.success : colors.warning }]}>
+              <View style={[s.grownBadge, { backgroundColor: lot.currentlyGrown ? colors.statusOk + "22" : colors.statusWarn + "22" }]}>
+                <Text style={[s.grownBadgeText, { color: lot.currentlyGrown ? colors.statusOk : colors.statusWarn }]}>
                   {lot.currentlyGrown ? "Currently Grown" : "Not Currently Grown"}
                 </Text>
               </View>

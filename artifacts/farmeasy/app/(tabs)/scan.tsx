@@ -15,6 +15,7 @@ import QRScanner from "@/components/QRScanner";
 import ChannelMonitoringCard from "@/components/ChannelMonitoringCard";
 import { parseQR, type LayoutQR } from "@/utils/parseQR";
 import { useColors } from "@/hooks/useColors";
+import AppHeader from "@/components/AppHeader";
 
 type ScanState =
   | { status: "idle" }
@@ -86,6 +87,7 @@ export default function ScanScreen() {
 
   return (
     <SafeAreaView style={s.safe} edges={["top"]}>
+      <AppHeader />
       <View style={s.header}>
         <Text style={s.title}>Scan Channel QR</Text>
         <Text style={s.subtitle}>Point the camera at a channel or rack QR code to view live environmental readings.</Text>

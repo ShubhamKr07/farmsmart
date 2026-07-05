@@ -16,6 +16,7 @@ import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { setBaseUrl } from "@workspace/api-client-react";
 import { useColors } from "@/hooks/useColors";
+import { ThemeOverrideProvider } from "@/context/ThemeOverrideContext";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
@@ -51,6 +52,14 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 }
 
 export default function RootLayout() {
+  return (
+    <ThemeOverrideProvider>
+      <RootLayoutInner />
+    </ThemeOverrideProvider>
+  );
+}
+
+function RootLayoutInner() {
   const colors = useColors();
   const [fontsLoaded, fontError] = useFonts({
     Inter_400Regular,
@@ -99,6 +108,34 @@ export default function RootLayout() {
                       />
                       <Stack.Screen
                         name="ask"
+                        options={{
+                          presentation: "modal",
+                          headerShown: false,
+                        }}
+                      />
+                      <Stack.Screen
+                        name="alerts"
+                        options={{
+                          presentation: "modal",
+                          headerShown: false,
+                        }}
+                      />
+                      <Stack.Screen
+                        name="search"
+                        options={{
+                          presentation: "modal",
+                          headerShown: false,
+                        }}
+                      />
+                      <Stack.Screen
+                        name="logs/index"
+                        options={{
+                          presentation: "modal",
+                          headerShown: false,
+                        }}
+                      />
+                      <Stack.Screen
+                        name="logs/[type]"
                         options={{
                           presentation: "modal",
                           headerShown: false,

@@ -211,7 +211,7 @@ export default function FertigationWizard() {
                       backgroundColor:
                         germinationProgress >= 100
                           ? colors.primary
-                          : colors.warning,
+                          : colors.statusWarn,
                     },
                   ]}
                 />

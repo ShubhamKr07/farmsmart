@@ -18,11 +18,15 @@ const STATUS_LABEL: Record<string, string> = {
   completed: "Completed",
 };
 
+// Matches web's Cycles.tsx stage-badge mapping exactly (germination: status
+// -ok green, fertigation: primary green, harvest: status-warn amber) — was
+// previously hardcoded Tailwind hex with fertigation as blue, a mismatch
+// with web's all-green-for-growing-stages convention (Phase 4.2).
 function statusColor(status: string, colors: ReturnType<typeof useColors>): string {
   const map: Record<string, string> = {
-    germination: "#10B981",
-    fertigation: "#3B82F6",
-    harvest: "#F59E0B",
+    germination: colors.statusOk,
+    fertigation: colors.primary,
+    harvest: colors.statusWarn,
     completed: colors.mutedForeground,
   };
   return map[status] ?? colors.mutedForeground;
@@ -76,8 +80,8 @@ function getCountdown(cycle: Cycle, now: number): CountdownResult | null {
 
 function countdownColor(result: CountdownResult, colors: ReturnType<typeof useColors>): string {
   if (result.daysOverdue !== null) return colors.destructive;
-  if (result.daysUntil !== null && result.daysUntil <= 2) return colors.warning;
-  return colors.success;
+  if (result.daysUntil !== null && result.daysUntil <= 2) return colors.statusWarn;
+  return colors.statusOk;
 }
 
 function countdownLabel(result: CountdownResult): string {

@@ -291,7 +291,7 @@ export default function CycleDetailScreen() {
         )}
         {canHarvest && harvestDaysRemaining === 0 && (
           <Pressable
-            style={[s.actionBtn, { backgroundColor: colors.warning }]}
+            style={[s.actionBtn, { backgroundColor: colors.statusWarn }]}
             onPress={() => router.push(`/harvest/${cycleId}` as any)}
           >
             <Feather name="scissors" size={18} color="#fff" />

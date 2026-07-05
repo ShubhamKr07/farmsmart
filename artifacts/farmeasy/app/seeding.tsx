@@ -500,7 +500,7 @@ export default function SeedingWizard() {
                     </View>
                     <View style={s.channelStatDivider} />
                     <View style={s.channelStat}>
-                      <Text style={[s.channelStatVal, { color: channelStatus.availableTrays > 0 ? colors.success : colors.destructive }]}>
+                      <Text style={[s.channelStatVal, { color: channelStatus.availableTrays > 0 ? colors.statusOk : colors.destructive }]}>
                         {channelStatus.availableTrays}
                       </Text>
                       <Text style={s.channelStatLabel}>Available</Text>
@@ -821,7 +821,7 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   channelTraysLeft: {
     fontSize: 13,
     fontFamily: "Inter_500Medium",
-    color: colors.success,
+    color: colors.statusOk,
     marginTop: 4,
     textAlign: "center",
   },

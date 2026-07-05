@@ -248,7 +248,7 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   errorText: {
     fontSize: 12,
     fontFamily: "Inter_400Regular",
-    color: "#C62828",
+    color: colors.destructive,
   },
   noConfig: {
     alignItems: "center",

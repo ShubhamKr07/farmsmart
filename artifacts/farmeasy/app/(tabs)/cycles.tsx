@@ -19,6 +19,7 @@ import {
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useColors } from "@/hooks/useColors";
+import AppHeader from "@/components/AppHeader";
 import CycleCard from "@/components/CycleCard";
 import { useUserRole } from "@/hooks/useUserRole";
 import { matchesSearch, matchesStage, matchesDateRange } from "@/utils/cycleFilters";
@@ -89,6 +90,7 @@ export default function CyclesScreen() {
 
   return (
     <SafeAreaView style={s.safe} edges={["top"]}>
+      <AppHeader />
       <View style={s.header}>
         <Text style={s.title}>Crop Cycles</Text>
       </View>
