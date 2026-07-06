@@ -331,3 +331,55 @@ Status: **shipped**. Targets `app/(tabs)/index.tsx`'s `YieldLineChart` specifica
 - Web's own chart is explicitly *not* being changed to match — this is mobile-only, by request.
 
 Verified live: filled area visible under the yield/seeding lines, Bad Trays legend dot and line now `chartPurple` (`#9C27B0`) instead of red.
+
+---
+
+# Phase 7 — Home screen redesign
+
+Status: **shipped**. Targets `app/(tabs)/index.tsx` and `components/AppHeader.tsx`. Checked real data availability for each item before writing this — two items needed new backend work, not just a mobile change; both built:
+
+- **Channel Utilization panel**: new `GET /api/layout/channels-status` (one grouped query pass across every channel, not N+1 calls to `/layout/resolve`) + `app/channel-availability.tsx`.
+- **Total Waste**: decided as `bad_tray_entries.lossEstimate`, computed wastage-aware — grounded in each cycle's own growth-profile `expectedYieldPerTrayKg` (affected trays × that cycle's actual expected yield) rather than a flat per-tray guess. `bad_tray_entries` was previously defined in the schema but never populated by any code path — now wired at both bad-tray reporting points (`POST /cycles/:id/manual-checks` and `/complete-harvest`). New `totalWasteThisWeek` field on `DashboardStats`.
+
+Verified live on the Android emulator.
+
+## 1. Channel Utilization → plain data card + drill-down panel
+
+Remove the progress-bar visualization from the stat card — becomes label + value + sub-line only, matching the existing "Running" card's plain layout right next to it. Card becomes `Pressable`, opening a new screen (`app/channel-availability.tsx`, modal-presented) listing every channel grouped by room, each row showing total tray positions / active cycles / available.
+
+**Backend gap, not free**: no endpoint returns this for *all* channels today. `GET /api/layout/resolve` (`artifacts/api-server/src/routes/layout.ts`) computes exactly this shape — `totalTrays`, `activeCycles`, `availableTrays`, `isFull` — but only for one channel at a time (takes `room`/`channel` query params, used by the QR-scan flow). Needs a new `GET /api/layout/channels-status` (or similar) running the same two aggregate queries (tray count per channel, active-cycle count per channel) grouped across every channel in one pass, not N+1 calls to `/resolve`. New OpenAPI schema + codegen too.
+
+## 2. Greeting message — one line
+
+`Good {greeting}, {displayName}!` — merge the current two-line `Text` (`Good evening,` / `Farm`) into one line with an exclamation mark, e.g. "Good evening, Jason!". Mobile-only style/JSX change, no data gap.
+
+## 3. System indicators below greeting (pH, temperature, humidity, water level)
+
+**Already available, no backend change needed.** `DashboardStats.sensorStatus` (`useGetDashboard()`, already fetched on this screen) has `acidityPh`, `tempCelsius`, `humidityPct`, `waterLevelPct` exactly — this is the same snapshot `recommend.ts`'s ops-context and web's RightSidebar already use. Add a compact horizontal row of 4 small indicator chips between the greeting and the existing stat cards. `sensorStatus` is optional in the type (`sensorStatus?: SensorStatus`) — needs a handled empty/placeholder state for facilities with no sensors configured yet, not just an assumed-always-present value.
+
+## 4. AppHeader — add brand name next to the logo
+
+`components/AppHeader.tsx` currently renders only `<LogoMark size={20} />`, no wordmark. Add a `Text` "FarmEasy" next to it — same treatment already built in `HamburgerMenu.tsx`'s `brandRow` (`LogoMark` + `Inter_700Bold` text in `colors.primary`), reused here for consistency rather than inventing a second style.
+
+## 5. New data cards — Total Waste, Total Yield Last Week
+
+- **Total Yield Last Week**: free — `stats.totalYieldThisWeek` already exists and is already fetched on this screen (currently only shown inside the chart card's "7-day total" row). Add it as its own stat card in `statsRow`.
+- **Total Waste**: **no existing aggregate — needs a decision, not just code.** Two candidate data sources, neither is an obvious clean match:
+  - `bad_tray_entries.lossEstimate` (existing, always-populated, computed today) — but semantically "tray loss from bad-tray incidents," not "waste/compost disposal."
+  - `facility_logs` where `log_type = 'waste'` (Phase 4.3/5's new Waste & Compost log, `data.quantity`) — semantically the right concept, but it's a brand-new opt-in manual log with likely few or zero entries right now, so the card would show near-zero for a while and only becomes meaningful once technicians actually use that log type regularly.
+  
+  Recommend clarifying which "waste" this card means before building — if it's the Waste & Compost log total, that's a new backend aggregation (`SUM(data->>'quantity')` grouped by unit, which itself is messy since units vary per entry — kg vs lbs vs count — needs a decision on whether to normalize or just sum same-unit entries and show per-unit totals).
+
+## 6. Maximize chart area, rename to "Recent Trends"
+
+- Title: `cardTitle` text `"Total Yield"` → `"Recent Trends"` (trivial).
+- "Maximize the chart area": current `YieldLineChart` uses a fixed `VH = 110` viewBox height inside a card that also carries a header row (title + Week/Month toggle) and a below-chart total row (`yieldTotalRow`, "7-day total" + number). Free up vertical space by moving that total number inline into the header row (next to "Recent Trends", small/secondary style) instead of its own row below the chart, and increase `VH` (e.g. to ~170-180) so the chart itself fills more of the freed space rather than just shrinking the card.
+
+## Build order
+
+1. Greeting one-line + AppHeader brand name (#2, #4) — pure mobile styling, no data gaps, do first.
+2. System indicators row (#3) — mobile-only, data already available, includes the empty-sensor-state handling.
+3. Total Yield Last Week card (#5, half of it) — mobile-only, data already available.
+4. Chart maximize + rename (#6) — mobile-only.
+5. Channel Utilization plain card + panel (#1) — needs the new `/api/layout/channels-status` endpoint + codegen first, then the mobile card + drill-down screen.
+6. Total Waste card (#5, other half) — blocked on a definition decision (bad-tray loss vs. facility-log waste total vs. something else) before any backend work starts.

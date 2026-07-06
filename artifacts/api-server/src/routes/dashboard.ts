@@ -10,6 +10,7 @@ import {
   alertsTable,
   sensorStatusTable,
   channelsTable,
+  badTrayEntriesTable,
 } from "@workspace/db";
 import { calcDaysOverdue, seedingWeight } from "../lib/utils";
 
@@ -121,6 +122,18 @@ export async function computeDashboardSnapshot() {
       const qty = Number(c.harvestedQty);
       if (c.closedAt >= weekStart) totalYieldThisWeek += qty;
       if (c.closedAt >= monthStart) totalYieldThisMonth += qty;
+    }
+
+    // Total Waste (Phase 7): SUM(bad_tray_entries.lossEstimate), same weekly
+    // window as totalYieldThisWeek — wastage-aware estimate grounded in each
+    // cycle's own expected yield (see POST /cycles/:id/manual-checks and
+    // /complete-harvest), not a flat per-tray guess.
+    const wasteRows = await db
+      .select({ lossEstimate: badTrayEntriesTable.lossEstimate, createdAt: badTrayEntriesTable.createdAt })
+      .from(badTrayEntriesTable);
+    let totalWasteThisWeek = 0;
+    for (const w of wasteRows) {
+      if (w.createdAt >= weekStart) totalWasteThisWeek += Number(w.lossEstimate ?? 0);
     }
 
     // Time-series via SQL generate_series + date_trunc + SUM (R5: replaces
@@ -235,6 +248,7 @@ export async function computeDashboardSnapshot() {
       totalChannels,
       totalYieldThisWeek,
       totalYieldThisMonth,
+      totalWasteThisWeek,
       activeSeedLots,
       activeSeedLotDetails: activeSeedLotsRows.map((s) => ({
         id: s.id,

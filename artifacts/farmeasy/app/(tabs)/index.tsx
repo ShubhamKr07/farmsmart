@@ -75,9 +75,35 @@ export default function HomeScreen() {
         }
       >
         <View style={s.header}>
-          <Text style={s.greeting}>Good {getGreeting()},</Text>
-          <Text style={s.userName}>{displayName}</Text>
+          <Text style={s.greeting}>
+            Good {getGreeting()}, {displayName}!
+          </Text>
         </View>
+
+        {stats?.sensorStatus && (
+          <View style={s.sensorRow}>
+            <View style={s.sensorChip}>
+              <Feather name="droplet" size={13} color={colors.chartPurple} />
+              <Text style={s.sensorValue}>{stats.sensorStatus.acidityPh ?? "—"}</Text>
+              <Text style={s.sensorLabel}>pH</Text>
+            </View>
+            <View style={s.sensorChip}>
+              <Feather name="thermometer" size={13} color={colors.statusWarn} />
+              <Text style={s.sensorValue}>{stats.sensorStatus.tempCelsius ?? "—"}°C</Text>
+              <Text style={s.sensorLabel}>Temp</Text>
+            </View>
+            <View style={s.sensorChip}>
+              <Feather name="wind" size={13} color={colors.chart2} />
+              <Text style={s.sensorValue}>{stats.sensorStatus.humidityPct ?? "—"}%</Text>
+              <Text style={s.sensorLabel}>Humidity</Text>
+            </View>
+            <View style={s.sensorChip}>
+              <Feather name="droplet" size={13} color={colors.primary} />
+              <Text style={s.sensorValue}>{stats.sensorStatus.waterLevelPct ?? "—"}%</Text>
+              <Text style={s.sensorLabel}>Water</Text>
+            </View>
+          </View>
+        )}
 
         {isLoading ? (
           <View style={s.loadingWrap}>
@@ -86,28 +112,17 @@ export default function HomeScreen() {
         ) : (
           <>
             <View style={s.statsRow}>
-              <View style={[s.statCard, { flex: 1.2 }]}>
+              <Pressable
+                style={[s.statCard, { flex: 1.2 }]}
+                onPress={() => router.push("/channel-availability" as any)}
+              >
                 <Text style={s.statLabel}>Channel Utilization</Text>
                 <Text style={s.statValue}>{utilizationPct}%</Text>
-                <View style={s.progressTrack}>
-                  <View
-                    style={[
-                      s.progressFill,
-                      {
-                        width: `${Math.min(utilizationPct, 100)}%` as any,
-                        backgroundColor:
-                          utilizationPct > 80
-                            ? colors.statusWarn
-                            : colors.primary,
-                      },
-                    ]}
-                  />
-                </View>
                 <Text style={s.statSub}>
                   {stats?.totalRunningCycles ?? 0}/
                   {stats?.totalChannels ?? 20} channels
                 </Text>
-              </View>
+              </Pressable>
               <View style={[s.statCard, { flex: 0.8 }]}>
                 <Text style={s.statLabel}>Running</Text>
                 <Text style={s.statValue}>
@@ -117,9 +132,31 @@ export default function HomeScreen() {
               </View>
             </View>
 
+            <View style={s.statsRow}>
+              <View style={s.statCard}>
+                <Text style={s.statLabel}>Total Yield</Text>
+                <Text style={s.statValue}>{formatGrams(stats?.totalYieldThisWeek ?? 0)}</Text>
+                <Text style={s.statSub}>last week</Text>
+              </View>
+              <View style={s.statCard}>
+                <Text style={s.statLabel}>Total Waste</Text>
+                <Text style={[s.statValue, { color: colors.chartPurple }]}>
+                  {formatGrams(stats?.totalWasteThisWeek ?? 0)}
+                </Text>
+                <Text style={s.statSub}>last week</Text>
+              </View>
+            </View>
+
             <View style={s.card}>
               <View style={s.cardHeaderRow}>
-                <Text style={s.cardTitle}>Total Yield</Text>
+                <View>
+                  <Text style={s.cardTitle}>Recent Trends</Text>
+                  <Text style={s.yieldInlineTotal}>
+                    {yieldPeriod === "week" ? "7-day" : "Month"} total: {formatGrams(
+                      yieldPeriod === "week" ? stats?.totalYieldThisWeek ?? 0 : stats?.totalYieldThisMonth ?? 0,
+                    )}
+                  </Text>
+                </View>
                 <View style={s.toggle}>
                   <Pressable
                     style={[s.toggleBtn, yieldPeriod === "week" && s.toggleBtnActive]}
@@ -146,16 +183,6 @@ export default function HomeScreen() {
                 seedingData={yieldPeriod === "week" ? ((stats as any)?.seedingByDay ?? []) : ((stats as any)?.seedingByWeek ?? [])}
                 badTrayData={yieldPeriod === "week" ? ((stats as any)?.badTrayByDay ?? []) : ((stats as any)?.badTrayByWeek ?? [])}
               />
-              <View style={s.yieldTotalRow}>
-                <Text style={s.yieldTotalLabel}>
-                  {yieldPeriod === "week" ? "7-day total" : "Month total"}
-                </Text>
-                <Text style={s.yieldNum}>
-                  {yieldPeriod === "week"
-                    ? formatGrams(stats?.totalYieldThisWeek ?? 0)
-                    : formatGrams(stats?.totalYieldThisMonth ?? 0)}
-                </Text>
-              </View>
             </View>
 
             <View style={s.card}>
@@ -260,7 +287,7 @@ function YieldLineChart({
   badTrayData: { label: string; value: number }[];
 }) {
   const VW = 300;
-  const VH = 110;
+  const VH = 175;
   const PL = 28;
   const PR = 6;
   const PT = 6;
@@ -371,18 +398,32 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   safe: { flex: 1, backgroundColor: colors.background },
   scroll: { padding: 16, paddingBottom: 100 },
   header: {
-    marginBottom: 20,
+    marginBottom: 12,
   },
   greeting: {
-    fontSize: 13,
-    fontFamily: "Inter_400Regular",
-    color: colors.mutedForeground,
-  },
-  userName: {
-    fontSize: 22,
+    fontSize: 20,
     fontFamily: "Inter_700Bold",
     color: colors.foreground,
   },
+  sensorRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 20,
+  },
+  sensorChip: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: colors.card,
+    borderRadius: colors.radius,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+  },
+  sensorValue: { fontSize: 12, fontFamily: "Inter_700Bold", color: colors.foreground },
+  sensorLabel: { fontSize: 10, fontFamily: "Inter_400Regular", color: colors.mutedForeground },
   loadingWrap: { flex: 1, alignItems: "center", padding: 60 },
   statsRow: { flexDirection: "row", gap: 12, marginBottom: 12 },
   statCard: {
@@ -410,16 +451,6 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
     color: colors.mutedForeground,
     marginTop: 4,
   },
-  progressTrack: {
-    height: 6,
-    backgroundColor: colors.muted,
-    borderRadius: 3,
-    overflow: "hidden",
-  },
-  progressFill: {
-    height: "100%",
-    borderRadius: 3,
-  },
   card: {
     backgroundColor: colors.card,
     borderRadius: colors.radius,
@@ -443,6 +474,12 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
     fontSize: 16,
     fontFamily: "Inter_600SemiBold",
     color: colors.foreground,
+  },
+  yieldInlineTotal: {
+    fontSize: 12,
+    fontFamily: "Inter_500Medium",
+    color: colors.primary,
+    marginTop: 2,
   },
   badge: {
     backgroundColor: colors.destructive,
@@ -502,24 +539,6 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
     fontSize: 11,
     fontFamily: "Inter_400Regular",
     color: colors.mutedForeground,
-  },
-  yieldTotalRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  yieldTotalLabel: {
-    fontSize: 13,
-    fontFamily: "Inter_400Regular",
-    color: colors.mutedForeground,
-  },
-  yieldNum: {
-    fontSize: 22,
-    fontFamily: "Inter_700Bold",
-    color: colors.primary,
   },
   filterChips: {
     flexDirection: "row",

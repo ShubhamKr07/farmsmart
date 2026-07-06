@@ -768,6 +768,21 @@ paths:
         "404":
           description: Room or channel not found
 
+  /layout/channels-status:
+    get:
+      operationId: getChannelsStatus
+      tags: [layout]
+      summary: Tray-position availability for every channel (Phase 7 Channel Utilization panel)
+      responses:
+        "200":
+          description: Per-channel tray availability, every room/channel in one call
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ChannelResolved"
+
   /layout/racks/{id}/tray-count:
     patch:
       operationId: setRackTrayCount
@@ -1497,6 +1512,9 @@ components:
           type: number
         totalYieldThisMonth:
           type: number
+        totalWasteThisWeek:
+          type: number
+          description: SUM(bad_tray_entries.lossEstimate) this week, grams — wastage-aware estimate grounded in each cycle's growth-profile expected yield.
         activeSeedLots:
           type: integer
         badTraysCount:
@@ -1542,6 +1560,7 @@ components:
         - totalChannels
         - totalYieldThisWeek
         - totalYieldThisMonth
+        - totalWasteThisWeek
         - activeSeedLots
         - badTraysCount
         - activeCropTypes

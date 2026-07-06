@@ -2566,6 +2566,83 @@ export function useResolveLayoutQr<TData = Awaited<ReturnType<typeof resolveLayo
 
 
 
+export const getGetChannelsStatusUrl = () => {
+
+
+
+
+  return `/api/layout/channels-status`
+}
+
+/**
+ * @summary Tray-position availability for every channel (Phase 7 Channel Utilization panel)
+ */
+export const getChannelsStatus = async ( options?: RequestInit): Promise<ChannelResolved[]> => {
+
+  return customFetch<ChannelResolved[]>(getGetChannelsStatusUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetChannelsStatusQueryKey = () => {
+    return [
+    `/api/layout/channels-status`
+    ] as const;
+    }
+
+
+export const getGetChannelsStatusQueryOptions = <TData = Awaited<ReturnType<typeof getChannelsStatus>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getChannelsStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetChannelsStatusQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getChannelsStatus>>> = ({ signal }) => getChannelsStatus({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getChannelsStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetChannelsStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getChannelsStatus>>>
+export type GetChannelsStatusQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Tray-position availability for every channel (Phase 7 Channel Utilization panel)
+ */
+
+export function useGetChannelsStatus<TData = Awaited<ReturnType<typeof getChannelsStatus>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getChannelsStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetChannelsStatusQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
 export const getSetRackTrayCountUrl = (id: number,) => {
 
 

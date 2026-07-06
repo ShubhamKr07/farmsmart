@@ -189,6 +189,8 @@ export interface DashboardStats {
   totalChannels: number;
   totalYieldThisWeek: number;
   totalYieldThisMonth: number;
+  /** SUM(bad_tray_entries.lossEstimate) this week, grams — wastage-aware estimate grounded in each cycle's growth-profile expected yield. */
+  totalWasteThisWeek: number;
   activeSeedLots: number;
   badTraysCount: number;
   /** Count of distinct crop/seed names in running cycles. */

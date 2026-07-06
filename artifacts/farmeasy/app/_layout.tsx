@@ -142,6 +142,13 @@ function RootLayoutInner() {
                         }}
                       />
                       <Stack.Screen
+                        name="channel-availability"
+                        options={{
+                          presentation: "modal",
+                          headerShown: false,
+                        }}
+                      />
+                      <Stack.Screen
                         name="seeding"
                         options={{
                           presentation: "modal",

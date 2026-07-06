@@ -25,6 +25,7 @@ export const GetDashboardResponse = zod.object({
   "totalChannels": zod.number(),
   "totalYieldThisWeek": zod.number(),
   "totalYieldThisMonth": zod.number(),
+  "totalWasteThisWeek": zod.number().describe('SUM(bad_tray_entries.lossEstimate) this week, grams — wastage-aware estimate grounded in each cycle\'s growth-profile expected yield.'),
   "activeSeedLots": zod.number(),
   "badTraysCount": zod.number(),
   "activeCropTypes": zod.number().describe('Count of distinct crop\/seed names in running cycles.'),
@@ -773,6 +774,27 @@ export const ResolveLayoutQrResponse = zod.object({
   "monitoringApiWaterLevel": zod.string().nullish(),
   "monitoringApiPh": zod.string().nullish()
 })
+
+
+/**
+ * @summary Tray-position availability for every channel (Phase 7 Channel Utilization panel)
+ */
+export const GetChannelsStatusResponseItem = zod.object({
+  "channelId": zod.number(),
+  "room": zod.string(),
+  "channel": zod.string(),
+  "totalTrays": zod.number().describe('Total tray slots defined in layout for this channel'),
+  "activeCycles": zod.number().describe('Non-completed cycles currently assigned to this channel'),
+  "availableTrays": zod.number().describe('totalTrays minus activeCycles (min 0)'),
+  "isFull": zod.boolean().describe('True when activeCycles >= totalTrays and totalTrays > 0'),
+  "rack": zod.string().nullish(),
+  "rackId": zod.number().nullish(),
+  "trayCount": zod.number().nullish(),
+  "monitoringApiTemp": zod.string().nullish(),
+  "monitoringApiWaterLevel": zod.string().nullish(),
+  "monitoringApiPh": zod.string().nullish()
+})
+export const GetChannelsStatusResponse = zod.array(GetChannelsStatusResponseItem)
 
 
 /**

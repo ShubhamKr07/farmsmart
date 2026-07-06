@@ -29,7 +29,10 @@ export default function AppHeader() {
         <Feather name="menu" size={22} color={colors.foreground} />
       </Pressable>
 
-      <LogoMark size={20} />
+      <View style={s.brandRow}>
+        <LogoMark size={20} />
+        <Text style={s.brandText}>FarmEasy</Text>
+      </View>
 
       <View style={s.spacer} />
 
@@ -64,5 +67,7 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
     alignItems: "center",
     justifyContent: "center",
   },
+  brandRow: { flexDirection: "row", alignItems: "center", gap: 6, marginLeft: 4 },
+  brandText: { fontSize: 15, fontFamily: "Inter_700Bold", color: colors.primary },
   spacer: { flex: 1 },
 });

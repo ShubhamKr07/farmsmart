@@ -375,6 +375,63 @@ router.delete("/layout/trays/:id", async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * GET /layout/channels-status — tray-position availability for every
+ * channel in one call (Alpha App Phase 7's Channel Utilization drill-down
+ * panel). Same totalTrays/activeCycles/availableTrays computation
+ * /layout/resolve already does per-channel, but done as one grouped pass
+ * over bulk-fetched rows instead of N+1 calls to /resolve.
+ */
+router.get("/layout/channels-status", async (req: Request, res: Response) => {
+  try {
+    await ensureRoomsExist();
+
+    const rooms = await db.select().from(roomsTable).orderBy(asc(roomsTable.sortOrder));
+    const channels = await db.select().from(channelsTable).orderBy(asc(channelsTable.positionIndex));
+    const racks = await db.select().from(racksTable);
+    const trays = await db.select().from(traysTable);
+    const activeCycles = await db
+      .select({ trayPosition: cyclesTable.trayPosition })
+      .from(cyclesTable)
+      .where(ne(cyclesTable.status, "completed"));
+
+    const result = rooms.flatMap((room) =>
+      channels
+        .filter((channel) => channel.roomId === room.id)
+        .map((channel) => {
+          const channelRackIds = new Set(
+            racks.filter((r) => r.channelId === channel.id).map((r) => r.id),
+          );
+          const totalTrays = trays.filter((t) => channelRackIds.has(t.rackId)).length;
+          const activeCount = activeCycles.filter(
+            (c) =>
+              c.trayPosition?.includes(`"room":"${room.name}"`) &&
+              c.trayPosition?.includes(`"channel":"${channel.label}"`),
+          ).length;
+          const availableTrays = Math.max(0, totalTrays - activeCount);
+
+          return {
+            channelId: channel.id,
+            room: room.name,
+            channel: channel.label,
+            totalTrays,
+            activeCycles: activeCount,
+            availableTrays,
+            isFull: totalTrays > 0 && activeCount >= totalTrays,
+            monitoringApiTemp: channel.monitoringApiTemp ?? null,
+            monitoringApiWaterLevel: channel.monitoringApiWaterLevel ?? null,
+            monitoringApiPh: channel.monitoringApiPh ?? null,
+          };
+        }),
+    );
+
+    return res.json(result);
+  } catch (err) {
+    req.log.error(err);
+    return res.status(500).json({ error: "Failed to fetch channel status" });
+  }
+});
+
 router.get("/layout/resolve", async (req: Request, res: Response) => {
   try {
     const room = (req.query["room"] as string | undefined)?.toLowerCase().trim();

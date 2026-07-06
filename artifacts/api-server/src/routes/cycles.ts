@@ -8,6 +8,7 @@ import {
   growthProfilesTable,
   manualChecksTable,
   sensorStatusTable,
+  badTrayEntriesTable,
 } from "@workspace/db";
 import { calcDaysOverdue, generateShortId, seedingWeight } from "../lib/utils";
 
@@ -509,6 +510,22 @@ router.post("/cycles/:id/complete-harvest", enforceAuth, async (req, res) => {
           photoUrls: [],
           createdBy: auth?.userId ?? null,
         });
+
+        const affectedTrays = (body.fullTrays ?? cycle.fullTrays) + (body.halfTrays ?? cycle.halfTrays) * 0.5;
+        const expectedYieldPerTrayKg = Number(profile?.expectedYieldPerTrayKg ?? 0);
+        const lossEstimate = affectedTrays * expectedYieldPerTrayKg * 1000;
+        const severity = affectedTrays >= 5 ? "high" : affectedTrays >= 2 ? "medium" : "low";
+
+        await tx.insert(badTrayEntriesTable).values({
+          cycleId: id,
+          issue: body.issue ?? null,
+          severity,
+          fullTrays: body.fullTrays ?? cycle.fullTrays,
+          halfTrays: body.halfTrays ?? cycle.halfTrays,
+          photoUrls: [],
+          lossEstimate: String(lossEstimate),
+          createdBy: auth?.userId ?? null,
+        });
       }
       return row;
     });
@@ -580,6 +597,42 @@ router.post("/cycles/:id/manual-checks", enforceAuth, async (req, res) => {
         createdBy: auth?.userId ?? null,
       })
       .returning();
+
+    if (body.isBadTrays) {
+      // Wastage-aware loss estimate (Phase 7): grounded in this cycle's own
+      // growth profile expected yield, not a flat per-tray guess — affected
+      // trays' share of what this specific crop was actually expected to
+      // produce. expectedYieldPerTrayKg is kg; grams to match
+      // totalYieldThisWeek's unit.
+      const [cycleRow] = await db
+        .select({ growthProfileId: cyclesTable.growthProfileId })
+        .from(cyclesTable)
+        .where(eq(cyclesTable.id, id));
+
+      let expectedYieldPerTrayKg = 0;
+      if (cycleRow?.growthProfileId) {
+        const [profile] = await db
+          .select({ expectedYieldPerTrayKg: growthProfilesTable.expectedYieldPerTrayKg })
+          .from(growthProfilesTable)
+          .where(eq(growthProfilesTable.id, cycleRow.growthProfileId));
+        expectedYieldPerTrayKg = Number(profile?.expectedYieldPerTrayKg ?? 0);
+      }
+
+      const affectedTrays = (body.fullTrays ?? 0) + (body.halfTrays ?? 0) * 0.5;
+      const lossEstimate = affectedTrays * expectedYieldPerTrayKg * 1000;
+      const severity = affectedTrays >= 5 ? "high" : affectedTrays >= 2 ? "medium" : "low";
+
+      await db.insert(badTrayEntriesTable).values({
+        cycleId: id,
+        issue: body.issue ?? null,
+        severity,
+        fullTrays: body.fullTrays,
+        halfTrays: body.halfTrays,
+        photoUrls: body.photoUrls ?? [],
+        lossEstimate: String(lossEstimate),
+        createdBy: auth?.userId ?? null,
+      });
+    }
 
     return res.status(201).json(formatCheck(check));
   } catch (err) {
