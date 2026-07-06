@@ -251,3 +251,83 @@ Port a lightweight equivalent of web's `MetricPicker` + `TimeRangeSelector` to m
 ## Status: Phase 4 complete (4.0-4.3)
 
 Verified on the Android emulator throughout: new light/dark palettes, AppHeader (hamburger/logo/alerts/health/theme-toggle) on all 3 tabs, hamburger panel's Search + Data Logs rows, Search modal, theme-toggle cycling, chart/cycle-stage colors matching web, and the full facility-logs flow (category picker → form → validated submit against the live, deployed API). Repo-wide typecheck clean throughout (only the 6 pre-existing baseline errors, unrelated to this work, survive).
+
+---
+
+# Phase 5 — Data Logs form: make it intuitive
+
+Status: **shipped (P0-P3 all built)**. The Phase 4.3 form works (validated, deployed, submits correctly) but is a flat field list with no help filling it out — every field is manual free text, no smart defaults, no native pickers, no reuse of data FarmSmart already has. This plan targets fill-out ergonomics specifically, not new log types or new screens.
+
+## What's weak today, concretely
+
+Looked at the actual shipped form (`app/logs/[type].tsx`, `constants/facilityLogTypes.ts`):
+
+1. **Date/time fields are raw text**: Visitor log's Date (`YYYY-MM-DD` placeholder), Time In, Time Out are plain `TextInput`s — a technician has to type a date by hand, formatted exactly right, with zero feedback if they get it wrong until submit fails.
+2. **No smart defaults**: Maintenance's "Year" field starts empty every time, even though it's almost always the current year.
+3. **No autocomplete from data FarmSmart already has**: "Zone" (env check) and "Area" (cleaning) are freeform text, but the real room names (`seeding`, `fertigation`, `harvesting` — `rooms` table, already exposed via `useGetLayout`, unused anywhere in mobile today) exist and could be suggested instead of retyped every time.
+4. **No inline per-field validation**: the only feedback is the Save button staying disabled, with no indication of *which* field is missing — a new user has to guess.
+5. **No focus chaining**: tapping through 4-8 fields means tapping each one manually; the keyboard's own "next" action doesn't move focus.
+6. **Flat, undifferentiated layout**: every field looks the same regardless of importance — required and optional fields are only distinguished by a small trailing `*`, easy to miss.
+7. **Months-completed checklist** (Maintenance) is 12 unlabeled equal-weight chips with no "select all" / "select none" shortcut and no indication of which months are actually relevant yet (e.g., a quarterly-frequency item doesn't need all 12).
+8. **No optional photo attachment** — the app already has a working photo-picker pattern (manual-check entries use `expo-image-picker` + `photoUrls`), but Cleaning/Waste/Receiving logs (where a photo is genuinely useful evidence) have no way to attach one.
+9. **Abrupt close on save**: success just does `router.back()` with no confirmation — easy to wonder if it actually saved.
+
+## Proposed fixes, prioritized
+
+### P0 — fixes that remove real friction, small/contained changes
+
+- **Numeric steppers for count-like fields** (Year, Quantity): `-`/`+` buttons flanking the input in addition to typing, and Year defaults to the current year on mount instead of blank.
+- **Inline field-level errors**: replace "Save button silently disabled" with a small red caption under each empty required field, shown once the user has touched Save once (don't nag before first attempt).
+- **Return-key focus chaining**: wire each `TextInput`'s `onSubmitEditing` to focus the next field via refs, last field's return key focuses Notes or triggers Save.
+- **Success confirmation**: a brief inline "Saved" state (checkmark + label, ~600ms) before `router.back()`, instead of an instant silent close.
+
+### P1 — real data reuse, needs one new wired-up hook
+
+- **Zone/Area autocomplete**: wire `useGetLayout` (already generated, unused in mobile) into a lightweight suggestion strip above Zone/Area fields — tapping a suggestion fills the field, typing still works freely. Real room names (`seeding`/`fertigation`/`harvesting`) plus any rack/channel labels the layout endpoint returns.
+- **Recent-value memory**: cache the last 5 distinct values entered per field key (AsyncStorage, keyed by `logType.fieldKey`) and surface them the same way as the layout suggestions — covers freeform fields autocomplete can't (e.g. "Rack 3 pump").
+
+### P2 — new native picker dependency, justified but real scope
+
+- **Native date/time pickers** for Visitor log's Date/Time In/Time Out: add `@react-native-community/datetimepicker` (not currently installed — this is a deliberate new dependency, not something to pretend is free; justified because there's no honest fix for "raw text date entry" without some picker mechanism). Replaces the `YYYY-MM-DD`/`e.g. 09:00` text fields with a real date/time picker sheet, eliminates the format-guessing problem at the source.
+
+### P3 — optional, matches an existing pattern but adds real scope
+
+- **Optional photo attachment** for Cleaning, Waste, and Receiving logs: reuse the exact `expo-image-picker` + upload pattern already working for manual-check photos. Needs `photoUrls` added to those 3 types' Zod schemas + a small upload step before the POST (mirrors `utils/uploadPhoto.ts`'s existing flow). Not P0/P1 because it's the one item here that touches the API contract, not just the mobile form.
+
+## Explicitly not planned
+
+- **Redesigning the months-completed checklist's semantics** (frequency-aware pre-selection) — would need product input on what "quarterly" vs "monthly" actually means for pre-selection logic; flagging as a question, not assuming an answer.
+- **Multi-step wizard conversion** (mirroring Harvest's Step 1/3 pattern) — considered, but these forms are short enough (4-8 fields) that a single scrollable screen is still reasonable; a wizard would add navigation overhead without clearly improving speed for a form this size. Only revisit if a category's field count grows materially.
+
+## Suggested build order
+
+1. P0 (numeric steppers, inline errors, focus chaining, success confirmation) — self-contained, no new deps, no API changes. **Shipped.**
+2. P1 (layout autocomplete + recent-value memory) — needs `useGetLayout` wiring, still no new deps. **Shipped** — `hooks/useLayoutZoneSuggestions.ts`, `hooks/useRecentFieldValues.ts`.
+3. P2 (native date/time pickers) — one new dependency, isolated to the Visitor log form. **Shipped** — `@react-native-community/datetimepicker` installed.
+4. P3 (photo attachments) — touches the API contract (3 Zod schemas), do last. **Shipped** — also fixed a real pre-existing bug found along the way: `customFetch` was never re-exported from `@workspace/api-client-react`'s barrel (`lib/api-client-react/src/index.ts`), which is why `utils/uploadPhoto.ts` was one of the "6 pre-existing baseline errors" cited throughout this whole doc — down to 5 now.
+
+Verified live on the Android emulator: Zone/Area autocomplete chips (real room names via `useGetLayout`), Year field defaulting to current year with +/- steppers, Visitor log's Date/Time In/Time Out opening the native Android date/time picker dialog, and the Photos (0/4) section with camera/library buttons on Waste & Compost.
+
+---
+
+# Phase 6 — Home yield chart: area chart, revised palette
+
+Status: **shipped**. Targets `app/(tabs)/index.tsx`'s `YieldLineChart` specifically.
+
+## What changes
+
+- **Line → area chart**: each series (`Yield`, `Seeding`, `Bad Trays`) gets a filled area under its line, not just a stroked polyline. `react-native-svg` (already a dependency, no new package needed) supports this via a closed `Path`/`Polygon` per series (line points + drop to baseline + back to start) rendered under the existing `Polyline`, with a semi-transparent fill — same visual idea as web's `Area`/`linearGradient` in `renderers.tsx`, adapted since RN SVG's gradient support works differently from CSS (`<LinearGradient>`/`<Stop>` from `react-native-svg` instead of web's `<linearGradient>`).
+- **Yield and Seeding**: different shades of green. `colors.chart1` (yield, matches `primary`) and `colors.chart2` (seeding, already the lighter green from the Phase 4.2 fix) — both tokens already exist, no new colors needed for these two.
+- **Bad Trays: purple, not red.** This is a **deliberate divergence from web** — web's own equivalent chart (`renderers.tsx`) colors its bad-trays area with `hsl(var(--destructive))` (red), matching its "bad trays = destructive" semantic used everywhere else (KPI card, badge). Making mobile's chart purple breaks that one specific parity point on purpose, per this explicit ask — flagging it plainly rather than silently matching web, since parity-with-web has been this whole doc's throughline until now.
+- **New token needed**: no purple exists in `colors.ts` today. `components/RackReadingsCard.tsx`/`ChannelMonitoringCard.tsx` already use a fixed `#9C27B0` as a categorical pH accent (unthemed, same value both light/dark) — propose adding `chartPurple: "#9C27B0"` to both `light`/`dark` palettes in `colors.ts` for consistency with that existing hue, rather than inventing a new purple.
+
+## Files touched
+
+- `constants/colors.ts` — add `chartPurple` token (light + dark).
+- `app/(tabs)/index.tsx` — `YieldLineChart`: add closed-path fills under each `Polyline` (or swap to `react-native-svg`'s `Polygon` for the fill layer), badTrays color `colors.destructive` → `colors.chartPurple`; legend dots update to match.
+
+## Not planned here
+
+- Web's own chart is explicitly *not* being changed to match — this is mobile-only, by request.
+
+Verified live: filled area visible under the yield/seeding lines, Bad Trays legend dot and line now `chartPurple` (`#9C27B0`) instead of red.

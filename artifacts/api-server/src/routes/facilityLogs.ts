@@ -26,6 +26,7 @@ const WasteDataSchema = z.object({
   quantity: z.number().positive(),
   unit: z.string().min(1).max(20),
   disposalMethod: z.string().min(1).max(200),
+  photoUrls: z.array(z.string()).max(4).default([]),
 });
 
 const EnvCheckDataSchema = z.object({
@@ -39,6 +40,7 @@ const CleaningDataSchema = z.object({
   area: z.string().min(1).max(200),
   cleaningType: z.string().min(1).max(100),
   productUsed: z.string().max(200).optional(),
+  photoUrls: z.array(z.string()).max(4).default([]),
 });
 
 const ReceivingDataSchema = z.object({
@@ -47,6 +49,7 @@ const ReceivingDataSchema = z.object({
   quantity: z.number().positive(),
   unit: z.string().min(1).max(20),
   supplier: z.string().max(200).optional(),
+  photoUrls: z.array(z.string()).max(4).default([]),
 });
 
 const VisitorDataSchema = z.object({

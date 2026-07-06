@@ -3,7 +3,7 @@ import { Feather } from "@expo/vector-icons";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import React, { useMemo, useState } from "react";
-import Svg, { Polyline, Line, Text as SvgText } from "react-native-svg";
+import Svg, { Polyline, Path, Line, Text as SvgText } from "react-native-svg";
 import {
   ActivityIndicator,
   Pressable,
@@ -283,6 +283,22 @@ function YieldLineChart({
       .join(" ");
   }
 
+  // Area chart (Phase 6): each series gets a filled region under its line,
+  // not just a stroked polyline — a closed path from the line points down
+  // to the baseline, semi-transparent fill.
+  function areaPath(data: { value: number }[]) {
+    if (data.length < 2) return "";
+    const points = data.map((d, i) => ({
+      x: PL + (i / (n - 1)) * chartW,
+      y: PT + chartH - (d.value / maxVal) * chartH,
+    }));
+    const baselineY = PT + chartH;
+    const first = points[0];
+    const last = points[points.length - 1];
+    const lineTo = points.slice(1).map((p) => `L ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" ");
+    return `M ${first.x.toFixed(1)} ${baselineY} L ${first.x.toFixed(1)} ${first.y.toFixed(1)} ${lineTo} L ${last.x.toFixed(1)} ${baselineY} Z`;
+  }
+
   const labels = yieldData.map((d) => d.label);
 
   return (
@@ -291,13 +307,22 @@ function YieldLineChart({
         <Line x1={PL} y1={PT} x2={PL} y2={PT + chartH} stroke={colors.border} strokeWidth={1} />
         <Line x1={PL} y1={PT + chartH} x2={VW - PR} y2={PT + chartH} stroke={colors.border} strokeWidth={1} />
         {yieldData.length >= 2 && (
-          <Polyline points={pts(yieldData)} fill="none" stroke={colors.primary} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+          <>
+            <Path d={areaPath(yieldData)} fill={colors.primary + "26"} stroke="none" />
+            <Polyline points={pts(yieldData)} fill="none" stroke={colors.primary} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+          </>
         )}
         {seedingData.length >= 2 && (
-          <Polyline points={pts(seedingData)} fill="none" stroke={colors.chart2} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+          <>
+            <Path d={areaPath(seedingData)} fill={colors.chart2 + "26"} stroke="none" />
+            <Polyline points={pts(seedingData)} fill="none" stroke={colors.chart2} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+          </>
         )}
         {badTrayData.length >= 2 && (
-          <Polyline points={pts(badTrayData)} fill="none" stroke={colors.destructive} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+          <>
+            <Path d={areaPath(badTrayData)} fill={colors.chartPurple + "26"} stroke="none" />
+            <Polyline points={pts(badTrayData)} fill="none" stroke={colors.chartPurple} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+          </>
         )}
         {labels.map((label, i) => (
           <SvgText
@@ -322,7 +347,7 @@ function YieldLineChart({
           <Text style={s.legendLabel}>Seeding</Text>
         </View>
         <View style={s.legendItem}>
-          <View style={[s.legendDot, { backgroundColor: colors.destructive }]} />
+          <View style={[s.legendDot, { backgroundColor: colors.chartPurple }]} />
           <Text style={s.legendLabel}>Bad Trays</Text>
         </View>
       </View>

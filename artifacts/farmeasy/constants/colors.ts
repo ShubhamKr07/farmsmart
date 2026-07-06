@@ -44,6 +44,12 @@ const colors = {
     // The old logo-green primary, kept as a distinct, intentional brand pop-color —
     // no longer the same slot as `accent` (which now matches web's neutral hover-surface).
     highlight: "#2ECC71",
+
+    // Same hue already used as a fixed categorical pH accent in RackReadingsCard/
+    // ChannelMonitoringCard — reused here for the Home yield chart's bad-trays
+    // series (Phase 6), a deliberate mobile-only divergence from web's chart,
+    // which colors that series destructive-red.
+    chartPurple: "#9C27B0",
   },
 
   // Mirrors the web dashboard's .dark palette (artifacts/admin-dashboard/src/index.css)
@@ -93,6 +99,7 @@ const colors = {
     chart5: "#C4C9D4",
 
     highlight: "#2ECC71",
+    chartPurple: "#9C27B0",
   },
 
   radius: 8,
