@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "FarmEasy",
-    "slug": "farmeasy",
+    "name": "FarmSmart",
+    "slug": "farmsmart",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "farmeasy",
+    "scheme": "farmsmart",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
@@ -15,14 +15,14 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.farmeasy.app",
+      "bundleIdentifier": "com.farmsmart.app",
       "infoPlist": {
-        "NSCameraUsageDescription": "FarmEasy uses the camera to scan QR codes on trays and seed bags.",
-        "NSPhotoLibraryUsageDescription": "FarmEasy uses the photo library for manual check photos."
+        "NSCameraUsageDescription": "FarmSmart uses the camera to scan QR codes on trays and seed bags.",
+        "NSPhotoLibraryUsageDescription": "FarmSmart uses the photo library for manual check photos."
       }
     },
     "android": {
-      "package": "com.farmeasy.app",
+      "package": "com.farmsmart.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon-foreground.png",
         "backgroundColor": "#F5F7F4"
@@ -49,14 +49,14 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "FarmEasy needs camera access to scan QR codes on trays and seed bags."
+          "cameraPermission": "FarmSmart needs camera access to scan QR codes on trays and seed bags."
         }
       ],
       [
         "expo-image-picker",
         {
-          "cameraPermission": "FarmEasy needs camera access to take photos during manual checks.",
-          "photosPermission": "FarmEasy needs photo library access for manual check photos."
+          "cameraPermission": "FarmSmart needs camera access to take photos during manual checks.",
+          "photosPermission": "FarmSmart needs photo library access for manual check photos."
         }
       ],
       [

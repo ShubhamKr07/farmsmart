@@ -383,3 +383,57 @@ Remove the progress-bar visualization from the stat card — becomes label + val
 4. Chart maximize + rename (#6) — mobile-only.
 5. Channel Utilization plain card + panel (#1) — needs the new `/api/layout/channels-status` endpoint + codegen first, then the mobile card + drill-down screen.
 6. Total Waste card (#5, other half) — blocked on a definition decision (bad-tray loss vs. facility-log waste total vs. something else) before any backend work starts.
+
+---
+
+# Phase 8 — Brand rename, real seed data, mobile auth parity
+
+Status: **shipped**. Three unrelated items bundled by request. (The "why do all system signals show errors" question was answered directly, not a build item — this dev DB had zero rows in the `sensors` table for any type, so every metric correctly reported no-sensor-configured, not a bug; fixed by Phase 8.2's seed data below.)
+
+- **Rename**: went with the full identifier-level rename (user asked for it explicitly after the impact analysis), not just the cosmetic tier — `app.json` (name/slug/scheme/bundleIdentifier/package/permission strings) + all in-UI wordmarks. Left internal-only plumbing (`@workspace/farmeasy` pnpm package name, `artifacts/farmeasy/` folder path, AsyncStorage key prefixes) untouched — zero user-facing benefit from renaming those, only risk. Uninstalled the old `com.farmeasy.app` from the test emulator, regenerated the native `android/` folder fresh, verified the renamed app builds/installs/signs-in correctly. Physical-phone dev APK (installed earlier via Google Drive) is now orphaned by the package change — needs a fresh build + redistribution + reinstall, a real follow-up cost flagged in the impact analysis, not yet done.
+- **Seed data**: web-searched real CEA/hydroponic reference ranges (cited sources below in the original plan text) and applied `scripts/seed-phase8-realistic-data.sql` to the dev DB — filled in all 5 crops' `expected_yield_per_tray_kg` (was NULL on every one), seeded 12 channels/12 racks/36 trays across the 3 existing rooms, and one full sensor set (temp/pH/humidity/water) with fresh readings. Verified end-to-end on both mobile and web: Channel Utilization now shows 58.3% (7/12), sensor row shows real values instead of universal errors.
+- **Mobile auth parity**: checked web's actual live Clerk `<SignIn/>` in-browser (not just reading code) — confirmed Google OAuth is enabled, sign-up is genuinely reachable, and Clerk's standard forgot-password flow is present. Rebuilt mobile's `(auth)` screens to match: `sign-in.tsx` gained a "Continue with Google" button (`useSSO`) and links to the two new screens; `forgot-password.tsx` (new, 3-step: email → code + new password → done) and `sign-up.tsx` (new, replaced the old bare `<Redirect href="/sign-in" />` placeholder) both built against `@clerk/expo` v3's `signIn.resetPasswordEmailCode.*` / `signUp.password()` + `signUp.verifications.*` API. Verified all three screens render and link to each other correctly on the Android emulator; did not submit real reset/signup flows end-to-end (would send genuine emails / create a real account on the live Clerk instance).
+
+## 1. Rename FarmEasy → FarmSmart
+
+Grepped every occurrence in `artifacts/farmeasy` first. Splits cleanly into two risk tiers:
+
+**Safe, cosmetic — just text, no consequences:**
+- `app.json`: `"name": "FarmEasy"` (the display name under the app icon), the 3 permission-description strings ("FarmEasy uses the camera to...", "FarmEasy needs camera access...", "FarmEasy needs photo library access...").
+- In-UI text: `app/(auth)/sign-in.tsx` (logo wordmark, both the main and MFA-verify screens), `components/HamburgerMenu.tsx` (`brandRow` text), `components/AppHeader.tsx` (`brandRow` text).
+
+**Real consequences — identifier-level, not cosmetic:**
+- `app.json`: `"slug": "farmeasy"` (Expo project slug — tied to EAS builds/updates if ever used), `"scheme": "farmeasy"` (deep-link scheme — anything with an existing `farmeasy://` link breaks), `bundleIdentifier: "com.farmeasy.app"` (iOS) and `package: "com.farmeasy.app"` (Android) — these are the app's actual OS-level identity. Changing them means the OS treats it as a **different app**: the currently-installed dev build on the test emulator (and anyone else's) won't upgrade in place, it'll need a full uninstall + fresh install. If this were ever published, it'd need a new App Store/Play Store listing, not an update to the existing one.
+- `package.json`: `"name": "@workspace/farmeasy"` — internal pnpm workspace package name, referenced by every `pnpm --filter farmeasy ...` command used all session (would need every such command updated too, low risk since it's just local tooling, not shipped).
+- AsyncStorage key prefixes: `hooks/useRecentFieldValues.ts` (`farmeasy.logs.recent.*`) and `context/ThemeOverrideContext.tsx` (`farmeasy.themeOverride`) — renaming these means existing installs silently lose their saved recent-values/theme-override preferences (keys just won't match anymore, not a crash, just a quiet reset).
+
+Recommend: do the cosmetic rename now (low risk, matches the actual brand), leave `slug`/`scheme`/`bundleIdentifier`/`package` as `farmeasy` unless there's a specific reason to force it — this app isn't published anywhere yet, so the identifier mismatch (app displays "FarmSmart" but is technically `com.farmeasy.app`) is cosmetic-only for now and reversible later with zero cost, whereas changing the identifiers today has a real one-time cost (everyone's installed dev build breaks) for no benefit yet. Flagging as an explicit decision, not assuming either way.
+
+## 2. Real seed data — web search for realistic CEA reference values
+
+Right now nearly every number on both apps is 0 or empty (0 channels, 0 sensors, 0g yield/waste) — not because anything's broken, but because this dev DB has almost no data in it. To actually demo the features (charts, sensor row, channel availability, yield/waste cards) meaningfully, the DB needs plausible data, not fabricated-looking round numbers.
+
+Plan: web search for real, published reference ranges from vertical-farming/CEA extension-service and industry sources for:
+- **Sensor value ranges** per metric — pH, EC/nutrient concentration, temperature, humidity, water level — typical ranges for hydroponic leafy-greens/microgreen production (used to seed `sensors`/`sensor_readings` with plausible, not random, values).
+- **Growth profile timings** — germination/fertigation day-counts and expected yield-per-tray for a handful of common crops already referenced in this codebase (microgreens, lettuce, pea shoots) — real extension-service growing guides publish these, used to fill in `growth_profiles.expectedYieldPerTrayKg`/`germinationDays`/`fertigationDays` with defensible numbers instead of placeholders.
+- **Facility layout scale** — how many rooms/channels/racks/trays a small-to-mid CEA operation typically runs, to size the seeded `rooms`/`channels`/`racks`/`trays` rows realistically rather than an arbitrary count.
+
+Output: a seed script (mirrors the existing `scripts/seed-demo.sql` pattern already in this repo) populating `sensors` + a handful of recent `sensor_readings` rows (so the new Phase 7 error-detection logic shows real green/healthy values instead of universal red), plus enough `channels`/`racks`/`trays` rows that Channel Utilization and the availability panel show real numbers instead of 0/0. Explicitly not fabricating data with no sourcing — every seeded range gets a cited real source, not guessed.
+
+## 3. Mobile auth parity with web
+
+Checked both. Web (`admin-dashboard/src/App.tsx`) mounts Clerk's **prebuilt** `<SignIn />` component from `@clerk/clerk-react` — whatever sign-in methods are turned on in the Clerk dashboard (password, magic link, OAuth providers, passkeys, forgot-password, MFA) show up automatically, zero custom UI code. Mobile (`app/(auth)/sign-in.tsx`) is a **hand-built** screen using Clerk's headless `useSignIn()` hook — this isn't a mistake, `@clerk/expo` has no prebuilt hosted-UI equivalent (native apps can't embed Clerk's web-hosted auth UI the way a browser iframe/redirect can), so *some* custom screen is unavoidable on mobile. The real question is which flows that custom screen actually implements vs. what web gets for free.
+
+Grepped mobile's sign-in screen: implements password sign-in + email-code MFA verification only. **No forgot-password/reset flow, no sign-up flow, no OAuth/social buttons exist on mobile at all.** Whether that's a real gap depends on what's actually turned on in the Clerk dashboard, which isn't visible from the codebase — sign-up may be intentionally absent on both apps (mobile's "Contact your farm administrator to request access" messaging suggests invite-only accounts, not self-serve signup, which would make its absence correct parity, not a gap). Forgot-password is the one flow that's very likely enabled for web (Clerk turns it on by default) and is missing from mobile with no equivalent path at all — a real gap regardless of Clerk config.
+
+Plan, once Clerk dashboard configuration is confirmed:
+1. Check Clerk dashboard (or ask) which methods are actually enabled — password, magic link, OAuth providers (Google/GitHub/etc.), passkeys. Don't guess.
+2. Build forgot-password on mobile (`useSignIn().create({ strategy: "reset_password_email_code" })` or equivalent Clerk headless flow) — new screen, reachable from a "Forgot password?" link on the existing sign-in screen. Highest-confidence real gap.
+3. For each OAuth provider actually enabled in the dashboard: `@clerk/expo`'s `useOAuth()` hook + a native OAuth button per provider (opens the provider's auth flow via an in-app browser, not a custom form) — only build for providers confirmed enabled, not preemptively.
+4. Sign-up: only build if confirmed this app is meant to allow self-serve account creation on mobile — current messaging implies it isn't, don't build without confirming that's wrong.
+
+## Build order
+
+1. Cosmetic FarmSmart rename (#1's safe tier) — quick, no dependencies.
+2. Seed data (#2) — needed before #3's auth screens are meaningfully testable anyway (an account with zero surrounding data doesn't show much once logged in), and unblocks re-verifying Phase 7's sensor/channel work with real values instead of universal errors/zeros.
+3. Auth parity (#3) — start with confirming Clerk dashboard config, then forgot-password (confirmed gap), then OAuth only for whatever's actually enabled.

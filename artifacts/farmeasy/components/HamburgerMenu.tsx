@@ -87,7 +87,7 @@ export default function HamburgerMenu({
         <Animated.View style={[s.panel, panelStyle]}>
           <View style={s.brandRow}>
             <LogoMark size={22} />
-            <Text style={s.brandText}>FarmEasy</Text>
+            <Text style={s.brandText}>FarmSmart</Text>
           </View>
 
           <View style={s.accountBlock}>

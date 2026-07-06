@@ -31,7 +31,7 @@ export default function AppHeader() {
 
       <View style={s.brandRow}>
         <LogoMark size={20} />
-        <Text style={s.brandText}>FarmEasy</Text>
+        <Text style={s.brandText}>FarmSmart</Text>
       </View>
 
       <View style={s.spacer} />
