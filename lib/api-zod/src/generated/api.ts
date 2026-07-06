@@ -64,12 +64,15 @@ export const GetDashboardResponse = zod.object({
   "sensorStatus": zod.object({
   "sensorsOnline": zod.number(),
   "sensorsTotal": zod.number(),
-  "acidityPh": zod.number(),
-  "waterLevelPct": zod.number(),
-  "tempCelsius": zod.number(),
-  "humidityPct": zod.number(),
-  "updatedAt": zod.coerce.date()
-}).optional()
+  "acidityPh": zod.number().nullable(),
+  "acidityPhError": zod.boolean(),
+  "waterLevelPct": zod.number().nullable(),
+  "waterLevelPctError": zod.boolean(),
+  "tempCelsius": zod.number().nullable(),
+  "tempCelsiusError": zod.boolean(),
+  "humidityPct": zod.number().nullable(),
+  "humidityPctError": zod.boolean()
+}).optional().describe('Sourced from the real per-channel-linked sensors\/sensor_readings tables (Phase 7), not a legacy flat singleton row. Each metric\'s \*Error flag is true when no sensor of that type exists or its last reading is stale (>15min).')
 })
 
 

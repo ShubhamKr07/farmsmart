@@ -377,10 +377,10 @@ function GenericKpiCard({ def, data }: RendererProps) {
     if (def.dataKey === "sensorStatus" && d?.sensorStatus) {
       const s = d.sensorStatus;
       value =
-        def.id === "ov.sensor.currentTemp" ? formatNumber(s.tempCelsius)
-        : def.id === "ov.sensor.currentPh" ? formatNumber(s.acidityPh)
-        : def.id === "ov.sensor.currentHumidity" ? `${formatNumber(s.humidityPct)}%`
-        : def.id === "ov.sensor.currentWater" ? `${formatNumber(s.waterLevelPct)}%`
+        def.id === "ov.sensor.currentTemp" ? (s.tempCelsius == null ? "—" : formatNumber(s.tempCelsius))
+        : def.id === "ov.sensor.currentPh" ? (s.acidityPh == null ? "—" : formatNumber(s.acidityPh))
+        : def.id === "ov.sensor.currentHumidity" ? (s.humidityPct == null ? "—" : `${formatNumber(s.humidityPct)}%`)
+        : def.id === "ov.sensor.currentWater" ? (s.waterLevelPct == null ? "—" : `${formatNumber(s.waterLevelPct)}%`)
         : def.id === "ov.sensor.onlineRatio" ? `${s.sensorsOnline}/${s.sensorsTotal}`
         : "—";
     } else if (def.dataKey === "criticalAlertsCount") {

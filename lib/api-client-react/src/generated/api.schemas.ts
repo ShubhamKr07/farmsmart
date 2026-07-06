@@ -152,14 +152,24 @@ export interface CreateManualCheckRequest {
   photoUrls: string[];
 }
 
+/**
+ * Sourced from the real per-channel-linked sensors/sensor_readings tables (Phase 7), not a legacy flat singleton row. Each metric's *Error flag is true when no sensor of that type exists or its last reading is stale (>15min).
+ */
 export interface SensorStatus {
   sensorsOnline: number;
   sensorsTotal: number;
-  acidityPh: number;
-  waterLevelPct: number;
-  tempCelsius: number;
-  humidityPct: number;
-  updatedAt: string;
+  /** @nullable */
+  acidityPh: number | null;
+  acidityPhError: boolean;
+  /** @nullable */
+  waterLevelPct: number | null;
+  waterLevelPctError: boolean;
+  /** @nullable */
+  tempCelsius: number | null;
+  tempCelsiusError: boolean;
+  /** @nullable */
+  humidityPct: number | null;
+  humidityPctError: boolean;
 }
 
 export interface ChartDataPoint {

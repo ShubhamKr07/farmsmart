@@ -8,7 +8,7 @@ import {
   manualChecksTable,
   seedLotsTable,
   alertsTable,
-  sensorStatusTable,
+  sensorsTable,
   channelsTable,
   badTrayEntriesTable,
 } from "@workspace/db";
@@ -209,28 +209,49 @@ export async function computeDashboardSnapshot() {
       return c.createdAt >= d;
     }).length;
 
-    // Sensor status — no fabricated fallback (G11). Absent readings are null.
-    const sensorRows = await db.select().from(sensorStatusTable).limit(1);
-    const s = sensorRows[0];
-    const num = (v: number | null | undefined): number | null =>
-      v === null || v === undefined ? null : Number(v);
-    const sensorStatus = s
-      ? {
-          sensorsOnline: s.sensorsOnline,
-          sensorsTotal: s.sensorsTotal,
-          acidityPh: num(s.acidityPh),
-          waterLevelPct: num(s.waterLevelPct),
-          tempCelsius: num(s.tempCelsius),
-          humidityPct: num(s.humidityPct),
-        }
-      : {
-          sensorsOnline: null,
-          sensorsTotal: null,
-          acidityPh: null,
-          waterLevelPct: null,
-          tempCelsius: null,
-          humidityPct: null,
-        };
+    // Sensor status (Phase 7): sourced from the real per-channel-linked
+    // sensors/sensor_readings tables (facility layout's monitoringApi*
+    // config is what a sensor is attached via channelId), not the legacy
+    // flat sensor_status singleton row that was never wired to any actual
+    // sensor. A metric errors out (isError: true) if no sensor of that type
+    // exists, or its last reading is missing/stale — no fabricated fallback
+    // (G11), absent/stale readings are surfaced as errors, not silently null.
+    const STALE_MS = 15 * 60 * 1000; // 15 min — a live env sensor should report more often than this
+    const allSensors = await db.select().from(sensorsTable);
+    const now2 = Date.now();
+
+    function metricFor(type: "temp" | "ph" | "water" | "humidity") {
+      const candidates = allSensors.filter((sn) => sn.type === type && sn.lastReadAt);
+      const latest = candidates.sort(
+        (a, b) => (b.lastReadAt as Date).getTime() - (a.lastReadAt as Date).getTime(),
+      )[0];
+      const isStale = !latest || now2 - (latest.lastReadAt as Date).getTime() > STALE_MS;
+      return {
+        value: latest ? Number(latest.lastValue ?? 0) : null,
+        isError: !latest || isStale,
+      };
+    }
+
+    const tempMetric = metricFor("temp");
+    const phMetric = metricFor("ph");
+    const humidityMetric = metricFor("humidity");
+    const waterMetric = metricFor("water");
+    const sensorsOnline = allSensors.filter(
+      (sn) => sn.lastReadAt && now2 - sn.lastReadAt.getTime() <= STALE_MS,
+    ).length;
+
+    const sensorStatus = {
+      sensorsOnline,
+      sensorsTotal: allSensors.length,
+      acidityPh: phMetric.value,
+      acidityPhError: phMetric.isError,
+      waterLevelPct: waterMetric.value,
+      waterLevelPctError: waterMetric.isError,
+      tempCelsius: tempMetric.value,
+      tempCelsiusError: tempMetric.isError,
+      humidityPct: humidityMetric.value,
+      humidityPctError: humidityMetric.isError,
+    };
 
     // Current alerts count
     const currentAlerts = await db

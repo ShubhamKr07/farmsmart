@@ -82,26 +82,24 @@ export default function HomeScreen() {
 
         {stats?.sensorStatus && (
           <View style={s.sensorRow}>
-            <View style={s.sensorChip}>
-              <Feather name="droplet" size={13} color={colors.chartPurple} />
-              <Text style={s.sensorValue}>{stats.sensorStatus.acidityPh ?? "—"}</Text>
-              <Text style={s.sensorLabel}>pH</Text>
-            </View>
-            <View style={s.sensorChip}>
-              <Feather name="thermometer" size={13} color={colors.statusWarn} />
-              <Text style={s.sensorValue}>{stats.sensorStatus.tempCelsius ?? "—"}°C</Text>
-              <Text style={s.sensorLabel}>Temp</Text>
-            </View>
-            <View style={s.sensorChip}>
-              <Feather name="wind" size={13} color={colors.chart2} />
-              <Text style={s.sensorValue}>{stats.sensorStatus.humidityPct ?? "—"}%</Text>
-              <Text style={s.sensorLabel}>Humidity</Text>
-            </View>
-            <View style={s.sensorChip}>
-              <Feather name="droplet" size={13} color={colors.primary} />
-              <Text style={s.sensorValue}>{stats.sensorStatus.waterLevelPct ?? "—"}%</Text>
-              <Text style={s.sensorLabel}>Water</Text>
-            </View>
+            {[
+              { key: "ph", icon: "droplet", value: stats.sensorStatus.acidityPh, unit: "", label: "pH", error: stats.sensorStatus.acidityPhError, color: colors.chartPurple },
+              { key: "temp", icon: "thermometer", value: stats.sensorStatus.tempCelsius, unit: "°C", label: "Temp", error: stats.sensorStatus.tempCelsiusError, color: colors.statusWarn },
+              { key: "humidity", icon: "wind", value: stats.sensorStatus.humidityPct, unit: "%", label: "Humidity", error: stats.sensorStatus.humidityPctError, color: colors.chart2 },
+              { key: "water", icon: "droplet", value: stats.sensorStatus.waterLevelPct, unit: "%", label: "Water", error: stats.sensorStatus.waterLevelPctError, color: colors.primary },
+            ].map((m) => (
+              <View key={m.key} style={[s.sensorChip, m.error && s.sensorChipError]}>
+                <Feather
+                  name={m.error ? "alert-triangle" : (m.icon as any)}
+                  size={13}
+                  color={m.error ? colors.destructive : m.color}
+                />
+                <Text style={[s.sensorValue, m.error && s.sensorValueError]}>
+                  {m.error ? "Error" : `${m.value ?? "—"}${m.unit}`}
+                </Text>
+                <Text style={s.sensorLabel}>{m.label}</Text>
+              </View>
+            ))}
           </View>
         )}
 
@@ -113,7 +111,7 @@ export default function HomeScreen() {
           <>
             <View style={s.statsRow}>
               <Pressable
-                style={[s.statCard, { flex: 1.2 }]}
+                style={s.statCard}
                 onPress={() => router.push("/channel-availability" as any)}
               >
                 <Text style={s.statLabel}>Channel Utilization</Text>
@@ -123,7 +121,7 @@ export default function HomeScreen() {
                   {stats?.totalChannels ?? 20} channels
                 </Text>
               </Pressable>
-              <View style={[s.statCard, { flex: 0.8 }]}>
+              <View style={s.statCard}>
                 <Text style={s.statLabel}>Running</Text>
                 <Text style={s.statValue}>
                   {stats?.totalRunningCycles ?? 0}
@@ -424,9 +422,12 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   },
   sensorValue: { fontSize: 12, fontFamily: "Inter_700Bold", color: colors.foreground },
   sensorLabel: { fontSize: 10, fontFamily: "Inter_400Regular", color: colors.mutedForeground },
+  sensorChipError: { backgroundColor: colors.destructive + "12", borderColor: colors.destructive + "40" },
+  sensorValueError: { color: colors.destructive },
   loadingWrap: { flex: 1, alignItems: "center", padding: 60 },
   statsRow: { flexDirection: "row", gap: 12, marginBottom: 12 },
   statCard: {
+    flex: 1,
     backgroundColor: colors.card,
     borderRadius: colors.radius,
     padding: 16,

@@ -1481,23 +1481,29 @@ components:
 
     SensorStatus:
       type: object
+      description: Sourced from the real per-channel-linked sensors/sensor_readings tables (Phase 7), not a legacy flat singleton row. Each metric's *Error flag is true when no sensor of that type exists or its last reading is stale (>15min).
       properties:
         sensorsOnline:
           type: integer
         sensorsTotal:
           type: integer
         acidityPh:
-          type: number
+          type: ["number", "null"]
+        acidityPhError:
+          type: boolean
         waterLevelPct:
-          type: number
+          type: ["number", "null"]
+        waterLevelPctError:
+          type: boolean
         tempCelsius:
-          type: number
+          type: ["number", "null"]
+        tempCelsiusError:
+          type: boolean
         humidityPct:
-          type: number
-        updatedAt:
-          type: string
-          format: date-time
-      required: [sensorsOnline, sensorsTotal, acidityPh, waterLevelPct, tempCelsius, humidityPct, updatedAt]
+          type: ["number", "null"]
+        humidityPctError:
+          type: boolean
+      required: [sensorsOnline, sensorsTotal, acidityPh, acidityPhError, waterLevelPct, waterLevelPctError, tempCelsius, tempCelsiusError, humidityPct, humidityPctError]
 
     DashboardStats:
       type: object
