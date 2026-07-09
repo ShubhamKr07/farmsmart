@@ -1,4 +1,4 @@
-# 🌱 FarmEasy
+# 🌱 FarmSmart
 
 **Operations software for indoor vertical farms — plan grow cycles, track facilities, manage inventory, and run day-to-day operations from your phone.**
 
@@ -11,11 +11,11 @@
 
 ---
 
-## Why FarmEasy
+## Why FarmSmart
 
 Indoor vertical farms pack dozens of grow cycles into a small footprint, and the operational complexity scales fast: which tray was seeded when, which rack is due for harvest, what's running low in inventory, and who's responsible for today's tasks. Most small and mid-sized growers run this on spreadsheets and memory — which breaks down the moment they add a second facility.
 
-**FarmEasy replaces the spreadsheet.** It's a mobile-first operations app that gives growers a single source of truth for their facilities, grow cycles, inventory, and daily tasks — built to stay reliable as an operation grows from one room to many.
+**FarmSmart replaces the spreadsheet.** It's a mobile-first operations app that gives growers a single source of truth for their facilities, grow cycles, inventory, and daily tasks — built to stay reliable as an operation grows from one room to many.
 
 > 📸 _<!-- TODO: add 2–3 screenshots or a short GIF of the app here. Visuals are the single biggest driver of a README getting taken seriously. -->_
 
@@ -36,7 +36,7 @@ Indoor vertical farms pack dozens of grow cycles into a small footprint, and the
 
 ## Architecture
 
-FarmEasy is a **TypeScript monorepo** managed with **pnpm workspaces**. The codebase is split into independently typed packages with a strict, typecheck-gated build, so a type error anywhere fails the build before anything ships.
+FarmSmart is a **TypeScript monorepo** managed with **pnpm workspaces**. The codebase is split into independently typed packages with a strict, typecheck-gated build, so a type error anywhere fails the build before anything ships.
 
 ```
 farmeasy/
