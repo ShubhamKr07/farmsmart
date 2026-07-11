@@ -40,7 +40,10 @@ async def synthesize_answer(question: str, docs: list[dict], farm_context_text: 
         resp = await _client.aio.models.generate_content(
             model=settings.gemini_chat_model,
             contents=prompt,
-            config=types.GenerateContentConfig(max_output_tokens=600),
+            config=types.GenerateContentConfig(
+                max_output_tokens=1024,
+                thinking_config=types.ThinkingConfig(thinking_budget=0),
+            ),
         )
     except Exception:
         logger.exception("Gemini synthesis failed, falling back to raw top-match answer")
