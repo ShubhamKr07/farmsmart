@@ -213,10 +213,14 @@ export async function computeDashboardSnapshot() {
     // sensors/sensor_readings tables (facility layout's monitoringApi*
     // config is what a sensor is attached via channelId), not the legacy
     // flat sensor_status singleton row that was never wired to any actual
-    // sensor. A metric errors out (isError: true) if no sensor of that type
-    // exists, or its last reading is missing/stale — no fabricated fallback
-    // (G11), absent/stale readings are surfaced as errors, not silently null.
-    const STALE_MS = 15 * 60 * 1000; // 15 min — a live env sensor should report more often than this
+    // sensor. A metric errors out (isError: true) only if no sensor of that
+    // type exists or has ever reported a reading — no fabricated fallback
+    // (G11), a metric with zero readings is surfaced as an error, not
+    // silently null. A metric that HAS reported before keeps showing its
+    // last known real value even once stale (staleness is a real, not
+    // fabricated, number) — sensorsOnline/sensorsTotal below is still the
+    // live freshness signal for anyone who needs it.
+    const STALE_MS = 15 * 60 * 1000; // 15 min — used for sensorsOnline count only, not per-metric error
     const allSensors = await db.select().from(sensorsTable);
     const now2 = Date.now();
 
@@ -225,10 +229,9 @@ export async function computeDashboardSnapshot() {
       const latest = candidates.sort(
         (a, b) => (b.lastReadAt as Date).getTime() - (a.lastReadAt as Date).getTime(),
       )[0];
-      const isStale = !latest || now2 - (latest.lastReadAt as Date).getTime() > STALE_MS;
       return {
         value: latest ? Number(latest.lastValue ?? 0) : null,
-        isError: !latest || isStale,
+        isError: !latest,
       };
     }
 
